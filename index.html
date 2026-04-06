@@ -2,951 +2,1507 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Village Rewards" />
-  <meta name="theme-color" content="#3d4535" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Village Rewards — a shared rewards system for Mont Albert's independent traders. Keep money, movement, and life within the village." />
   <title>Village Rewards · Mont Albert</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <style>
     :root {
       --green:      #3d4535;
       --green-dark: #2c3127;
       --green-mid:  #505c42;
+      --green-light:#6b7a5a;
       --beige:      #fff0dc;
-      --beige-dim:  rgba(255,240,220,0.15);
+      --beige-dim:  #e8d9c3;
+      --beige-faint:rgba(255,240,220,0.07);
       --accent:     #a8c285;
-      --danger:     #c97b5a;
+      --accent-dim: rgba(168,194,133,0.15);
       --serif:      'Abril Fatface', serif;
       --sans:       'IBM Plex Sans', system-ui, sans-serif;
-      --safe-top:   env(safe-area-inset-top, 0px);
-      --safe-bot:   env(safe-area-inset-bottom, 0px);
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    html, body {
-      height: 100%;
+    html { scroll-behavior: smooth; }
+
+    body {
       font-family: var(--sans);
       font-weight: 300;
-      background: var(--green);
-      color: var(--beige);
-      overflow: hidden;
+      background: var(--beige);
+      color: var(--green);
+      overflow-x: hidden;
     }
 
-    /* ── Screen system ── */
-    .screen {
+    /* ── Noise texture overlay ── */
+    body::before {
+      content: '';
       position: fixed;
       inset: 0;
-      display: flex;
-      flex-direction: column;
-      opacity: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
       pointer-events: none;
-      transform: translateY(12px);
-      transition: opacity 0.28s ease, transform 0.28s ease;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding-top: var(--safe-top);
-      padding-bottom: var(--safe-bot);
-    }
-    .screen.active {
-      opacity: 1;
-      pointer-events: all;
-      transform: translateY(0);
+      z-index: 1000;
+      opacity: 0.4;
     }
 
-    /* ── Shared layout ── */
-    .bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 18px 24px 14px;
-      border-bottom: 1px solid rgba(255,240,220,0.1);
-      flex-shrink: 0;
+    /* ── Typography ── */
+    .serif { font-family: var(--serif); }
+
+    h1, h2, h3 { font-family: var(--serif); font-weight: 400; }
+
+    .display {
+      font-size: clamp(56px, 9vw, 120px);
+      line-height: 0.95;
+      letter-spacing: -0.01em;
     }
-    .bar .logo {
-      font-family: var(--serif);
-      font-size: 15px;
-      letter-spacing: 0.02em;
+
+    .display-md {
+      font-size: clamp(40px, 6vw, 72px);
+      line-height: 1.0;
     }
-    .bar .sub {
+
+    .display-sm {
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1.05;
+    }
+
+    .label {
       font-size: 10px;
-      letter-spacing: 0.18em;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
       opacity: 0.45;
     }
-    .bar .back-btn {
-      background: none;
-      border: none;
+
+    p { line-height: 1.7; }
+
+    /* ── Links ── */
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Sections ── */
+    section { position: relative; }
+
+    .container {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 0 24px; }
+    }
+
+    /* ══════════════════════════════════════════════════
+       NAV
+    ══════════════════════════════════════════════════ */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 22px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    nav.scrolled {
+      background: rgba(255,240,220,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(61,69,53,0.1);
+    }
+
+    .nav-logo {
+      font-family: var(--serif);
+      font-size: 16px;
+      letter-spacing: 0.02em;
+    }
+
+    .nav-logo span {
+      font-family: var(--sans);
+      font-size: 10px;
+      font-weight: 300;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.4;
+      margin-left: 14px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      opacity: 0.55;
+      transition: opacity 0.2s;
+    }
+
+    .nav-links a:hover { opacity: 1; }
+
+    .nav-cta {
+      background: var(--green);
+      color: var(--beige) !important;
+      padding: 10px 20px;
+      font-size: 10px !important;
+      letter-spacing: 0.18em !important;
+      opacity: 1 !important;
+      transition: background 0.2s !important;
+    }
+
+    .nav-cta:hover { background: var(--green-mid) !important; }
+
+    @media (max-width: 768px) {
+      nav { padding: 18px 24px; }
+      .nav-links { display: none; }
+    }
+
+    /* ══════════════════════════════════════════════════
+       HERO
+    ══════════════════════════════════════════════════ */
+    #hero {
+      background: var(--green);
       color: var(--beige);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding-bottom: 80px;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    /* Decorative concentric arcs */
+    .hero-bg svg {
+      position: absolute;
+      right: -80px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 700px;
+      height: 700px;
+      opacity: 0.06;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-pretitle {
+      font-size: 10px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      opacity: 0.4;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .hero-pretitle::before {
+      content: '';
+      display: block;
+      width: 36px;
+      height: 1px;
+      background: currentColor;
+      opacity: 0.4;
+    }
+
+    .hero-title { color: var(--beige); margin-bottom: 0; }
+
+    .hero-title .line-2 { color: var(--accent); }
+
+    .hero-bottom {
+      margin-top: 60px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: end;
+    }
+
+    .hero-desc {
+      font-size: clamp(15px, 1.5vw, 18px);
+      line-height: 1.65;
+      opacity: 0.7;
+      max-width: 440px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 14px;
+    }
+
+    .btn-hero-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--beige);
+      color: var(--green);
+      padding: 18px 32px;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      transition: background 0.2s, transform 0.15s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-hero-primary:hover {
+      background: var(--beige-dim);
+      transform: translateY(-1px);
+    }
+
+    .btn-hero-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid rgba(255,240,220,0.3);
+      color: var(--beige);
+      padding: 14px 28px;
+      font-family: var(--sans);
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+
+    .btn-hero-outline:hover {
+      border-color: rgba(255,240,220,0.6);
+      transform: translateY(-1px);
+    }
+
+    .hero-note {
+      font-size: 11px;
+      opacity: 0.35;
+      text-align: right;
+    }
+
+    @media (max-width: 768px) {
+      #hero { padding-bottom: 56px; justify-content: flex-end; }
+      .hero-bottom { grid-template-columns: 1fr; gap: 32px; }
+      .hero-actions { align-items: flex-start; }
+      .hero-note { text-align: left; }
+    }
+
+    /* ══════════════════════════════════════════════════
+       STRIP / MARQUEE
+    ══════════════════════════════════════════════════ */
+    .marquee-strip {
+      background: var(--accent);
+      color: var(--green-dark);
+      padding: 14px 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .marquee-track {
+      display: inline-flex;
+      gap: 0;
+      animation: marquee 28s linear infinite;
+    }
+
+    .marquee-item {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 0 40px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .marquee-item::after {
+      content: '◆';
+      font-size: 6px;
+      opacity: 0.5;
+    }
+
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ══════════════════════════════════════════════════
+       PROBLEM / SHIFT
+    ══════════════════════════════════════════════════ */
+    #problem {
+      padding: 120px 0;
+      background: var(--beige);
+    }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+      margin-top: 64px;
+    }
+
+    .problem-item {
+      padding: 40px;
+      border: 1px solid rgba(61,69,53,0.1);
+      position: relative;
+      transition: border-color 0.3s;
+    }
+
+    .problem-item:hover { border-color: rgba(61,69,53,0.3); }
+
+    .problem-num {
+      font-family: var(--serif);
+      font-size: 80px;
+      line-height: 1;
+      opacity: 0.06;
+      position: absolute;
+      top: 20px;
+      right: 24px;
+    }
+
+    .problem-title {
+      font-family: var(--serif);
+      font-size: 22px;
+      margin-bottom: 14px;
+      line-height: 1.2;
+    }
+
+    .problem-desc {
+      font-size: 14px;
+      opacity: 0.65;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 768px) {
+      .problem-grid { grid-template-columns: 1fr; gap: 16px; }
+    }
+
+    /* ══════════════════════════════════════════════════
+       HOW IT WORKS
+    ══════════════════════════════════════════════════ */
+    #how {
+      background: var(--green);
+      color: var(--beige);
+      padding: 120px 0;
+    }
+
+    .how-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: end;
+      margin-bottom: 80px;
+    }
+
+    .how-intro {
+      font-size: clamp(15px, 1.4vw, 17px);
+      opacity: 0.65;
+      line-height: 1.7;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+    }
+
+    .step {
+      background: var(--beige-faint);
+      padding: 40px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      transition: background 0.25s;
+      cursor: default;
+    }
+
+    .step:hover { background: rgba(255,240,220,0.12); }
+
+    .step-num {
+      font-family: var(--serif);
+      font-size: 48px;
+      line-height: 1;
+      color: var(--accent);
+      opacity: 0.5;
+    }
+
+    .step-icon {
+      font-size: 28px;
+    }
+
+    .step-title {
+      font-family: var(--serif);
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .step-desc {
+      font-size: 13px;
+      opacity: 0.55;
+      line-height: 1.65;
+    }
+
+    .how-footer {
+      margin-top: 48px;
+      padding: 32px 40px;
+      background: var(--beige-faint);
+      border-left: 3px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .how-footer p {
+      font-size: 15px;
+      opacity: 0.75;
+      max-width: 600px;
+      line-height: 1.6;
+    }
+
+    .how-footer strong { font-weight: 500; color: var(--accent); }
+
+    @media (max-width: 900px) {
+      .steps { grid-template-columns: 1fr 1fr; }
+      .how-header { grid-template-columns: 1fr; gap: 24px; }
+    }
+
+    @media (max-width: 600px) {
+      .steps { grid-template-columns: 1fr; }
+    }
+
+    /* ══════════════════════════════════════════════════
+       FOR TRADERS
+    ══════════════════════════════════════════════════ */
+    #traders {
+      padding: 120px 0;
+      background: var(--beige);
+    }
+
+    .traders-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 100px;
+      align-items: center;
+      margin-top: 64px;
+    }
+
+    .traders-benefits {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .benefit-row {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 24px;
+      padding: 28px 0;
+      border-bottom: 1px solid rgba(61,69,53,0.1);
+      align-items: start;
+    }
+
+    .benefit-row:first-child { border-top: 1px solid rgba(61,69,53,0.1); }
+
+    .benefit-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--accent-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .benefit-title {
+      font-family: var(--serif);
+      font-size: 18px;
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+
+    .benefit-desc {
+      font-size: 13px;
+      opacity: 0.6;
+      line-height: 1.65;
+    }
+
+    /* Mockup card */
+    .traders-visual {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .mock-card {
+      background: var(--green);
+      color: var(--beige);
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mock-card::after {
+      content: '';
+      position: absolute;
+      right: -40px;
+      top: -40px;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,240,220,0.06);
+    }
+
+    .mock-label {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.35;
+      margin-bottom: 12px;
+    }
+
+    .mock-value {
+      font-family: var(--serif);
+      font-size: 52px;
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .mock-sub {
+      font-size: 12px;
+      opacity: 0.45;
+      margin-top: 6px;
+    }
+
+    .mock-stat-row {
+      display: flex;
+      gap: 2px;
+      margin-top: 2px;
+    }
+
+    .mock-stat {
+      flex: 1;
+      background: var(--green-dark);
+      padding: 20px 20px;
+    }
+
+    .mock-stat .s-val {
+      font-family: var(--serif);
+      font-size: 28px;
+      color: var(--accent);
+      opacity: 0.8;
+    }
+
+    .mock-stat .s-lbl {
+      font-size: 10px;
+      opacity: 0.35;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 900px) {
+      .traders-layout { grid-template-columns: 1fr; gap: 48px; }
+    }
+
+    /* ══════════════════════════════════════════════════
+       DIFFERENTIATORS
+    ══════════════════════════════════════════════════ */
+    #why {
+      background: var(--green-dark);
+      color: var(--beige);
+      padding: 120px 0;
+    }
+
+    .why-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      margin-top: 64px;
+    }
+
+    .why-card {
+      padding: 48px 36px;
+      background: var(--beige-faint);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: background 0.25s;
+    }
+
+    .why-card:hover { background: rgba(255,240,220,0.1); }
+
+    .why-tag {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      opacity: 0.8;
+    }
+
+    .why-title {
+      font-family: var(--serif);
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    .why-desc {
+      font-size: 13px;
+      opacity: 0.55;
+      line-height: 1.65;
+      flex: 1;
+    }
+
+    .why-card .rule {
+      width: 32px;
+      height: 1px;
+      background: var(--accent);
+      opacity: 0.4;
+    }
+
+    @media (max-width: 900px) {
+      .why-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .why-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ══════════════════════════════════════════════════
+       PILOT
+    ══════════════════════════════════════════════════ */
+    #pilot {
+      background: var(--beige);
+      padding: 120px 0;
+    }
+
+    .pilot-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 100px;
+      margin-top: 64px;
+      align-items: start;
+    }
+
+    .pilot-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      counter-reset: pstep;
+    }
+
+    .pilot-step {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 20px;
+      padding: 28px 0;
+      border-bottom: 1px solid rgba(61,69,53,0.1);
+      counter-increment: pstep;
+      align-items: start;
+    }
+
+    .pilot-step:first-child { border-top: 1px solid rgba(61,69,53,0.1); }
+
+    .pilot-step-num {
+      font-family: var(--serif);
+      font-size: 24px;
+      opacity: 0.2;
+      line-height: 1.3;
+    }
+
+    .pilot-step-title {
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .pilot-step-desc {
+      font-size: 13px;
+      opacity: 0.6;
+      line-height: 1.6;
+    }
+
+    .pilot-box {
+      background: var(--green);
+      color: var(--beige);
+      padding: 48px 44px;
+      position: sticky;
+      top: 100px;
+    }
+
+    .pilot-box .pilot-box-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.4;
+      margin-bottom: 20px;
+    }
+
+    .pilot-box h3 {
+      font-size: 32px;
+      margin-bottom: 20px;
+      line-height: 1.1;
+    }
+
+    .pilot-box p {
+      font-size: 14px;
+      opacity: 0.65;
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+
+    .pilot-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 36px;
+    }
+
+    .pilot-tag {
       font-size: 10px;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      opacity: 0.5;
-      cursor: pointer;
-      font-family: var(--sans);
-      padding: 4px 0;
-    }
-    .bar .back-btn:hover { opacity: 0.9; }
-
-    .body { flex: 1; padding: 32px 24px; }
-    .body.center { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-
-    /* ── Typography ── */
-    .display { font-family: var(--serif); font-size: clamp(38px, 10vw, 52px); line-height: 1.0; }
-    .display-sm { font-family: var(--serif); font-size: 28px; line-height: 1.1; }
-    .label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.45; }
-    .hint { font-size: 13px; opacity: 0.55; line-height: 1.6; }
-
-    /* ── Inputs ── */
-    .field {
-      width: 100%;
-      background: rgba(255,240,220,0.08);
+      padding: 7px 14px;
       border: 1px solid rgba(255,240,220,0.2);
-      color: var(--beige);
-      font-family: var(--sans);
-      font-size: 16px;
-      font-weight: 300;
-      padding: 14px 16px;
-      outline: none;
-      border-radius: 0;
-      appearance: none;
-      -webkit-appearance: none;
-      transition: border-color 0.2s;
+      opacity: 0.7;
     }
-    .field:focus { border-color: rgba(255,240,220,0.6); }
-    .field::placeholder { opacity: 0.35; }
-    .field-group { display: flex; flex-direction: column; gap: 10px; margin-top: 28px; }
-    .field-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.5; margin-bottom: 6px; }
 
-    /* ── Buttons ── */
-    .btn {
-      width: 100%;
-      padding: 16px;
+    .btn-pilot {
+      display: block;
+      background: var(--accent);
+      color: var(--green-dark);
+      padding: 18px 28px;
       font-family: var(--sans);
       font-size: 11px;
       font-weight: 500;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      cursor: pointer;
-      border: none;
-      transition: opacity 0.2s, transform 0.1s;
-      border-radius: 0;
-    }
-    .btn:active { transform: scale(0.98); }
-    .btn-primary { background: var(--beige); color: var(--green); }
-    .btn-outline { background: transparent; border: 1px solid rgba(255,240,220,0.35); color: var(--beige); }
-    .btn-accent  { background: var(--accent); color: var(--green-dark); }
-    .btn-danger  { background: var(--danger); color: var(--beige); }
-    .btn:disabled { opacity: 0.35; cursor: default; }
-
-    /* ── Select ── */
-    select.field {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23fff0dc' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 16px center;
-      padding-right: 40px;
-      cursor: pointer;
-    }
-    select.field option { background: var(--green); color: var(--beige); }
-
-    /* ─────────────────────────────────────────────── */
-    /* SCREEN 1: WELCOME                               */
-    /* ─────────────────────────────────────────────── */
-    #s-welcome .body {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: calc(100vh - 60px);
-    }
-    #s-welcome .top { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-    #s-welcome .village { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.4; margin-bottom: 20px; }
-    #s-welcome .tagline { font-size: 15px; font-weight: 300; opacity: 0.6; margin-top: 20px; max-width: 260px; line-height: 1.6; }
-    #s-welcome .role-btns { display: flex; flex-direction: column; gap: 10px; padding-bottom: 24px; }
-    #s-welcome .role-hint { font-size: 10px; opacity: 0.35; text-align: center; letter-spacing: 0.1em; margin-top: 4px; }
-
-    /* ─────────────────────────────────────────────── */
-    /* SCREEN 2: REGISTER                              */
-    /* ─────────────────────────────────────────────── */
-    #s-register .body { min-height: calc(100vh - 60px); }
-    #s-register .intro { font-size: 14px; opacity: 0.65; line-height: 1.6; margin-top: 8px; }
-
-    /* ─────────────────────────────────────────────── */
-    /* SCREEN 3: CUSTOMER DASHBOARD                    */
-    /* ─────────────────────────────────────────────── */
-    #s-customer { background: var(--green); }
-
-    .points-hero {
-      text-align: center;
-      padding: 36px 24px 28px;
-      border-bottom: 1px solid rgba(255,240,220,0.1);
-    }
-    .points-hero .greeting { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.4; margin-bottom: 12px; }
-    .points-hero .pts-num { font-family: var(--serif); font-size: 72px; line-height: 1; color: var(--accent); }
-    .points-hero .pts-label { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.45; margin-top: 6px; }
-    .points-hero .pts-value { font-size: 14px; opacity: 0.5; margin-top: 4px; }
-
-    .qr-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 32px 24px;
-      border-bottom: 1px solid rgba(255,240,220,0.1);
-    }
-    .qr-section .qr-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.4; margin-bottom: 20px; }
-    #qr-canvas {
-      background: var(--beige);
-      padding: 14px;
-      border-radius: 2px;
-    }
-    #qr-canvas canvas, #qr-canvas img { display: block; }
-    .customer-code {
-      margin-top: 16px;
-      font-family: var(--serif);
-      font-size: 26px;
       letter-spacing: 0.18em;
-      opacity: 0.9;
+      text-transform: uppercase;
+      text-align: center;
+      transition: opacity 0.2s, transform 0.15s;
     }
-    .code-hint { font-size: 11px; opacity: 0.35; margin-top: 6px; }
 
-    .history-section { padding: 24px; }
-    .history-section .history-title { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.4; margin-bottom: 16px; }
-    .tx-list { display: flex; flex-direction: column; gap: 0; }
-    .tx-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 0;
-      border-bottom: 1px solid rgba(255,240,220,0.08);
+    .btn-pilot:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
     }
-    .tx-item:last-child { border-bottom: none; }
-    .tx-shop { font-size: 14px; opacity: 0.8; }
-    .tx-date { font-size: 11px; opacity: 0.35; margin-top: 2px; }
-    .tx-pts { font-size: 15px; font-weight: 500; }
-    .tx-pts.earn { color: var(--accent); }
-    .tx-pts.redeem { color: var(--danger); }
-    .tx-empty { font-size: 13px; opacity: 0.35; text-align: center; padding: 24px 0; font-style: italic; }
 
-    /* ─────────────────────────────────────────────── */
-    /* SCREEN 4: TRADER LOGIN                          */
-    /* ─────────────────────────────────────────────── */
-    .pin-hint {
-      background: rgba(168,194,133,0.12);
-      border: 1px solid rgba(168,194,133,0.3);
-      padding: 14px 16px;
-      margin-top: 20px;
-      font-size: 13px;
-      line-height: 1.6;
-      color: var(--accent);
-    }
-    .pin-hint strong { font-weight: 500; }
-
-    /* ─────────────────────────────────────────────── */
-    /* SCREEN 5: TRADER DASHBOARD                      */
-    /* ─────────────────────────────────────────────── */
-    .trader-shop-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      background: var(--beige-dim);
-      border: 1px solid rgba(255,240,220,0.2);
-      font-size: 11px;
-      letter-spacing: 0.1em;
-    }
-    .trader-shop-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
-
-    .tabs {
-      display: flex;
-      border-bottom: 1px solid rgba(255,240,220,0.12);
-      margin-bottom: 28px;
-    }
-    .tab-btn {
-      flex: 1;
-      padding: 14px;
-      background: none;
-      border: none;
+    .btn-pilot-outline {
+      display: block;
+      border: 1px solid rgba(255,240,220,0.25);
       color: var(--beige);
+      padding: 14px 28px;
       font-family: var(--sans);
       font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.16em;
+      font-weight: 400;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
-      cursor: pointer;
-      opacity: 0.4;
-      border-bottom: 2px solid transparent;
-      transition: opacity 0.2s, border-color 0.2s;
+      text-align: center;
+      margin-top: 10px;
+      transition: border-color 0.2s;
     }
-    .tab-btn.active { opacity: 1; border-bottom-color: var(--accent); }
 
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
+    .btn-pilot-outline:hover { border-color: rgba(255,240,220,0.5); }
 
-    .spend-preview {
-      background: rgba(255,240,220,0.06);
-      border: 1px solid rgba(255,240,220,0.12);
-      padding: 16px;
-      margin-top: 12px;
-      display: flex;
-      justify-content: space-between;
+    @media (max-width: 900px) {
+      .pilot-layout { grid-template-columns: 1fr; gap: 48px; }
+      .pilot-box { position: static; }
+    }
+
+    /* ══════════════════════════════════════════════════
+       VISION / ECOSYSTEM
+    ══════════════════════════════════════════════════ */
+    #vision {
+      background: var(--green);
+      color: var(--beige);
+      padding: 120px 0;
+      overflow: hidden;
+    }
+
+    .vision-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
       align-items: center;
     }
-    .spend-preview .preview-label { font-size: 11px; opacity: 0.45; letter-spacing: 0.12em; text-transform: uppercase; }
-    .spend-preview .preview-pts { font-family: var(--serif); font-size: 32px; color: var(--accent); }
-    .spend-preview .preview-sub { font-size: 11px; opacity: 0.4; margin-top: 2px; }
 
-    .customer-lookup {
-      padding: 16px;
-      background: rgba(255,240,220,0.06);
-      border: 1px solid rgba(255,240,220,0.12);
-      margin-top: 12px;
+    .vision-text p {
+      font-size: 15px;
+      opacity: 0.65;
+      line-height: 1.75;
+      margin-top: 28px;
+      max-width: 480px;
     }
-    .customer-lookup .found-name { font-size: 16px; font-weight: 400; }
-    .customer-lookup .found-pts { font-size: 12px; opacity: 0.55; margin-top: 4px; }
-    .customer-lookup.error { border-color: rgba(201,123,90,0.4); background: rgba(201,123,90,0.06); }
-    .customer-lookup .error-msg { font-size: 13px; color: var(--danger); }
 
-    /* ─────────────────────────────────────────────── */
-    /* SCREEN 6: SUCCESS                               */
-    /* ─────────────────────────────────────────────── */
-    #s-success .body {
+    .stack-layers {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      min-height: calc(100vh - 60px);
+      gap: 3px;
     }
-    .success-icon { font-size: 48px; margin-bottom: 24px; animation: pop 0.4s ease; }
-    @keyframes pop {
-      0% { transform: scale(0.5); opacity: 0; }
-      70% { transform: scale(1.15); }
-      100% { transform: scale(1); opacity: 1; }
-    }
-    .success-pts { font-family: var(--serif); font-size: 64px; color: var(--accent); animation: rise 0.5s 0.1s both ease; }
-    @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-    .success-label { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.5; margin-top: 6px; animation: rise 0.5s 0.2s both ease; }
-    .success-detail { font-size: 14px; opacity: 0.6; margin-top: 12px; animation: rise 0.5s 0.3s both ease; }
-    .success-btns { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 40px; animation: rise 0.5s 0.4s both ease; }
 
-    /* ─────────────────────────────────────────────── */
-    /* INSTALL BANNER                                  */
-    /* ─────────────────────────────────────────────── */
-    #install-banner {
-      position: fixed;
-      bottom: calc(var(--safe-bot) + 16px);
-      left: 16px;
-      right: 16px;
-      background: var(--green-dark);
-      border: 1px solid rgba(255,240,220,0.2);
-      padding: 14px 16px;
-      display: none;
+    .stack-layer {
+      padding: 24px 28px;
+      display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      z-index: 1000;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      background: rgba(255,240,220,0.05);
+      transition: background 0.25s;
     }
-    #install-banner.visible { display: flex; }
-    #install-banner p { font-size: 12px; opacity: 0.8; line-height: 1.4; flex: 1; }
-    #install-banner button { background: var(--accent); border: none; color: var(--green-dark); font-family: var(--sans); font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; padding: 10px 14px; cursor: pointer; flex-shrink: 0; }
-    #install-banner .dismiss { background: none; border: none; color: var(--beige); opacity: 0.4; font-size: 18px; cursor: pointer; padding: 0 4px; flex-shrink: 0; }
+
+    .stack-layer:hover { background: rgba(255,240,220,0.09); }
+
+    .stack-layer.active {
+      background: var(--accent);
+      color: var(--green-dark);
+    }
+
+    .stack-product {
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.45;
+      margin-bottom: 4px;
+    }
+
+    .stack-layer.active .stack-product { opacity: 0.6; }
+
+    .stack-name {
+      font-family: var(--serif);
+      font-size: 20px;
+    }
+
+    .stack-type {
+      font-size: 11px;
+      opacity: 0.4;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-align: right;
+    }
+
+    .stack-layer.active .stack-type { opacity: 0.55; }
+
+    @media (max-width: 900px) {
+      .vision-inner { grid-template-columns: 1fr; gap: 48px; }
+      .vision-text p { max-width: 100%; }
+    }
+
+    /* ══════════════════════════════════════════════════
+       QUOTE / STATEMENT
+    ══════════════════════════════════════════════════ */
+    #statement {
+      background: var(--beige-dim);
+      padding: 100px 0;
+      text-align: center;
+    }
+
+    .statement-inner {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .statement-quote {
+      font-family: var(--serif);
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1.2;
+      color: var(--green);
+    }
+
+    .statement-attr {
+      margin-top: 28px;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.4;
+    }
+
+    /* ══════════════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════════════ */
+    footer {
+      background: var(--green-dark);
+      color: var(--beige);
+      padding: 60px 0 40px;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .footer-logo {
+      font-family: var(--serif);
+      font-size: 22px;
+    }
+
+    .footer-sub {
+      font-size: 11px;
+      opacity: 0.4;
+      margin-top: 4px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .footer-links a {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      opacity: 0.4;
+      transition: opacity 0.2s;
+    }
+
+    .footer-links a:hover { opacity: 0.8; }
+
+    .footer-rule {
+      border: none;
+      border-top: 1px solid rgba(255,240,220,0.08);
+      margin: 40px 0 24px;
+    }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-bottom p {
+      font-size: 11px;
+      opacity: 0.3;
+    }
+
+    /* ══════════════════════════════════════════════════
+       SCROLL ANIMATIONS
+    ══════════════════════════════════════════════════ */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+
+    /* ══════════════════════════════════════════════════
+       HERO ANIMATION
+    ══════════════════════════════════════════════════ */
+    .hero-pretitle  { animation: fadeUp 0.8s 0.2s both ease; }
+    .hero-title     { animation: fadeUp 0.8s 0.35s both ease; }
+    .hero-bottom    { animation: fadeUp 0.8s 0.55s both ease; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: none; }
+    }
   </style>
 </head>
 <body>
 
-<!-- ─── SCREEN: WELCOME ──────────────────────────── -->
-<div class="screen active" id="s-welcome">
-  <div class="bar">
-    <span class="logo">Village Rewards</span>
-    <span class="sub">Mont Albert</span>
+<!-- ═══════════════════════════════════════════
+     NAV
+═══════════════════════════════════════════ -->
+<nav id="nav">
+  <div class="nav-logo">
+    Village Rewards
+    <span>Mont Albert</span>
   </div>
-  <div class="body">
-    <div class="top">
-      <div class="village">Mont Albert Village</div>
-      <h1 class="display">Shop local.<br />Earn<br />together.</h1>
-      <p class="tagline">Earn points every time you shop in the village. Use them anywhere on the strip.</p>
+  <ul class="nav-links">
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#traders">For traders</a></li>
+    <li><a href="#pilot">The pilot</a></li>
+    <li><a href="village-rewards-pwa.html" class="nav-cta">Open app →</a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════ -->
+<section id="hero">
+  <div class="hero-bg">
+    <svg viewBox="0 0 700 700" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="350" cy="350" r="320" stroke="#fff0dc" stroke-width="1"/>
+      <circle cx="350" cy="350" r="240" stroke="#fff0dc" stroke-width="1"/>
+      <circle cx="350" cy="350" r="160" stroke="#fff0dc" stroke-width="1"/>
+      <circle cx="350" cy="350" r="80"  stroke="#fff0dc" stroke-width="1"/>
+      <line x1="350" y1="30"  x2="350" y2="670" stroke="#fff0dc" stroke-width="0.5"/>
+      <line x1="30"  y1="350" x2="670" y2="350" stroke="#fff0dc" stroke-width="0.5"/>
+      <line x1="124" y1="124" x2="576" y2="576" stroke="#fff0dc" stroke-width="0.5"/>
+      <line x1="576" y1="124" x2="124" y2="576" stroke="#fff0dc" stroke-width="0.5"/>
+    </svg>
+  </div>
+
+  <div class="container hero-inner">
+    <div class="hero-pretitle">Mont Albert Village · Est. 2026</div>
+
+    <h1 class="display hero-title">
+      Shop local.<br />
+      <span class="line-2">Earn together.</span>
+    </h1>
+
+    <div class="hero-bottom">
+      <p class="hero-desc">
+        Village Rewards is the shared economic layer for Mont Albert's independent traders — keeping money, movement, and life within the village.
+      </p>
+      <div class="hero-actions">
+        <a href="village-rewards-pwa.html" class="btn-hero-primary">
+          Open Village Rewards
+          <span>→</span>
+        </a>
+        <a href="#pilot" class="btn-hero-outline">
+          Join the pilot
+        </a>
+        <p class="hero-note">Free for founding traders · No setup required</p>
+      </div>
     </div>
-    <div class="role-btns">
-      <button class="btn btn-primary" onclick="goCustomer()">I'm shopping</button>
-      <button class="btn btn-outline" onclick="show('s-trader-login')">I'm a trader</button>
-      <p class="role-hint">Two ways in. One village.</p>
-    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     MARQUEE
+═══════════════════════════════════════════ -->
+<div class="marquee-strip" aria-hidden="true">
+  <div class="marquee-track">
+    <!-- duplicated for seamless loop -->
+    <span class="marquee-item">Earn points</span>
+    <span class="marquee-item">Shop anywhere in the village</span>
+    <span class="marquee-item">No app required</span>
+    <span class="marquee-item">Free for pilot traders</span>
+    <span class="marquee-item">Mont Albert Village</span>
+    <span class="marquee-item">Keep spending local</span>
+    <span class="marquee-item">One QR code</span>
+    <span class="marquee-item">Earn points</span>
+    <span class="marquee-item">Shop anywhere in the village</span>
+    <span class="marquee-item">No app required</span>
+    <span class="marquee-item">Free for pilot traders</span>
+    <span class="marquee-item">Mont Albert Village</span>
+    <span class="marquee-item">Keep spending local</span>
+    <span class="marquee-item">One QR code</span>
   </div>
 </div>
 
-<!-- ─── SCREEN: REGISTER ─────────────────────────── -->
-<div class="screen" id="s-register">
-  <div class="bar">
-    <button class="back-btn" onclick="show('s-welcome')">← Back</button>
-    <span class="sub">Join</span>
-  </div>
-  <div class="body">
-    <h2 class="display-sm">Join Village<br />Rewards</h2>
-    <p class="intro" style="margin-top:12px;">One quick registration and you'll earn points at every participating shop in the village.</p>
-    <div class="field-group">
-      <div>
-        <div class="field-label">Your name</div>
-        <input class="field" id="reg-name" type="text" placeholder="First name" autocomplete="given-name" />
-      </div>
-      <div>
-        <div class="field-label">Email address</div>
-        <input class="field" id="reg-email" type="email" placeholder="you@example.com" autocomplete="email" />
-      </div>
-      <div style="margin-top:8px;">
-        <button class="btn btn-primary" onclick="register()">Start earning points</button>
-      </div>
-      <p class="hint" style="text-align:center;margin-top:4px;">No spam. Just your points balance.</p>
+<!-- ═══════════════════════════════════════════
+     PROBLEM
+═══════════════════════════════════════════ -->
+<section id="problem">
+  <div class="container">
+    <div class="reveal">
+      <div class="label">The challenge</div>
+      <h2 class="display-md" style="margin-top:20px;max-width:600px;">Local villages are under pressure.</h2>
     </div>
-  </div>
-</div>
 
-<!-- ─── SCREEN: CUSTOMER DASHBOARD ───────────────── -->
-<div class="screen" id="s-customer">
-  <div class="bar">
-    <span class="logo">Village Rewards</span>
-    <button class="back-btn" onclick="show('s-welcome')" style="font-size:9px;">Switch</button>
-  </div>
-
-  <div class="points-hero">
-    <div class="greeting" id="c-greeting">Welcome back</div>
-    <div class="pts-num" id="c-points">0</div>
-    <div class="pts-label">Village Points</div>
-    <div class="pts-value" id="c-value">$0.00 to spend</div>
-  </div>
-
-  <div class="qr-section">
-    <div class="qr-label">Show this to earn points</div>
-    <div id="qr-canvas"></div>
-    <div class="customer-code" id="c-code">——</div>
-    <div class="code-hint">Your village code · show at checkout</div>
-  </div>
-
-  <div class="history-section">
-    <div class="history-title">Recent activity</div>
-    <div class="tx-list" id="tx-list">
-      <p class="tx-empty">No transactions yet. Start shopping!</p>
-    </div>
-  </div>
-</div>
-
-<!-- ─── SCREEN: TRADER LOGIN ─────────────────────── -->
-<div class="screen" id="s-trader-login">
-  <div class="bar">
-    <button class="back-btn" onclick="show('s-welcome')">← Back</button>
-    <span class="sub">Trader Login</span>
-  </div>
-  <div class="body">
-    <h2 class="display-sm">Trader<br />Access</h2>
-    <div class="field-group">
-      <div>
-        <div class="field-label">Your shop</div>
-        <select class="field" id="t-shop">
-          <option value="">Select your shop…</option>
-          <option>Mont Albert Coffee</option>
-          <option>Village Grocer</option>
-          <option>Mont Albert Florist</option>
-          <option>Village Bakehouse</option>
-          <option>The Local Deli</option>
-          <option>Gardener &amp; Son</option>
-          <option value="other">Other shop…</option>
-        </select>
+    <div class="problem-grid">
+      <div class="problem-item reveal reveal-delay-1">
+        <div class="problem-num">01</div>
+        <h3 class="problem-title">Foot traffic is declining</h3>
+        <p class="problem-desc">Spending is shifting online and to large retail centres. Each shop fights this battle alone, without a shared system working in their favour.</p>
       </div>
-      <div id="other-shop-wrap" style="display:none;">
-        <div class="field-label">Shop name</div>
-        <input class="field" id="t-shop-other" type="text" placeholder="Enter your shop name" />
+      <div class="problem-item reveal reveal-delay-2">
+        <div class="problem-num">02</div>
+        <h3 class="problem-title">Customers have no reason to stay</h3>
+        <p class="problem-desc">Once a customer's immediate need is met, they leave. There's nothing in the village ecosystem pulling them next door.</p>
       </div>
-      <div>
-        <div class="field-label">Pilot PIN</div>
-        <input class="field" id="t-pin" type="password" placeholder="Enter PIN" />
+      <div class="problem-item reveal reveal-delay-3">
+        <div class="problem-num">03</div>
+        <h3 class="problem-title">Ten shops, ten marketing efforts</h3>
+        <p class="problem-desc">Every trader is promoting separately — different channels, different messages, different budgets. The village has no collective voice.</p>
       </div>
-      <div class="pin-hint">
-        <strong>Pilot access:</strong> Your PIN was provided with your onboarding pack. Contact Tyson at Gardener &amp; Son if you need it.
-      </div>
-      <div style="margin-top:8px;">
-        <button class="btn btn-primary" onclick="traderLogin()">Open trader view</button>
+      <div class="problem-item reveal reveal-delay-4">
+        <div class="problem-num">04</div>
+        <h3 class="problem-title">Local spending leaks out daily</h3>
+        <p class="problem-desc">Without any retention infrastructure, money earned in the village is spent elsewhere. The strip has no economic layer holding it together.</p>
       </div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- ─── SCREEN: TRADER DASHBOARD ─────────────────── -->
-<div class="screen" id="s-trader">
-  <div class="bar">
-    <span class="logo">Village Rewards</span>
-    <button class="back-btn" onclick="traderLogout()">Sign out</button>
-  </div>
-  <div class="body">
-    <div id="t-shop-badge" class="trader-shop-badge" style="margin-bottom:24px;">
-      <span class="dot"></span>
-      <span id="t-shop-name">Shop</span>
-    </div>
-
-    <div class="tabs">
-      <button class="tab-btn active" id="tab-earn-btn" onclick="switchTab('earn')">Award Points</button>
-      <button class="tab-btn" id="tab-redeem-btn" onclick="switchTab('redeem')">Redeem Points</button>
-    </div>
-
-    <!-- EARN TAB -->
-    <div class="tab-panel active" id="tab-earn">
-      <div class="field-label">Customer's village code</div>
-      <input class="field" id="earn-code" type="text" placeholder="e.g. AB12CD" maxlength="6"
-        oninput="this.value=this.value.toUpperCase(); lookupCustomer('earn')" />
-      <div id="earn-lookup" style="display:none;" class="customer-lookup"></div>
-
-      <div style="margin-top:20px;">
-        <div class="field-label">Purchase amount ($)</div>
-        <input class="field" id="earn-amount" type="number" placeholder="0.00" min="0" step="0.01"
-          oninput="updatePreview()" />
+<!-- ═══════════════════════════════════════════
+     HOW IT WORKS
+═══════════════════════════════════════════ -->
+<section id="how">
+  <div class="container">
+    <div class="how-header">
+      <div class="reveal">
+        <div class="label" style="color:var(--beige);opacity:0.35;">How it works</div>
+        <h2 class="display-md" style="margin-top:20px;">Simple by design.</h2>
       </div>
+      <p class="how-intro reveal reveal-delay-1">
+        No app to download. No POS system to change. No staff training sessions. Just a small QR code on the counter and a system that quietly does its work.
+      </p>
+    </div>
 
-      <div id="earn-preview" class="spend-preview" style="display:none;">
-        <div>
-          <div class="preview-label">Points to award</div>
-          <div class="preview-sub" id="preview-sub"></div>
+    <div class="steps">
+      <div class="step reveal reveal-delay-1">
+        <div class="step-num">01</div>
+        <div class="step-icon">🛍</div>
+        <h3 class="step-title">Customer shops locally</h3>
+        <p class="step-desc">Any purchase at any participating shop on the strip qualifies.</p>
+      </div>
+      <div class="step reveal reveal-delay-2">
+        <div class="step-num">02</div>
+        <div class="step-icon">⬡</div>
+        <h3 class="step-title">Staff confirm the spend</h3>
+        <p class="step-desc">The trader enters the purchase amount on their device. One step, ten seconds.</p>
+      </div>
+      <div class="step reveal reveal-delay-3">
+        <div class="step-num">03</div>
+        <div class="step-icon">◎</div>
+        <h3 class="step-title">Customer earns Village Points</h3>
+        <p class="step-desc">Points land on their phone instantly. Their balance grows with every visit.</p>
+      </div>
+      <div class="step reveal reveal-delay-4">
+        <div class="step-num">04</div>
+        <div class="step-icon">↩</div>
+        <h3 class="step-title">Spend anywhere in the village</h3>
+        <p class="step-desc">Points redeem at any participating shop — sending customers back along the strip.</p>
+      </div>
+    </div>
+
+    <div class="how-footer reveal">
+      <p>
+        <strong>Two devices, one transaction.</strong> The customer shows their QR code — you enter the amount. That's the entire interaction. The same familiar pattern as tap-to-pay, but the value stays in the village.
+      </p>
+      <a href="village-rewards-pwa.html" style="flex-shrink:0;display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(255,240,220,0.25);color:var(--beige);padding:14px 24px;font-family:var(--sans);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;white-space:nowrap;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(255,240,220,0.6)'" onmouseout="this.style.borderColor='rgba(255,240,220,0.25)'">
+        Try the app →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FOR TRADERS
+═══════════════════════════════════════════ -->
+<section id="traders">
+  <div class="container">
+    <div class="reveal">
+      <div class="label">For traders</div>
+      <h2 class="display-md" style="margin-top:20px;max-width:560px;">Your shop, plus the whole village working with you.</h2>
+    </div>
+
+    <div class="traders-layout">
+      <div class="traders-benefits">
+        <div class="benefit-row reveal">
+          <div class="benefit-icon">↑</div>
+          <div>
+            <div class="benefit-title">More repeat visits</div>
+            <p class="benefit-desc">Customers come back to earn and to spend. A points balance is a reason to return that no discount or promotion creates.</p>
+          </div>
         </div>
-        <div style="text-align:right;">
-          <div class="preview-pts" id="preview-pts">0</div>
+        <div class="benefit-row reveal reveal-delay-1">
+          <div class="benefit-icon">→</div>
+          <div>
+            <div class="benefit-title">Cross-village movement</div>
+            <p class="benefit-desc">A coffee becomes a stop at the florist, the grocer, the bakery. Points earned at your counter bring customers back to the strip.</p>
+          </div>
+        </div>
+        <div class="benefit-row reveal reveal-delay-2">
+          <div class="benefit-icon">⬡</div>
+          <div>
+            <div class="benefit-title">One village marketing engine</div>
+            <p class="benefit-desc">Instead of ten shops promoting separately, Village Rewards gives you one shared channel. Campaigns, seasonal boosts, and events that benefit everyone.</p>
+          </div>
+        </div>
+        <div class="benefit-row reveal reveal-delay-3">
+          <div class="benefit-icon">◌</div>
+          <div>
+            <div class="benefit-title">Zero setup friction</div>
+            <p class="benefit-desc">A printed QR card on your counter and two minutes of onboarding. No hardware, no POS integration, no staff training sessions required.</p>
+          </div>
         </div>
       </div>
 
-      <div style="margin-top:20px;">
-        <button class="btn btn-accent" id="earn-btn" onclick="awardPoints()" disabled>Award Points</button>
-      </div>
-    </div>
-
-    <!-- REDEEM TAB -->
-    <div class="tab-panel" id="tab-redeem">
-      <div class="field-label">Customer's village code</div>
-      <input class="field" id="redeem-code" type="text" placeholder="e.g. AB12CD" maxlength="6"
-        oninput="this.value=this.value.toUpperCase(); lookupCustomer('redeem')" />
-      <div id="redeem-lookup" style="display:none;" class="customer-lookup"></div>
-
-      <div style="margin-top:20px;">
-        <div class="field-label">Points to redeem</div>
-        <input class="field" id="redeem-amount" type="number" placeholder="0" min="0" step="1"
-          oninput="updateRedeemPreview()" />
-      </div>
-
-      <div id="redeem-preview" class="spend-preview" style="display:none;">
-        <div>
-          <div class="preview-label">Dollar value</div>
-          <div class="preview-sub" id="redeem-sub"></div>
+      <!-- Visual mockup -->
+      <div class="traders-visual reveal reveal-delay-2">
+        <div class="mock-card">
+          <div class="mock-label">Village Points · Mont Albert Coffee</div>
+          <div class="mock-value">1,840</div>
+          <div class="mock-sub">$18.40 to spend in the village</div>
         </div>
-        <div style="text-align:right;">
-          <div class="preview-pts" id="redeem-val" style="color:var(--danger)">$0.00</div>
+        <div class="mock-stat-row">
+          <div class="mock-stat">
+            <div class="s-val">47</div>
+            <div class="s-lbl">Active customers</div>
+          </div>
+          <div class="mock-stat">
+            <div class="s-val">$3.2k</div>
+            <div class="s-lbl">Points issued</div>
+          </div>
+        </div>
+        <div class="mock-stat-row">
+          <div class="mock-stat">
+            <div class="s-val">12</div>
+            <div class="s-lbl">Cross-shop visits</div>
+          </div>
+          <div class="mock-stat">
+            <div class="s-val">68%</div>
+            <div class="s-lbl">Return rate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     WHY VILLAGE REWARDS
+═══════════════════════════════════════════ -->
+<section id="why">
+  <div class="container">
+    <div class="reveal">
+      <div class="label" style="color:var(--beige);opacity:0.3;">Why Village Rewards</div>
+      <h2 class="display-md" style="margin-top:20px;">Not a loyalty app.<br />An economic layer.</h2>
+    </div>
+
+    <div class="why-grid">
+      <div class="why-card reveal reveal-delay-1">
+        <div class="why-tag">01</div>
+        <div class="rule"></div>
+        <h3 class="why-title">Precinct-first, not merchant-first</h3>
+        <p class="why-desc">We activate villages — not individual shops. Onboarding means 5–15 traders at once. The village is the product, not the app.</p>
+      </div>
+      <div class="why-card reveal reveal-delay-2">
+        <div class="why-tag">02</div>
+        <div class="rule"></div>
+        <h3 class="why-title">Shared village currency</h3>
+        <p class="why-desc">Points earn and spend across the whole strip — not locked to a single store. This drives cross-shop behaviour by design, not by chance.</p>
+      </div>
+      <div class="why-card reveal reveal-delay-3">
+        <div class="why-tag">03</div>
+        <div class="rule"></div>
+        <h3 class="why-title">Always-on infrastructure</h3>
+        <p class="why-desc">Not a campaign. Not a promotion during construction works. A continuous system that runs quietly behind every transaction.</p>
+      </div>
+      <div class="why-card reveal reveal-delay-1">
+        <div class="why-tag">04</div>
+        <div class="rule"></div>
+        <h3 class="why-title">Web-first, zero friction</h3>
+        <p class="why-desc">No app to download. No card to carry. A QR scan is the complete customer onboarding journey — under ten seconds start to finish.</p>
+      </div>
+      <div class="why-card reveal reveal-delay-2">
+        <div class="why-tag">05</div>
+        <div class="rule"></div>
+        <h3 class="why-title">Village identity built in</h3>
+        <p class="why-desc">Each village has its own page, its own campaigns, its own story. This isn't generic SaaS — it's infrastructure with a sense of place.</p>
+      </div>
+      <div class="why-card reveal reveal-delay-3">
+        <div class="why-tag">06</div>
+        <div class="rule"></div>
+        <h3 class="why-title">A foundation, not a ceiling</h3>
+        <p class="why-desc">Local spending contributing to ecological projects. Village data for council decisions. A civic layer for communities that want more than just points.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     PILOT
+═══════════════════════════════════════════ -->
+<section id="pilot">
+  <div class="container">
+    <div class="reveal">
+      <div class="label">The pilot</div>
+      <h2 class="display-md" style="margin-top:20px;max-width:560px;">Starting in Mont Albert. Starting now.</h2>
+    </div>
+
+    <div class="pilot-layout">
+      <div class="pilot-steps">
+        <div class="pilot-step reveal">
+          <div class="pilot-step-num">1</div>
+          <div>
+            <div class="pilot-step-title">Express interest</div>
+            <p class="pilot-step-desc">Reach out to Tyson at Gardener &amp; Son. A short conversation — no commitment required at this stage.</p>
+          </div>
+        </div>
+        <div class="pilot-step reveal reveal-delay-1">
+          <div class="pilot-step-num">2</div>
+          <div>
+            <div class="pilot-step-title">Quick onboarding</div>
+            <p class="pilot-step-desc">We set up your trader account and hand over your QR counter card. Takes about fifteen minutes in person.</p>
+          </div>
+        </div>
+        <div class="pilot-step reveal reveal-delay-2">
+          <div class="pilot-step-num">3</div>
+          <div>
+            <div class="pilot-step-title">Go live</div>
+            <p class="pilot-step-desc">Place your QR card at the counter. That's it. The system runs itself from that point on.</p>
+          </div>
+        </div>
+        <div class="pilot-step reveal reveal-delay-3">
+          <div class="pilot-step-num">4</div>
+          <div>
+            <div class="pilot-step-title">Watch the village connect</div>
+            <p class="pilot-step-desc">Your trader dashboard shows customer activity, points issued, and cross-shop movement in real time.</p>
+          </div>
+        </div>
+        <div class="pilot-step reveal reveal-delay-4">
+          <div class="pilot-step-num">5</div>
+          <div>
+            <div class="pilot-step-title">Shape what comes next</div>
+            <p class="pilot-step-desc">Pilot traders have direct input into how the system evolves. You're founding members — not just early adopters.</p>
+          </div>
         </div>
       </div>
 
-      <div style="margin-top:20px;">
-        <button class="btn btn-danger" id="redeem-btn" onclick="redeemPoints()" disabled>Confirm Redemption</button>
+      <div class="pilot-box reveal reveal-delay-2">
+        <div class="pilot-box-label">Pilot · Mont Albert Village · 2026</div>
+        <h3>Join the founding group</h3>
+        <p>We're inviting 5–10 traders to be part of the pilot. Free to join. No lock-in. Just a genuine test of something that could be genuinely useful for our village.</p>
+        <div class="pilot-tags">
+          <span class="pilot-tag">Free</span>
+          <span class="pilot-tag">No POS change</span>
+          <span class="pilot-tag">5–10 traders</span>
+          <span class="pilot-tag">Real data</span>
+          <span class="pilot-tag">No lock-in</span>
+        </div>
+        <a href="mailto:hello@gardenerandson.com.au?subject=Village%20Rewards%20Pilot" class="btn-pilot">
+          Express interest
+        </a>
+        <a href="village-rewards-pwa.html" class="btn-pilot-outline">
+          See the app first →
+        </a>
       </div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- ─── SCREEN: SUCCESS ───────────────────────────── -->
-<div class="screen" id="s-success">
-  <div class="bar">
-    <span class="logo">Village Rewards</span>
-  </div>
-  <div class="body">
-    <div class="success-icon" id="success-icon">✓</div>
-    <div class="success-pts" id="success-pts">0</div>
-    <div class="success-label" id="success-label">Points Awarded</div>
-    <div class="success-detail" id="success-detail"></div>
-    <div class="success-btns">
-      <button class="btn btn-accent" onclick="show('s-trader')">Next customer</button>
-      <button class="btn btn-outline" onclick="traderLogout()">Done for today</button>
+<!-- ═══════════════════════════════════════════
+     VISION / ECOSYSTEM
+═══════════════════════════════════════════ -->
+<section id="vision">
+  <div class="container">
+    <div class="vision-inner">
+      <div class="vision-text reveal">
+        <div class="label" style="color:var(--beige);opacity:0.35;">The bigger picture</div>
+        <h2 class="display-md" style="margin-top:20px;">Part of something larger than a loyalty program.</h2>
+        <p>Village Rewards sits within a broader system Gardener &amp; Son is building — one that connects private gardens, local economies, and community outcomes into a single coherent layer across Melbourne's villages.</p>
+        <p style="margin-top:16px;">This is the economic layer. Built to work with everything that comes next.</p>
+      </div>
+      <div class="stack-layers reveal reveal-delay-2">
+        <div class="stack-layer">
+          <div>
+            <div class="stack-product">Ecological Registry</div>
+            <div class="stack-name">Ecological Layer</div>
+          </div>
+          <div class="stack-type">Live</div>
+        </div>
+        <div class="stack-layer">
+          <div>
+            <div class="stack-product">Yield</div>
+            <div class="stack-name">Incentive Layer</div>
+          </div>
+          <div class="stack-type">In development</div>
+        </div>
+        <div class="stack-layer active">
+          <div>
+            <div class="stack-product">Village Rewards</div>
+            <div class="stack-name">Economic Layer</div>
+          </div>
+          <div class="stack-type">Pilot → now</div>
+        </div>
+        <div class="stack-layer">
+          <div>
+            <div class="stack-product">Future</div>
+            <div class="stack-name">Civic Layer</div>
+          </div>
+          <div class="stack-type">Coming</div>
+        </div>
+      </div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- ─── INSTALL BANNER ───────────────────────────── -->
-<div id="install-banner">
-  <p>Add Village Rewards to your home screen for quick access.</p>
-  <button onclick="installPWA()">Install</button>
-  <button class="dismiss" onclick="dismissInstall()">✕</button>
-</div>
+<!-- ═══════════════════════════════════════════
+     STATEMENT
+═══════════════════════════════════════════ -->
+<section id="statement">
+  <div class="container">
+    <div class="statement-inner reveal">
+      <p class="statement-quote">
+        "Village Rewards keeps money, movement, and life within the village."
+      </p>
+      <p class="statement-attr">Gardener &amp; Son · Mont Albert · Melbourne</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════ -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-logo">Village Rewards</div>
+        <div class="footer-sub">A Gardener &amp; Son initiative · Mont Albert</div>
+      </div>
+      <ul class="footer-links">
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#traders">For traders</a></li>
+        <li><a href="#pilot">Join the pilot</a></li>
+        <li><a href="village-rewards-pwa.html">Open app</a></li>
+      </ul>
+    </div>
+
+    <hr class="footer-rule" />
+
+    <div class="footer-bottom">
+      <p>© 2026 Gardener &amp; Son · 2 Churchill Street, Mont Albert, Melbourne</p>
+      <p>Designing ecological gardens. Building the systems around them.</p>
+    </div>
+  </div>
+</footer>
 
 <script>
-/* ─────────────────────────────────────────────────── */
-/* CONFIG                                              */
-/* ─────────────────────────────────────────────────── */
-var TRADER_PIN       = 'MONT';     // Pilot PIN — change before launch
-var POINTS_PER_DOLLAR = 1;         // 1 point per $1 spent
-var POINTS_TO_DOLLAR  = 100;       // 100 points = $1 redemption value
+  /* ── Nav scroll state ── */
+  var nav = document.getElementById('nav');
+  window.addEventListener('scroll', function() {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  }, { passive: true });
 
-/* ─────────────────────────────────────────────────── */
-/* STATE                                               */
-/* ─────────────────────────────────────────────────── */
-var currentShop    = null;
-var deferredPrompt = null;
-var qrInstance     = null;
-var activeTab      = 'earn';
-
-/* ─────────────────────────────────────────────────── */
-/* SCREEN NAVIGATION                                   */
-/* ─────────────────────────────────────────────────── */
-function show(id) {
-  document.querySelectorAll('.screen').forEach(function(s) {
-    s.classList.remove('active');
-  });
-  var el = document.getElementById(id);
-  if (el) {
-    // small delay so transition fires
-    requestAnimationFrame(function() {
-      el.classList.add('active');
+  /* ── Scroll reveal ── */
+  var revealEls = document.querySelectorAll('.reveal');
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
     });
-  }
-  window.scrollTo(0, 0);
-}
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
 
-/* ─────────────────────────────────────────────────── */
-/* CUSTOMER HELPERS                                    */
-/* ─────────────────────────────────────────────────── */
-function generateId() {
-  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  var id = '';
-  for (var i = 0; i < 6; i++) {
-    id += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return id;
-}
-
-function loadCustomer(id) {
-  var raw = localStorage.getItem('vr_customer_' + id);
-  return raw ? JSON.parse(raw) : null;
-}
-
-function saveCustomer(c) {
-  localStorage.setItem('vr_customer_' + c.id, JSON.stringify(c));
-  // maintain index
-  var index = JSON.parse(localStorage.getItem('vr_index') || '[]');
-  if (index.indexOf(c.id) === -1) {
-    index.push(c.id);
-    localStorage.setItem('vr_index', JSON.stringify(index));
-  }
-}
-
-function findCustomerById(code) {
-  var id = code.trim().toUpperCase();
-  return loadCustomer(id);
-}
-
-function formatDate(ts) {
-  var d = new Date(ts);
-  return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
-}
-
-function ptsToDollars(pts) {
-  return '$' + (pts / POINTS_TO_DOLLAR).toFixed(2);
-}
-
-/* ─────────────────────────────────────────────────── */
-/* CUSTOMER FLOW                                       */
-/* ─────────────────────────────────────────────────── */
-function goCustomer() {
-  var saved = localStorage.getItem('vr_my_id');
-  if (saved) {
-    var c = loadCustomer(saved);
-    if (c) {
-      renderCustomerDashboard(c);
-      show('s-customer');
-      return;
-    }
-  }
-  show('s-register');
-}
-
-function register() {
-  var name  = document.getElementById('reg-name').value.trim();
-  var email = document.getElementById('reg-email').value.trim();
-  if (!name) { alert('Please enter your name.'); return; }
-  if (!email || !email.includes('@')) { alert('Please enter a valid email.'); return; }
-
-  var id = generateId();
-  var customer = {
-    id: id,
-    name: name,
-    email: email,
-    points: 0,
-    joined: Date.now(),
-    history: []
-  };
-
-  saveCustomer(customer);
-  localStorage.setItem('vr_my_id', id);
-
-  renderCustomerDashboard(customer);
-  show('s-customer');
-}
-
-function renderCustomerDashboard(c) {
-  var firstName = c.name.split(' ')[0];
-  document.getElementById('c-greeting').textContent = 'Hello, ' + firstName;
-  document.getElementById('c-points').textContent = c.points.toLocaleString();
-  document.getElementById('c-value').textContent = ptsToDollars(c.points) + ' to spend';
-  document.getElementById('c-code').textContent = c.id;
-
-  // QR Code
-  var canvas = document.getElementById('qr-canvas');
-  canvas.innerHTML = '';
-  if (typeof QRCode !== 'undefined') {
-    new QRCode(canvas, {
-      text: c.id,
-      width: 180,
-      height: 180,
-      colorDark: '#3d4535',
-      colorLight: '#fff0dc',
-      correctLevel: QRCode.CorrectLevel.M
-    });
-  }
-
-  // History
-  var list = document.getElementById('tx-list');
-  if (!c.history || c.history.length === 0) {
-    list.innerHTML = '<p class="tx-empty">No transactions yet. Start shopping!</p>';
-    return;
-  }
-  var recent = c.history.slice(-8).reverse();
-  list.innerHTML = recent.map(function(tx) {
-    var isEarn = tx.type === 'earn';
-    return '<div class="tx-item">' +
-      '<div><div class="tx-shop">' + tx.shop + '</div><div class="tx-date">' + formatDate(tx.ts) + (tx.amount ? ' · $' + parseFloat(tx.amount).toFixed(2) : '') + '</div></div>' +
-      '<div class="tx-pts ' + tx.type + '">' + (isEarn ? '+' : '−') + tx.points + ' pts</div>' +
-    '</div>';
-  }).join('');
-}
-
-/* ─────────────────────────────────────────────────── */
-/* TRADER FLOW                                         */
-/* ─────────────────────────────────────────────────── */
-document.getElementById('t-shop').addEventListener('change', function() {
-  var wrap = document.getElementById('other-shop-wrap');
-  wrap.style.display = this.value === 'other' ? 'block' : 'none';
-});
-
-function traderLogin() {
-  var shopEl    = document.getElementById('t-shop');
-  var shopOther = document.getElementById('t-shop-other').value.trim();
-  var pin       = document.getElementById('t-pin').value.trim().toUpperCase();
-  var shop      = shopEl.value === 'other' ? shopOther : shopEl.value;
-
-  if (!shop)              { alert('Please select your shop.'); return; }
-  if (!pin)               { alert('Please enter your PIN.'); return; }
-  if (pin !== TRADER_PIN) { alert('Incorrect PIN. Please check with Tyson.'); return; }
-
-  currentShop = shop;
-  document.getElementById('t-shop-name').textContent = shop;
-  resetTraderForms();
-  show('s-trader');
-}
-
-function traderLogout() {
-  currentShop = null;
-  show('s-welcome');
-}
-
-function switchTab(tab) {
-  activeTab = tab;
-  document.getElementById('tab-earn-btn').classList.toggle('active', tab === 'earn');
-  document.getElementById('tab-redeem-btn').classList.toggle('active', tab === 'redeem');
-  document.getElementById('tab-earn').classList.toggle('active', tab === 'earn');
-  document.getElementById('tab-redeem').classList.toggle('active', tab === 'redeem');
-  resetTraderForms();
-}
-
-function resetTraderForms() {
-  ['earn-code','earn-amount','redeem-code','redeem-amount'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  ['earn-lookup','earn-preview','redeem-lookup','redeem-preview'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-  document.getElementById('earn-btn').disabled = true;
-  document.getElementById('redeem-btn').disabled = true;
-}
-
-function lookupCustomer(mode) {
-  var code    = document.getElementById(mode + '-code').value.trim().toUpperCase();
-  var lookupEl = document.getElementById(mode + '-lookup');
-
-  if (code.length < 6) {
-    lookupEl.style.display = 'none';
-    document.getElementById(mode === 'earn' ? 'earn-btn' : 'redeem-btn').disabled = true;
-    return;
-  }
-
-  var c = findCustomerById(code);
-  lookupEl.style.display = 'block';
-  lookupEl.className = 'customer-lookup';
-
-  if (c) {
-    lookupEl.innerHTML =
-      '<div class="found-name">' + c.name + '</div>' +
-      '<div class="found-pts">' + c.points.toLocaleString() + ' points · ' + ptsToDollars(c.points) + ' to spend</div>';
-    if (mode === 'earn') {
-      updatePreview();
-    } else {
-      updateRedeemPreview();
-    }
-  } else {
-    lookupEl.className = 'customer-lookup error';
-    lookupEl.innerHTML = '<div class="error-msg">Customer not found. Check the code and try again.</div>';
-    document.getElementById(mode === 'earn' ? 'earn-btn' : 'redeem-btn').disabled = true;
-  }
-}
-
-function updatePreview() {
-  var code   = document.getElementById('earn-code').value.trim().toUpperCase();
-  var amount = parseFloat(document.getElementById('earn-amount').value) || 0;
-  var preview = document.getElementById('earn-preview');
-  var btn     = document.getElementById('earn-btn');
-  var c = code.length === 6 ? findCustomerById(code) : null;
-
-  if (amount > 0 && c) {
-    var pts = Math.round(amount * POINTS_PER_DOLLAR);
-    document.getElementById('preview-pts').textContent = pts;
-    document.getElementById('preview-sub').textContent = '$' + amount.toFixed(2) + ' purchase';
-    preview.style.display = 'flex';
-    btn.disabled = false;
-  } else {
-    preview.style.display = 'none';
-    btn.disabled = true;
-  }
-}
-
-function updateRedeemPreview() {
-  var code   = document.getElementById('redeem-code').value.trim().toUpperCase();
-  var pts    = parseInt(document.getElementById('redeem-amount').value) || 0;
-  var preview = document.getElementById('redeem-preview');
-  var btn     = document.getElementById('redeem-btn');
-  var c = code.length === 6 ? findCustomerById(code) : null;
-
-  if (pts > 0 && c) {
-    var value = pts / POINTS_TO_DOLLAR;
-    document.getElementById('redeem-val').textContent = '$' + value.toFixed(2);
-    document.getElementById('redeem-sub').textContent = pts + ' points redeemed';
-
-    preview.style.display = 'flex';
-    if (pts > c.points) {
-      document.getElementById('redeem-sub').textContent = '⚠ Exceeds balance (' + c.points + ' pts)';
-      btn.disabled = true;
-    } else {
-      btn.disabled = false;
-    }
-  } else {
-    preview.style.display = 'none';
-    btn.disabled = true;
-  }
-}
-
-function awardPoints() {
-  var code   = document.getElementById('earn-code').value.trim().toUpperCase();
-  var amount = parseFloat(document.getElementById('earn-amount').value);
-  var c = findCustomerById(code);
-  if (!c || !amount || amount <= 0) return;
-
-  var pts = Math.round(amount * POINTS_PER_DOLLAR);
-  c.points += pts;
-  c.history.push({ type: 'earn', shop: currentShop, amount: amount, points: pts, ts: Date.now() });
-  saveCustomer(c);
-
-  // If this is the logged-in customer on same device, refresh their view
-  var myId = localStorage.getItem('vr_my_id');
-  if (myId === c.id) { renderCustomerDashboard(c); }
-
-  showSuccess(pts, 'awarded', c.name, amount);
-}
-
-function redeemPoints() {
-  var code = document.getElementById('redeem-code').value.trim().toUpperCase();
-  var pts  = parseInt(document.getElementById('redeem-amount').value);
-  var c = findCustomerById(code);
-  if (!c || !pts || pts <= 0 || pts > c.points) return;
-
-  c.points -= pts;
-  c.history.push({ type: 'redeem', shop: currentShop, points: pts, ts: Date.now() });
-  saveCustomer(c);
-
-  var myId = localStorage.getItem('vr_my_id');
-  if (myId === c.id) { renderCustomerDashboard(c); }
-
-  showSuccess(pts, 'redeemed', c.name, null);
-}
-
-function showSuccess(pts, type, name, amount) {
-  var isEarn = type === 'awarded';
-  document.getElementById('success-icon').textContent = isEarn ? '✦' : '✓';
-  document.getElementById('success-pts').style.color = isEarn ? 'var(--accent)' : 'var(--danger)';
-  document.getElementById('success-pts').textContent = (isEarn ? '+' : '−') + pts;
-  document.getElementById('success-label').textContent = 'Points ' + type;
-  document.getElementById('success-detail').textContent = isEarn
-    ? name + ' earned ' + pts + ' points on a $' + parseFloat(amount).toFixed(2) + ' purchase.'
-    : name + ' redeemed ' + pts + ' points (' + ptsToDollars(pts) + ' value).';
-  resetTraderForms();
-  show('s-success');
-}
-
-/* ─────────────────────────────────────────────────── */
-/* PWA INSTALL                                         */
-/* ─────────────────────────────────────────────────── */
-window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault();
-  deferredPrompt = e;
-  if (!localStorage.getItem('vr_install_dismissed')) {
-    document.getElementById('install-banner').classList.add('visible');
-  }
-});
-
-function installPWA() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(function() {
-      deferredPrompt = null;
-      document.getElementById('install-banner').classList.remove('visible');
-    });
-  }
-}
-
-function dismissInstall() {
-  document.getElementById('install-banner').classList.remove('visible');
-  localStorage.setItem('vr_install_dismissed', '1');
-}
-
-/* ─────────────────────────────────────────────────── */
-/* SERVICE WORKER (best-effort single-file)            */
-/* ─────────────────────────────────────────────────── */
-if ('serviceWorker' in navigator) {
-  var swCode = [
-    "var CACHE='vr-v1';",
-    "self.addEventListener('install',function(e){",
-    "  self.skipWaiting();",
-    "});",
-    "self.addEventListener('activate',function(e){",
-    "  e.waitUntil(clients.claim());",
-    "});",
-    "self.addEventListener('fetch',function(e){",
-    "  e.respondWith(fetch(e.request).catch(function(){",
-    "    return caches.match(e.request);",
-    "  }));",
-    "});"
-  ].join('\n');
-  try {
-    var blob = new Blob([swCode], { type: 'application/javascript' });
-    var swUrl = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl).catch(function() {});
-  } catch(e) {}
-}
+  revealEls.forEach(function(el) { observer.observe(el); });
 </script>
 
 </body>
