@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Village Rewards" />
+  <meta name="theme-color" content="#3d4535" />
+  <title>Village Rewards · Mont Albert</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --green:      #3d4535;
+      --green-dark: #2c3127;
+      --green-mid:  #505c42;
+      --beige:      #fff0dc;
+      --beige-dim:  rgba(255,240,220,0.15);
+      --accent:     #a8c285;
+      --danger:     #c97b5a;
+      --serif:      'Abril Fatface', serif;
+      --sans:       'IBM Plex Sans', system-ui, sans-serif;
+      --safe-top:   env(safe-area-inset-top, 0px);
+      --safe-bot:   env(safe-area-inset-bottom, 0px);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      font-family: var(--sans);
+      font-weight: 300;
+      background: var(--green);
+      color: var(--beige);
+      overflow: hidden;
+    }
+
+    /* ── Screen system ── */
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+      transition: opacity 0.28s ease, transform 0.28s ease;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-top: var(--safe-top);
+      padding-bottom: var(--safe-bot);
+    }
+    .screen.active {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+
+    /* ── Shared layout ── */
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px 14px;
+      border-bottom: 1px solid rgba(255,240,220,0.1);
+      flex-shrink: 0;
+    }
+    .bar .logo {
+      font-family: var(--serif);
+      font-size: 15px;
+      letter-spacing: 0.02em;
+    }
+    .bar .sub {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.45;
+    }
+    .bar .back-btn {
+      background: none;
+      border: none;
+      color: var(--beige);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      cursor: pointer;
+      font-family: var(--sans);
+      padding: 4px 0;
+    }
+    .bar .back-btn:hover { opacity: 0.9; }
+
+    .body { flex: 1; padding: 32px 24px; }
+    .body.center { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+
+    /* ── Typography ── */
+    .display { font-family: var(--serif); font-size: clamp(38px, 10vw, 52px); line-height: 1.0; }
+    .display-sm { font-family: var(--serif); font-size: 28px; line-height: 1.1; }
+    .label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.45; }
+    .hint { font-size: 13px; opacity: 0.55; line-height: 1.6; }
+
+    /* ── Inputs ── */
+    .field {
+      width: 100%;
+      background: rgba(255,240,220,0.08);
+      border: 1px solid rgba(255,240,220,0.2);
+      color: var(--beige);
+      font-family: var(--sans);
+      font-size: 16px;
+      font-weight: 300;
+      padding: 14px 16px;
+      outline: none;
+      border-radius: 0;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: border-color 0.2s;
+    }
+    .field:focus { border-color: rgba(255,240,220,0.6); }
+    .field::placeholder { opacity: 0.35; }
+    .field-group { display: flex; flex-direction: column; gap: 10px; margin-top: 28px; }
+    .field-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.5; margin-bottom: 6px; }
+
+    /* ── Buttons ── */
+    .btn {
+      width: 100%;
+      padding: 16px;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s, transform 0.1s;
+      border-radius: 0;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--beige); color: var(--green); }
+    .btn-outline { background: transparent; border: 1px solid rgba(255,240,220,0.35); color: var(--beige); }
+    .btn-accent  { background: var(--accent); color: var(--green-dark); }
+    .btn-danger  { background: var(--danger); color: var(--beige); }
+    .btn:disabled { opacity: 0.35; cursor: default; }
+
+    /* ── Select ── */
+    select.field {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23fff0dc' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 40px;
+      cursor: pointer;
+    }
+    select.field option { background: var(--green); color: var(--beige); }
+
+    /* ─────────────────────────────────────────────── */
+    /* SCREEN 1: WELCOME                               */
+    /* ─────────────────────────────────────────────── */
+    #s-welcome .body {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: calc(100vh - 60px);
+    }
+    #s-welcome .top { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    #s-welcome .village { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.4; margin-bottom: 20px; }
+    #s-welcome .tagline { font-size: 15px; font-weight: 300; opacity: 0.6; margin-top: 20px; max-width: 260px; line-height: 1.6; }
+    #s-welcome .role-btns { display: flex; flex-direction: column; gap: 10px; padding-bottom: 24px; }
+    #s-welcome .role-hint { font-size: 10px; opacity: 0.35; text-align: center; letter-spacing: 0.1em; margin-top: 4px; }
+
+    /* ─────────────────────────────────────────────── */
+    /* SCREEN 2: REGISTER                              */
+    /* ─────────────────────────────────────────────── */
+    #s-register .body { min-height: calc(100vh - 60px); }
+    #s-register .intro { font-size: 14px; opacity: 0.65; line-height: 1.6; margin-top: 8px; }
+
+    /* ─────────────────────────────────────────────── */
+    /* SCREEN 3: CUSTOMER DASHBOARD                    */
+    /* ─────────────────────────────────────────────── */
+    #s-customer { background: var(--green); }
+
+    .points-hero {
+      text-align: center;
+      padding: 36px 24px 28px;
+      border-bottom: 1px solid rgba(255,240,220,0.1);
+    }
+    .points-hero .greeting { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.4; margin-bottom: 12px; }
+    .points-hero .pts-num { font-family: var(--serif); font-size: 72px; line-height: 1; color: var(--accent); }
+    .points-hero .pts-label { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.45; margin-top: 6px; }
+    .points-hero .pts-value { font-size: 14px; opacity: 0.5; margin-top: 4px; }
+
+    .qr-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 24px;
+      border-bottom: 1px solid rgba(255,240,220,0.1);
+    }
+    .qr-section .qr-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.4; margin-bottom: 20px; }
+    #qr-canvas {
+      background: var(--beige);
+      padding: 14px;
+      border-radius: 2px;
+    }
+    #qr-canvas canvas, #qr-canvas img { display: block; }
+    .customer-code {
+      margin-top: 16px;
+      font-family: var(--serif);
+      font-size: 26px;
+      letter-spacing: 0.18em;
+      opacity: 0.9;
+    }
+    .code-hint { font-size: 11px; opacity: 0.35; margin-top: 6px; }
+
+    .history-section { padding: 24px; }
+    .history-section .history-title { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.4; margin-bottom: 16px; }
+    .tx-list { display: flex; flex-direction: column; gap: 0; }
+    .tx-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255,240,220,0.08);
+    }
+    .tx-item:last-child { border-bottom: none; }
+    .tx-shop { font-size: 14px; opacity: 0.8; }
+    .tx-date { font-size: 11px; opacity: 0.35; margin-top: 2px; }
+    .tx-pts { font-size: 15px; font-weight: 500; }
+    .tx-pts.earn { color: var(--accent); }
+    .tx-pts.redeem { color: var(--danger); }
+    .tx-empty { font-size: 13px; opacity: 0.35; text-align: center; padding: 24px 0; font-style: italic; }
+
+    /* ─────────────────────────────────────────────── */
+    /* SCREEN 4: TRADER LOGIN                          */
+    /* ─────────────────────────────────────────────── */
+    .pin-hint {
+      background: rgba(168,194,133,0.12);
+      border: 1px solid rgba(168,194,133,0.3);
+      padding: 14px 16px;
+      margin-top: 20px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--accent);
+    }
+    .pin-hint strong { font-weight: 500; }
+
+    /* ─────────────────────────────────────────────── */
+    /* SCREEN 5: TRADER DASHBOARD                      */
+    /* ─────────────────────────────────────────────── */
+    .trader-shop-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: var(--beige-dim);
+      border: 1px solid rgba(255,240,220,0.2);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+    }
+    .trader-shop-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid rgba(255,240,220,0.12);
+      margin-bottom: 28px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 14px;
+      background: none;
+      border: none;
+      color: var(--beige);
+      font-family: var(--sans);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+      opacity: 0.4;
+      border-bottom: 2px solid transparent;
+      transition: opacity 0.2s, border-color 0.2s;
+    }
+    .tab-btn.active { opacity: 1; border-bottom-color: var(--accent); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .spend-preview {
+      background: rgba(255,240,220,0.06);
+      border: 1px solid rgba(255,240,220,0.12);
+      padding: 16px;
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .spend-preview .preview-label { font-size: 11px; opacity: 0.45; letter-spacing: 0.12em; text-transform: uppercase; }
+    .spend-preview .preview-pts { font-family: var(--serif); font-size: 32px; color: var(--accent); }
+    .spend-preview .preview-sub { font-size: 11px; opacity: 0.4; margin-top: 2px; }
+
+    .customer-lookup {
+      padding: 16px;
+      background: rgba(255,240,220,0.06);
+      border: 1px solid rgba(255,240,220,0.12);
+      margin-top: 12px;
+    }
+    .customer-lookup .found-name { font-size: 16px; font-weight: 400; }
+    .customer-lookup .found-pts { font-size: 12px; opacity: 0.55; margin-top: 4px; }
+    .customer-lookup.error { border-color: rgba(201,123,90,0.4); background: rgba(201,123,90,0.06); }
+    .customer-lookup .error-msg { font-size: 13px; color: var(--danger); }
+
+    /* ─────────────────────────────────────────────── */
+    /* SCREEN 6: SUCCESS                               */
+    /* ─────────────────────────────────────────────── */
+    #s-success .body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: calc(100vh - 60px);
+    }
+    .success-icon { font-size: 48px; margin-bottom: 24px; animation: pop 0.4s ease; }
+    @keyframes pop {
+      0% { transform: scale(0.5); opacity: 0; }
+      70% { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .success-pts { font-family: var(--serif); font-size: 64px; color: var(--accent); animation: rise 0.5s 0.1s both ease; }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    .success-label { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.5; margin-top: 6px; animation: rise 0.5s 0.2s both ease; }
+    .success-detail { font-size: 14px; opacity: 0.6; margin-top: 12px; animation: rise 0.5s 0.3s both ease; }
+    .success-btns { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 40px; animation: rise 0.5s 0.4s both ease; }
+
+    /* ─────────────────────────────────────────────── */
+    /* INSTALL BANNER                                  */
+    /* ─────────────────────────────────────────────── */
+    #install-banner {
+      position: fixed;
+      bottom: calc(var(--safe-bot) + 16px);
+      left: 16px;
+      right: 16px;
+      background: var(--green-dark);
+      border: 1px solid rgba(255,240,220,0.2);
+      padding: 14px 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      z-index: 1000;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+    #install-banner.visible { display: flex; }
+    #install-banner p { font-size: 12px; opacity: 0.8; line-height: 1.4; flex: 1; }
+    #install-banner button { background: var(--accent); border: none; color: var(--green-dark); font-family: var(--sans); font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; padding: 10px 14px; cursor: pointer; flex-shrink: 0; }
+    #install-banner .dismiss { background: none; border: none; color: var(--beige); opacity: 0.4; font-size: 18px; cursor: pointer; padding: 0 4px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<!-- ─── SCREEN: WELCOME ──────────────────────────── -->
+<div class="screen active" id="s-welcome">
+  <div class="bar">
+    <span class="logo">Village Rewards</span>
+    <span class="sub">Mont Albert</span>
+  </div>
+  <div class="body">
+    <div class="top">
+      <div class="village">Mont Albert Village</div>
+      <h1 class="display">Shop local.<br />Earn<br />together.</h1>
+      <p class="tagline">Earn points every time you shop in the village. Use them anywhere on the strip.</p>
+    </div>
+    <div class="role-btns">
+      <button class="btn btn-primary" onclick="goCustomer()">I'm shopping</button>
+      <button class="btn btn-outline" onclick="show('s-trader-login')">I'm a trader</button>
+      <p class="role-hint">Two ways in. One village.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SCREEN: REGISTER ─────────────────────────── -->
+<div class="screen" id="s-register">
+  <div class="bar">
+    <button class="back-btn" onclick="show('s-welcome')">← Back</button>
+    <span class="sub">Join</span>
+  </div>
+  <div class="body">
+    <h2 class="display-sm">Join Village<br />Rewards</h2>
+    <p class="intro" style="margin-top:12px;">One quick registration and you'll earn points at every participating shop in the village.</p>
+    <div class="field-group">
+      <div>
+        <div class="field-label">Your name</div>
+        <input class="field" id="reg-name" type="text" placeholder="First name" autocomplete="given-name" />
+      </div>
+      <div>
+        <div class="field-label">Email address</div>
+        <input class="field" id="reg-email" type="email" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div style="margin-top:8px;">
+        <button class="btn btn-primary" onclick="register()">Start earning points</button>
+      </div>
+      <p class="hint" style="text-align:center;margin-top:4px;">No spam. Just your points balance.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SCREEN: CUSTOMER DASHBOARD ───────────────── -->
+<div class="screen" id="s-customer">
+  <div class="bar">
+    <span class="logo">Village Rewards</span>
+    <button class="back-btn" onclick="show('s-welcome')" style="font-size:9px;">Switch</button>
+  </div>
+
+  <div class="points-hero">
+    <div class="greeting" id="c-greeting">Welcome back</div>
+    <div class="pts-num" id="c-points">0</div>
+    <div class="pts-label">Village Points</div>
+    <div class="pts-value" id="c-value">$0.00 to spend</div>
+  </div>
+
+  <div class="qr-section">
+    <div class="qr-label">Show this to earn points</div>
+    <div id="qr-canvas"></div>
+    <div class="customer-code" id="c-code">——</div>
+    <div class="code-hint">Your village code · show at checkout</div>
+  </div>
+
+  <div class="history-section">
+    <div class="history-title">Recent activity</div>
+    <div class="tx-list" id="tx-list">
+      <p class="tx-empty">No transactions yet. Start shopping!</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SCREEN: TRADER LOGIN ─────────────────────── -->
+<div class="screen" id="s-trader-login">
+  <div class="bar">
+    <button class="back-btn" onclick="show('s-welcome')">← Back</button>
+    <span class="sub">Trader Login</span>
+  </div>
+  <div class="body">
+    <h2 class="display-sm">Trader<br />Access</h2>
+    <div class="field-group">
+      <div>
+        <div class="field-label">Your shop</div>
+        <select class="field" id="t-shop">
+          <option value="">Select your shop…</option>
+          <option>Mont Albert Coffee</option>
+          <option>Village Grocer</option>
+          <option>Mont Albert Florist</option>
+          <option>Village Bakehouse</option>
+          <option>The Local Deli</option>
+          <option>Gardener &amp; Son</option>
+          <option value="other">Other shop…</option>
+        </select>
+      </div>
+      <div id="other-shop-wrap" style="display:none;">
+        <div class="field-label">Shop name</div>
+        <input class="field" id="t-shop-other" type="text" placeholder="Enter your shop name" />
+      </div>
+      <div>
+        <div class="field-label">Pilot PIN</div>
+        <input class="field" id="t-pin" type="password" placeholder="Enter PIN" />
+      </div>
+      <div class="pin-hint">
+        <strong>Pilot access:</strong> Your PIN was provided with your onboarding pack. Contact Tyson at Gardener &amp; Son if you need it.
+      </div>
+      <div style="margin-top:8px;">
+        <button class="btn btn-primary" onclick="traderLogin()">Open trader view</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SCREEN: TRADER DASHBOARD ─────────────────── -->
+<div class="screen" id="s-trader">
+  <div class="bar">
+    <span class="logo">Village Rewards</span>
+    <button class="back-btn" onclick="traderLogout()">Sign out</button>
+  </div>
+  <div class="body">
+    <div id="t-shop-badge" class="trader-shop-badge" style="margin-bottom:24px;">
+      <span class="dot"></span>
+      <span id="t-shop-name">Shop</span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-earn-btn" onclick="switchTab('earn')">Award Points</button>
+      <button class="tab-btn" id="tab-redeem-btn" onclick="switchTab('redeem')">Redeem Points</button>
+    </div>
+
+    <!-- EARN TAB -->
+    <div class="tab-panel active" id="tab-earn">
+      <div class="field-label">Customer's village code</div>
+      <input class="field" id="earn-code" type="text" placeholder="e.g. AB12CD" maxlength="6"
+        oninput="this.value=this.value.toUpperCase(); lookupCustomer('earn')" />
+      <div id="earn-lookup" style="display:none;" class="customer-lookup"></div>
+
+      <div style="margin-top:20px;">
+        <div class="field-label">Purchase amount ($)</div>
+        <input class="field" id="earn-amount" type="number" placeholder="0.00" min="0" step="0.01"
+          oninput="updatePreview()" />
+      </div>
+
+      <div id="earn-preview" class="spend-preview" style="display:none;">
+        <div>
+          <div class="preview-label">Points to award</div>
+          <div class="preview-sub" id="preview-sub"></div>
+        </div>
+        <div style="text-align:right;">
+          <div class="preview-pts" id="preview-pts">0</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <button class="btn btn-accent" id="earn-btn" onclick="awardPoints()" disabled>Award Points</button>
+      </div>
+    </div>
+
+    <!-- REDEEM TAB -->
+    <div class="tab-panel" id="tab-redeem">
+      <div class="field-label">Customer's village code</div>
+      <input class="field" id="redeem-code" type="text" placeholder="e.g. AB12CD" maxlength="6"
+        oninput="this.value=this.value.toUpperCase(); lookupCustomer('redeem')" />
+      <div id="redeem-lookup" style="display:none;" class="customer-lookup"></div>
+
+      <div style="margin-top:20px;">
+        <div class="field-label">Points to redeem</div>
+        <input class="field" id="redeem-amount" type="number" placeholder="0" min="0" step="1"
+          oninput="updateRedeemPreview()" />
+      </div>
+
+      <div id="redeem-preview" class="spend-preview" style="display:none;">
+        <div>
+          <div class="preview-label">Dollar value</div>
+          <div class="preview-sub" id="redeem-sub"></div>
+        </div>
+        <div style="text-align:right;">
+          <div class="preview-pts" id="redeem-val" style="color:var(--danger)">$0.00</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <button class="btn btn-danger" id="redeem-btn" onclick="redeemPoints()" disabled>Confirm Redemption</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SCREEN: SUCCESS ───────────────────────────── -->
+<div class="screen" id="s-success">
+  <div class="bar">
+    <span class="logo">Village Rewards</span>
+  </div>
+  <div class="body">
+    <div class="success-icon" id="success-icon">✓</div>
+    <div class="success-pts" id="success-pts">0</div>
+    <div class="success-label" id="success-label">Points Awarded</div>
+    <div class="success-detail" id="success-detail"></div>
+    <div class="success-btns">
+      <button class="btn btn-accent" onclick="show('s-trader')">Next customer</button>
+      <button class="btn btn-outline" onclick="traderLogout()">Done for today</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── INSTALL BANNER ───────────────────────────── -->
+<div id="install-banner">
+  <p>Add Village Rewards to your home screen for quick access.</p>
+  <button onclick="installPWA()">Install</button>
+  <button class="dismiss" onclick="dismissInstall()">✕</button>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────── */
+/* CONFIG                                              */
+/* ─────────────────────────────────────────────────── */
+var TRADER_PIN       = 'MONT';     // Pilot PIN — change before launch
+var POINTS_PER_DOLLAR = 1;         // 1 point per $1 spent
+var POINTS_TO_DOLLAR  = 100;       // 100 points = $1 redemption value
+
+/* ─────────────────────────────────────────────────── */
+/* STATE                                               */
+/* ─────────────────────────────────────────────────── */
+var currentShop    = null;
+var deferredPrompt = null;
+var qrInstance     = null;
+var activeTab      = 'earn';
+
+/* ─────────────────────────────────────────────────── */
+/* SCREEN NAVIGATION                                   */
+/* ─────────────────────────────────────────────────── */
+function show(id) {
+  document.querySelectorAll('.screen').forEach(function(s) {
+    s.classList.remove('active');
+  });
+  var el = document.getElementById(id);
+  if (el) {
+    // small delay so transition fires
+    requestAnimationFrame(function() {
+      el.classList.add('active');
+    });
+  }
+  window.scrollTo(0, 0);
+}
+
+/* ─────────────────────────────────────────────────── */
+/* CUSTOMER HELPERS                                    */
+/* ─────────────────────────────────────────────────── */
+function generateId() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var id = '';
+  for (var i = 0; i < 6; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return id;
+}
+
+function loadCustomer(id) {
+  var raw = localStorage.getItem('vr_customer_' + id);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function saveCustomer(c) {
+  localStorage.setItem('vr_customer_' + c.id, JSON.stringify(c));
+  // maintain index
+  var index = JSON.parse(localStorage.getItem('vr_index') || '[]');
+  if (index.indexOf(c.id) === -1) {
+    index.push(c.id);
+    localStorage.setItem('vr_index', JSON.stringify(index));
+  }
+}
+
+function findCustomerById(code) {
+  var id = code.trim().toUpperCase();
+  return loadCustomer(id);
+}
+
+function formatDate(ts) {
+  var d = new Date(ts);
+  return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+}
+
+function ptsToDollars(pts) {
+  return '$' + (pts / POINTS_TO_DOLLAR).toFixed(2);
+}
+
+/* ─────────────────────────────────────────────────── */
+/* CUSTOMER FLOW                                       */
+/* ─────────────────────────────────────────────────── */
+function goCustomer() {
+  var saved = localStorage.getItem('vr_my_id');
+  if (saved) {
+    var c = loadCustomer(saved);
+    if (c) {
+      renderCustomerDashboard(c);
+      show('s-customer');
+      return;
+    }
+  }
+  show('s-register');
+}
+
+function register() {
+  var name  = document.getElementById('reg-name').value.trim();
+  var email = document.getElementById('reg-email').value.trim();
+  if (!name) { alert('Please enter your name.'); return; }
+  if (!email || !email.includes('@')) { alert('Please enter a valid email.'); return; }
+
+  var id = generateId();
+  var customer = {
+    id: id,
+    name: name,
+    email: email,
+    points: 0,
+    joined: Date.now(),
+    history: []
+  };
+
+  saveCustomer(customer);
+  localStorage.setItem('vr_my_id', id);
+
+  renderCustomerDashboard(customer);
+  show('s-customer');
+}
+
+function renderCustomerDashboard(c) {
+  var firstName = c.name.split(' ')[0];
+  document.getElementById('c-greeting').textContent = 'Hello, ' + firstName;
+  document.getElementById('c-points').textContent = c.points.toLocaleString();
+  document.getElementById('c-value').textContent = ptsToDollars(c.points) + ' to spend';
+  document.getElementById('c-code').textContent = c.id;
+
+  // QR Code
+  var canvas = document.getElementById('qr-canvas');
+  canvas.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(canvas, {
+      text: c.id,
+      width: 180,
+      height: 180,
+      colorDark: '#3d4535',
+      colorLight: '#fff0dc',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+
+  // History
+  var list = document.getElementById('tx-list');
+  if (!c.history || c.history.length === 0) {
+    list.innerHTML = '<p class="tx-empty">No transactions yet. Start shopping!</p>';
+    return;
+  }
+  var recent = c.history.slice(-8).reverse();
+  list.innerHTML = recent.map(function(tx) {
+    var isEarn = tx.type === 'earn';
+    return '<div class="tx-item">' +
+      '<div><div class="tx-shop">' + tx.shop + '</div><div class="tx-date">' + formatDate(tx.ts) + (tx.amount ? ' · $' + parseFloat(tx.amount).toFixed(2) : '') + '</div></div>' +
+      '<div class="tx-pts ' + tx.type + '">' + (isEarn ? '+' : '−') + tx.points + ' pts</div>' +
+    '</div>';
+  }).join('');
+}
+
+/* ─────────────────────────────────────────────────── */
+/* TRADER FLOW                                         */
+/* ─────────────────────────────────────────────────── */
+document.getElementById('t-shop').addEventListener('change', function() {
+  var wrap = document.getElementById('other-shop-wrap');
+  wrap.style.display = this.value === 'other' ? 'block' : 'none';
+});
+
+function traderLogin() {
+  var shopEl    = document.getElementById('t-shop');
+  var shopOther = document.getElementById('t-shop-other').value.trim();
+  var pin       = document.getElementById('t-pin').value.trim().toUpperCase();
+  var shop      = shopEl.value === 'other' ? shopOther : shopEl.value;
+
+  if (!shop)              { alert('Please select your shop.'); return; }
+  if (!pin)               { alert('Please enter your PIN.'); return; }
+  if (pin !== TRADER_PIN) { alert('Incorrect PIN. Please check with Tyson.'); return; }
+
+  currentShop = shop;
+  document.getElementById('t-shop-name').textContent = shop;
+  resetTraderForms();
+  show('s-trader');
+}
+
+function traderLogout() {
+  currentShop = null;
+  show('s-welcome');
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-earn-btn').classList.toggle('active', tab === 'earn');
+  document.getElementById('tab-redeem-btn').classList.toggle('active', tab === 'redeem');
+  document.getElementById('tab-earn').classList.toggle('active', tab === 'earn');
+  document.getElementById('tab-redeem').classList.toggle('active', tab === 'redeem');
+  resetTraderForms();
+}
+
+function resetTraderForms() {
+  ['earn-code','earn-amount','redeem-code','redeem-amount'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['earn-lookup','earn-preview','redeem-lookup','redeem-preview'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  document.getElementById('earn-btn').disabled = true;
+  document.getElementById('redeem-btn').disabled = true;
+}
+
+function lookupCustomer(mode) {
+  var code    = document.getElementById(mode + '-code').value.trim().toUpperCase();
+  var lookupEl = document.getElementById(mode + '-lookup');
+
+  if (code.length < 6) {
+    lookupEl.style.display = 'none';
+    document.getElementById(mode === 'earn' ? 'earn-btn' : 'redeem-btn').disabled = true;
+    return;
+  }
+
+  var c = findCustomerById(code);
+  lookupEl.style.display = 'block';
+  lookupEl.className = 'customer-lookup';
+
+  if (c) {
+    lookupEl.innerHTML =
+      '<div class="found-name">' + c.name + '</div>' +
+      '<div class="found-pts">' + c.points.toLocaleString() + ' points · ' + ptsToDollars(c.points) + ' to spend</div>';
+    if (mode === 'earn') {
+      updatePreview();
+    } else {
+      updateRedeemPreview();
+    }
+  } else {
+    lookupEl.className = 'customer-lookup error';
+    lookupEl.innerHTML = '<div class="error-msg">Customer not found. Check the code and try again.</div>';
+    document.getElementById(mode === 'earn' ? 'earn-btn' : 'redeem-btn').disabled = true;
+  }
+}
+
+function updatePreview() {
+  var code   = document.getElementById('earn-code').value.trim().toUpperCase();
+  var amount = parseFloat(document.getElementById('earn-amount').value) || 0;
+  var preview = document.getElementById('earn-preview');
+  var btn     = document.getElementById('earn-btn');
+  var c = code.length === 6 ? findCustomerById(code) : null;
+
+  if (amount > 0 && c) {
+    var pts = Math.round(amount * POINTS_PER_DOLLAR);
+    document.getElementById('preview-pts').textContent = pts;
+    document.getElementById('preview-sub').textContent = '$' + amount.toFixed(2) + ' purchase';
+    preview.style.display = 'flex';
+    btn.disabled = false;
+  } else {
+    preview.style.display = 'none';
+    btn.disabled = true;
+  }
+}
+
+function updateRedeemPreview() {
+  var code   = document.getElementById('redeem-code').value.trim().toUpperCase();
+  var pts    = parseInt(document.getElementById('redeem-amount').value) || 0;
+  var preview = document.getElementById('redeem-preview');
+  var btn     = document.getElementById('redeem-btn');
+  var c = code.length === 6 ? findCustomerById(code) : null;
+
+  if (pts > 0 && c) {
+    var value = pts / POINTS_TO_DOLLAR;
+    document.getElementById('redeem-val').textContent = '$' + value.toFixed(2);
+    document.getElementById('redeem-sub').textContent = pts + ' points redeemed';
+
+    preview.style.display = 'flex';
+    if (pts > c.points) {
+      document.getElementById('redeem-sub').textContent = '⚠ Exceeds balance (' + c.points + ' pts)';
+      btn.disabled = true;
+    } else {
+      btn.disabled = false;
+    }
+  } else {
+    preview.style.display = 'none';
+    btn.disabled = true;
+  }
+}
+
+function awardPoints() {
+  var code   = document.getElementById('earn-code').value.trim().toUpperCase();
+  var amount = parseFloat(document.getElementById('earn-amount').value);
+  var c = findCustomerById(code);
+  if (!c || !amount || amount <= 0) return;
+
+  var pts = Math.round(amount * POINTS_PER_DOLLAR);
+  c.points += pts;
+  c.history.push({ type: 'earn', shop: currentShop, amount: amount, points: pts, ts: Date.now() });
+  saveCustomer(c);
+
+  // If this is the logged-in customer on same device, refresh their view
+  var myId = localStorage.getItem('vr_my_id');
+  if (myId === c.id) { renderCustomerDashboard(c); }
+
+  showSuccess(pts, 'awarded', c.name, amount);
+}
+
+function redeemPoints() {
+  var code = document.getElementById('redeem-code').value.trim().toUpperCase();
+  var pts  = parseInt(document.getElementById('redeem-amount').value);
+  var c = findCustomerById(code);
+  if (!c || !pts || pts <= 0 || pts > c.points) return;
+
+  c.points -= pts;
+  c.history.push({ type: 'redeem', shop: currentShop, points: pts, ts: Date.now() });
+  saveCustomer(c);
+
+  var myId = localStorage.getItem('vr_my_id');
+  if (myId === c.id) { renderCustomerDashboard(c); }
+
+  showSuccess(pts, 'redeemed', c.name, null);
+}
+
+function showSuccess(pts, type, name, amount) {
+  var isEarn = type === 'awarded';
+  document.getElementById('success-icon').textContent = isEarn ? '✦' : '✓';
+  document.getElementById('success-pts').style.color = isEarn ? 'var(--accent)' : 'var(--danger)';
+  document.getElementById('success-pts').textContent = (isEarn ? '+' : '−') + pts;
+  document.getElementById('success-label').textContent = 'Points ' + type;
+  document.getElementById('success-detail').textContent = isEarn
+    ? name + ' earned ' + pts + ' points on a $' + parseFloat(amount).toFixed(2) + ' purchase.'
+    : name + ' redeemed ' + pts + ' points (' + ptsToDollars(pts) + ' value).';
+  resetTraderForms();
+  show('s-success');
+}
+
+/* ─────────────────────────────────────────────────── */
+/* PWA INSTALL                                         */
+/* ─────────────────────────────────────────────────── */
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!localStorage.getItem('vr_install_dismissed')) {
+    document.getElementById('install-banner').classList.add('visible');
+  }
+});
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function() {
+      deferredPrompt = null;
+      document.getElementById('install-banner').classList.remove('visible');
+    });
+  }
+}
+
+function dismissInstall() {
+  document.getElementById('install-banner').classList.remove('visible');
+  localStorage.setItem('vr_install_dismissed', '1');
+}
+
+/* ─────────────────────────────────────────────────── */
+/* SERVICE WORKER (best-effort single-file)            */
+/* ─────────────────────────────────────────────────── */
+if ('serviceWorker' in navigator) {
+  var swCode = [
+    "var CACHE='vr-v1';",
+    "self.addEventListener('install',function(e){",
+    "  self.skipWaiting();",
+    "});",
+    "self.addEventListener('activate',function(e){",
+    "  e.waitUntil(clients.claim());",
+    "});",
+    "self.addEventListener('fetch',function(e){",
+    "  e.respondWith(fetch(e.request).catch(function(){",
+    "    return caches.match(e.request);",
+    "  }));",
+    "});"
+  ].join('\n');
+  try {
+    var blob = new Blob([swCode], { type: 'application/javascript' });
+    var swUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl).catch(function() {});
+  } catch(e) {}
+}
+</script>
+
+</body>
+</html>
