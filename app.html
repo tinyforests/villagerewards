@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Village Rewards" />
+  <meta name="theme-color" content="#3d4535" />
+  <title>Village Rewards · Mont Albert</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --green:      #3d4535;
+      --green-dark: #2c3127;
+      --green-mid:  #505c42;
+      --beige:      #fff0dc;
+      --beige-dim:  rgba(255,240,220,0.12);
+      --accent:     #a8c285;
+      --danger:     #c97b5a;
+      --serif:      'Abril Fatface', serif;
+      --sans:       'IBM Plex Sans', system-ui, sans-serif;
+      --safe-top:   env(safe-area-inset-top, 0px);
+      --safe-bot:   env(safe-area-inset-bottom, 0px);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      font-family: var(--sans);
+      font-weight: 300;
+      background: var(--green);
+      color: var(--beige);
+      overflow: hidden;
+    }
+
+    /* ── Screens ── */
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-top: var(--safe-top);
+      padding-bottom: calc(var(--safe-bot) + 16px);
+    }
+    .screen.active { opacity: 1; pointer-events: all; transform: none; }
+
+    /* ── Shared ── */
+    .bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 24px 14px;
+      border-bottom: 1px solid rgba(255,240,220,0.1);
+      flex-shrink: 0;
+    }
+    .bar .logo { font-family: var(--serif); font-size: 15px; }
+    .bar .sub  { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.4; }
+    .bar .back-btn {
+      background: none; border: none; color: var(--beige);
+      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      opacity: 0.5; cursor: pointer; font-family: var(--sans); padding: 4px 0;
+    }
+    .bar .back-btn:hover { opacity: 0.9; }
+    .body { flex: 1; padding: 32px 24px; }
+
+    /* ── Type ── */
+    .display    { font-family: var(--serif); font-size: clamp(36px,9vw,52px); line-height: 1.0; }
+    .display-sm { font-family: var(--serif); font-size: 28px; line-height: 1.1; }
+    .label      { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.4; }
+    .hint       { font-size: 13px; opacity: 0.5; line-height: 1.6; }
+
+    /* ── Fields ── */
+    .field {
+      width: 100%; background: rgba(255,240,220,0.08);
+      border: 1px solid rgba(255,240,220,0.2); color: var(--beige);
+      font-family: var(--sans); font-size: 16px; font-weight: 300;
+      padding: 14px 16px; outline: none; border-radius: 0;
+      -webkit-appearance: none; transition: border-color 0.2s;
+    }
+    .field:focus { border-color: rgba(255,240,220,0.55); }
+    .field::placeholder { opacity: 0.3; }
+    .field-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.45; margin-bottom: 6px; }
+    .field-group { display: flex; flex-direction: column; gap: 12px; margin-top: 28px; }
+    select.field {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23fff0dc' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 16px center;
+      padding-right: 40px; cursor: pointer;
+    }
+    select.field option { background: var(--green); color: var(--beige); }
+
+    /* ── Buttons ── */
+    .btn {
+      width: 100%; padding: 16px; font-family: var(--sans);
+      font-size: 11px; font-weight: 500; letter-spacing: 0.2em;
+      text-transform: uppercase; cursor: pointer; border: none;
+      transition: opacity 0.2s, transform 0.1s; border-radius: 0;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary  { background: var(--beige); color: var(--green); }
+    .btn-outline  { background: transparent; border: 1px solid rgba(255,240,220,0.3); color: var(--beige); }
+    .btn-accent   { background: var(--accent); color: var(--green-dark); }
+    .btn-danger   { background: var(--danger); color: var(--beige); }
+    .btn-checkin  { background: rgba(168,194,133,0.15); border: 1px solid var(--accent); color: var(--accent); }
+    .btn:disabled { opacity: 0.3; cursor: default; }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      display: inline-block; width: 18px; height: 18px;
+      border: 2px solid rgba(255,240,220,0.2);
+      border-top-color: var(--beige); border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-overlay {
+      position: fixed; inset: 0; background: rgba(44,49,39,0.85);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 999; opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .loading-overlay.active { opacity: 1; pointer-events: all; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: calc(var(--safe-bot) + 80px); left: 16px; right: 16px;
+      background: var(--green-dark); border: 1px solid rgba(255,240,220,0.2);
+      padding: 14px 16px; font-size: 13px; z-index: 998;
+      transform: translateY(20px); opacity: 0;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    .toast.show { transform: none; opacity: 1; }
+    .toast.error { border-color: rgba(201,123,90,0.4); }
+
+    /* ══════════════════════════════════════
+       SCREEN: WELCOME
+    ══════════════════════════════════════ */
+    #s-welcome .body {
+      display: flex; flex-direction: column;
+      justify-content: space-between; min-height: calc(100dvh - 60px);
+    }
+    #s-welcome .top { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    #s-welcome .village { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.35; margin-bottom: 20px; }
+    #s-welcome .tagline { font-size: 15px; font-weight: 300; opacity: 0.55; margin-top: 20px; max-width: 280px; line-height: 1.65; }
+    #s-welcome .role-btns { display: flex; flex-direction: column; gap: 10px; padding-bottom: 8px; }
+    #s-welcome .role-hint { font-size: 10px; opacity: 0.3; text-align: center; letter-spacing: 0.1em; margin-top: 6px; }
+
+    /* ══════════════════════════════════════
+       SCREEN: REGISTER
+    ══════════════════════════════════════ */
+    #s-register .intro { font-size: 14px; opacity: 0.6; line-height: 1.65; margin-top: 10px; }
+
+    /* ══════════════════════════════════════
+       SCREEN: CUSTOMER DASHBOARD
+    ══════════════════════════════════════ */
+    .points-hero {
+      text-align: center; padding: 36px 24px 28px;
+      border-bottom: 1px solid rgba(255,240,220,0.1);
+    }
+    .points-hero .greeting { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.35; margin-bottom: 12px; }
+    .points-hero .pts-num  { font-family: var(--serif); font-size: 72px; line-height: 1; color: var(--accent); }
+    .points-hero .pts-lbl  { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.4; margin-top: 6px; }
+    .points-hero .pts-val  { font-size: 14px; opacity: 0.45; margin-top: 4px; }
+
+    .qr-section {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 28px 24px; border-bottom: 1px solid rgba(255,240,220,0.1);
+    }
+    .qr-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.35; margin-bottom: 18px; }
+    #qr-canvas { background: var(--beige); padding: 12px; }
+    #qr-canvas canvas, #qr-canvas img { display: block; }
+    .customer-code { margin-top: 14px; font-family: var(--serif); font-size: 28px; letter-spacing: 0.2em; }
+    .code-hint { font-size: 11px; opacity: 0.3; margin-top: 4px; }
+
+    /* Check-in CTA */
+    .checkin-cta {
+      margin: 20px 24px 0;
+      padding: 18px 20px;
+      background: rgba(168,194,133,0.08);
+      border: 1px solid rgba(168,194,133,0.25);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .checkin-cta .cta-text { font-size: 13px; line-height: 1.5; opacity: 0.8; }
+    .checkin-cta .cta-text strong { font-weight: 500; color: var(--accent); display: block; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .checkin-cta .cta-pts { font-family: var(--serif); font-size: 32px; color: var(--accent); flex-shrink: 0; }
+
+    .history-section { padding: 24px; }
+    .history-title { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.35; margin-bottom: 16px; }
+    .tx-list { display: flex; flex-direction: column; }
+    .tx-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 13px 0; border-bottom: 1px solid rgba(255,240,220,0.07);
+    }
+    .tx-item:last-child { border-bottom: none; }
+    .tx-shop { font-size: 14px; opacity: 0.8; }
+    .tx-meta { font-size: 11px; opacity: 0.3; margin-top: 2px; }
+    .tx-pts { font-size: 15px; font-weight: 500; }
+    .tx-pts.earn    { color: var(--accent); }
+    .tx-pts.redeem  { color: var(--danger); }
+    .tx-pts.checkin { color: rgba(168,194,133,0.65); }
+    .tx-empty { font-size: 13px; opacity: 0.3; text-align: center; padding: 24px 0; font-style: italic; }
+
+    /* ══════════════════════════════════════
+       SCREEN: TRADER LOGIN
+    ══════════════════════════════════════ */
+    .pin-hint {
+      background: rgba(168,194,133,0.1); border: 1px solid rgba(168,194,133,0.25);
+      padding: 14px 16px; margin-top: 8px; font-size: 13px; line-height: 1.6; color: var(--accent);
+    }
+
+    /* ══════════════════════════════════════
+       SCREEN: TRADER DASHBOARD
+    ══════════════════════════════════════ */
+    .shop-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 12px; background: var(--beige-dim);
+      border: 1px solid rgba(255,240,220,0.15); font-size: 11px;
+      letter-spacing: 0.1em; margin-bottom: 24px;
+    }
+    .shop-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+    .tabs { display: flex; border-bottom: 1px solid rgba(255,240,220,0.1); margin-bottom: 24px; }
+    .tab-btn {
+      flex: 1; padding: 14px; background: none; border: none; color: var(--beige);
+      font-family: var(--sans); font-size: 10px; font-weight: 500;
+      letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer;
+      opacity: 0.35; border-bottom: 2px solid transparent; transition: opacity 0.2s, border-color 0.2s;
+    }
+    .tab-btn.active { opacity: 1; border-bottom-color: var(--accent); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .spend-preview {
+      background: rgba(255,240,220,0.05); border: 1px solid rgba(255,240,220,0.1);
+      padding: 16px; margin-top: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .preview-label { font-size: 10px; opacity: 0.4; letter-spacing: 0.12em; text-transform: uppercase; }
+    .preview-pts   { font-family: var(--serif); font-size: 36px; color: var(--accent); }
+    .preview-sub   { font-size: 11px; opacity: 0.35; margin-top: 2px; }
+
+    .lookup-box {
+      padding: 14px 16px; margin-top: 12px;
+      background: rgba(255,240,220,0.05); border: 1px solid rgba(255,240,220,0.1);
+    }
+    .lookup-box.error  { border-color: rgba(201,123,90,0.35); background: rgba(201,123,90,0.05); }
+    .lookup-name  { font-size: 16px; font-weight: 400; }
+    .lookup-pts   { font-size: 12px; opacity: 0.45; margin-top: 3px; }
+    .lookup-err   { font-size: 13px; color: var(--danger); }
+
+    /* Check-in tab */
+    .checkin-info {
+      background: rgba(168,194,133,0.08); border: 1px solid rgba(168,194,133,0.2);
+      padding: 16px; margin-bottom: 20px; font-size: 13px; line-height: 1.6; opacity: 0.8;
+    }
+    .checkin-info strong { color: var(--accent); font-weight: 500; }
+
+    /* ══════════════════════════════════════
+       SCREEN: SUCCESS
+    ══════════════════════════════════════ */
+    #s-success .body {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center; min-height: calc(100dvh - 60px);
+    }
+    .success-icon  { font-size: 48px; margin-bottom: 20px; animation: pop 0.4s ease; }
+    .success-pts   { font-family: var(--serif); font-size: 72px; line-height: 1; animation: rise 0.5s 0.1s both ease; }
+    .success-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.4; margin-top: 6px; animation: rise 0.5s 0.2s both ease; }
+    .success-detail{ font-size: 14px; opacity: 0.55; margin-top: 12px; max-width: 260px; line-height: 1.6; animation: rise 0.5s 0.3s both ease; }
+    .success-btns  { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 36px; animation: rise 0.5s 0.4s both ease; }
+
+    @keyframes pop  { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+    /* ══════════════════════════════════════
+       INSTALL BANNER
+    ══════════════════════════════════════ */
+    #install-banner {
+      position: fixed; bottom: calc(var(--safe-bot) + 16px);
+      left: 16px; right: 16px; background: var(--green-dark);
+      border: 1px solid rgba(255,240,220,0.18); padding: 14px 16px;
+      display: none; align-items: center; gap: 12px; z-index: 1000;
+    }
+    #install-banner.visible { display: flex; }
+    #install-banner p   { font-size: 12px; opacity: 0.75; line-height: 1.4; flex: 1; }
+    #install-banner .ib-btn { background: var(--accent); border: none; color: var(--green-dark); font-family: var(--sans); font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; padding: 10px 14px; cursor: pointer; flex-shrink: 0; }
+    #install-banner .ib-x   { background: none; border: none; color: var(--beige); opacity: 0.35; font-size: 18px; cursor: pointer; padding: 0 4px; }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loader"><div class="spinner"></div></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══ WELCOME ═══════════════════════════════════════ -->
+<div class="screen active" id="s-welcome">
+  <div class="bar">
+    <span class="logo">Village Rewards</span>
+    <span class="sub">Mont Albert</span>
+  </div>
+  <div class="body">
+    <div class="top">
+      <div class="village">Mont Albert Village</div>
+      <h1 class="display">Shop local.<br />Earn<br />together.</h1>
+      <p class="tagline">Earn points every time you shop — or simply visit — the village. Use them anywhere on the strip.</p>
+    </div>
+    <div class="role-btns">
+      <button class="btn btn-primary"  onclick="goCustomer()">I'm shopping</button>
+      <button class="btn btn-outline"  onclick="show('s-trader-login')">I'm a trader</button>
+      <p class="role-hint">Two ways in. One village.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ REGISTER ══════════════════════════════════════ -->
+<div class="screen" id="s-register">
+  <div class="bar">
+    <button class="back-btn" onclick="show('s-welcome')">← Back</button>
+    <span class="sub">Join</span>
+  </div>
+  <div class="body">
+    <h2 class="display-sm">Join Village<br />Rewards</h2>
+    <p class="intro">One quick registration. Earn points at every participating shop — and every time you check in.</p>
+    <div class="field-group">
+      <div>
+        <div class="field-label">Your name</div>
+        <input class="field" id="reg-name" type="text" placeholder="First name" autocomplete="given-name" />
+      </div>
+      <div>
+        <div class="field-label">Email address</div>
+        <input class="field" id="reg-email" type="email" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <button class="btn btn-primary" onclick="register()" style="margin-top:8px;">Start earning</button>
+      <p class="hint" style="text-align:center;">No spam. Just your points balance.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CUSTOMER DASHBOARD ════════════════════════════ -->
+<div class="screen" id="s-customer">
+  <div class="bar">
+    <span class="logo">Village Rewards</span>
+    <button class="back-btn" onclick="show('s-welcome')">Switch</button>
+  </div>
+
+  <div class="points-hero">
+    <div class="greeting" id="c-greeting">Welcome back</div>
+    <div class="pts-num" id="c-points">0</div>
+    <div class="pts-lbl">Village Points</div>
+    <div class="pts-val" id="c-value">$0.00 to spend</div>
+  </div>
+
+  <div class="qr-section">
+    <div class="qr-label">Your village code</div>
+    <div id="qr-canvas"></div>
+    <div class="customer-code" id="c-code">——</div>
+    <div class="code-hint">Show to staff · scan to earn</div>
+  </div>
+
+  <!-- Check-in CTA -->
+  <div class="checkin-cta" id="checkin-cta">
+    <div class="cta-text">
+      <strong>Just visiting?</strong>
+      Check in at any shop to earn points — no purchase needed.
+    </div>
+    <div class="cta-pts">+8</div>
+  </div>
+
+  <div class="history-section">
+    <div class="history-title">Recent activity</div>
+    <div class="tx-list" id="tx-list">
+      <p class="tx-empty">No activity yet. Start shopping!</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TRADER LOGIN ══════════════════════════════════ -->
+<div class="screen" id="s-trader-login">
+  <div class="bar">
+    <button class="back-btn" onclick="show('s-welcome')">← Back</button>
+    <span class="sub">Trader</span>
+  </div>
+  <div class="body">
+    <h2 class="display-sm">Trader<br />Access</h2>
+    <div class="field-group">
+      <div>
+        <div class="field-label">Your shop</div>
+        <select class="field" id="t-shop-select" onchange="onShopChange()">
+          <option value="">Select your shop…</option>
+        </select>
+      </div>
+      <div id="other-wrap" style="display:none;">
+        <div class="field-label">Shop name</div>
+        <input class="field" id="t-shop-other" type="text" placeholder="Enter your shop name" />
+      </div>
+      <div>
+        <div class="field-label">Pilot PIN</div>
+        <input class="field" id="t-pin" type="password" placeholder="Enter PIN" />
+      </div>
+      <div class="pin-hint">
+        Your PIN was provided with your onboarding pack.<br />
+        Contact Tyson at Gardener &amp; Son if you need it.
+      </div>
+      <button class="btn btn-primary" onclick="traderLogin()" style="margin-top:8px;">Open trader view</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TRADER DASHBOARD ══════════════════════════════ -->
+<div class="screen" id="s-trader">
+  <div class="bar">
+    <span class="logo">Village Rewards</span>
+    <button class="back-btn" onclick="traderLogout()">Sign out</button>
+  </div>
+  <div class="body">
+    <div class="shop-badge">
+      <span class="dot"></span>
+      <span id="t-shop-name-display">Shop</span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-purchase-btn" onclick="switchTab('purchase')">Purchase</button>
+      <button class="tab-btn" id="tab-checkin-btn"  onclick="switchTab('checkin')">Check-in</button>
+      <button class="tab-btn" id="tab-redeem-btn"   onclick="switchTab('redeem')">Redeem</button>
+    </div>
+
+    <!-- PURCHASE TAB -->
+    <div class="tab-panel active" id="tab-purchase">
+      <div class="field-label">Customer village code</div>
+      <input class="field" id="p-code" type="text" placeholder="e.g. AB12CD" maxlength="6"
+        oninput="this.value=this.value.toUpperCase();lookupCustomer('p')" />
+      <div id="p-lookup" style="display:none;" class="lookup-box"></div>
+
+      <div style="margin-top:18px;">
+        <div class="field-label">Purchase amount ($)</div>
+        <input class="field" id="p-amount" type="number" placeholder="0.00" min="0" step="0.01"
+          oninput="updatePurchasePreview()" />
+      </div>
+
+      <div id="p-preview" class="spend-preview" style="display:none;">
+        <div>
+          <div class="preview-label">Points to award</div>
+          <div class="preview-sub" id="p-preview-sub"></div>
+        </div>
+        <div class="preview-pts" id="p-preview-pts">0</div>
+      </div>
+
+      <button class="btn btn-accent" id="p-btn" onclick="awardPurchasePoints()" disabled style="margin-top:18px;">
+        Award Points
+      </button>
+    </div>
+
+    <!-- CHECKIN TAB -->
+    <div class="tab-panel" id="tab-checkin">
+      <div class="checkin-info">
+        <strong>+8 points per check-in.</strong>
+        Customers earn points just for visiting — no purchase required.
+        One check-in per customer per shop every 4 hours.
+      </div>
+
+      <div class="field-label">Customer village code</div>
+      <input class="field" id="ci-code" type="text" placeholder="e.g. AB12CD" maxlength="6"
+        oninput="this.value=this.value.toUpperCase();lookupCustomer('ci')" />
+      <div id="ci-lookup" style="display:none;" class="lookup-box"></div>
+
+      <button class="btn btn-checkin" id="ci-btn" onclick="awardCheckin()" disabled style="margin-top:18px;">
+        Award Check-in Points (+8)
+      </button>
+    </div>
+
+    <!-- REDEEM TAB -->
+    <div class="tab-panel" id="tab-redeem">
+      <div class="field-label">Customer village code</div>
+      <input class="field" id="r-code" type="text" placeholder="e.g. AB12CD" maxlength="6"
+        oninput="this.value=this.value.toUpperCase();lookupCustomer('r')" />
+      <div id="r-lookup" style="display:none;" class="lookup-box"></div>
+
+      <div style="margin-top:18px;">
+        <div class="field-label">Points to redeem</div>
+        <input class="field" id="r-amount" type="number" placeholder="0" min="0" step="1"
+          oninput="updateRedeemPreview()" />
+      </div>
+
+      <div id="r-preview" class="spend-preview" style="display:none;">
+        <div>
+          <div class="preview-label">Dollar value</div>
+          <div class="preview-sub" id="r-preview-sub"></div>
+        </div>
+        <div class="preview-pts" id="r-preview-val" style="color:var(--danger)">$0.00</div>
+      </div>
+
+      <button class="btn btn-danger" id="r-btn" onclick="redeemPoints()" disabled style="margin-top:18px;">
+        Confirm Redemption
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SUCCESS ═══════════════════════════════════════ -->
+<div class="screen" id="s-success">
+  <div class="bar"><span class="logo">Village Rewards</span></div>
+  <div class="body">
+    <div class="success-icon"  id="suc-icon">✦</div>
+    <div class="success-pts"   id="suc-pts"  style="color:var(--accent)">0</div>
+    <div class="success-label" id="suc-label">Points Awarded</div>
+    <div class="success-detail" id="suc-detail"></div>
+    <div class="success-btns">
+      <button class="btn btn-accent"  onclick="show('s-trader')">Next customer</button>
+      <button class="btn btn-outline" onclick="traderLogout()">Done for today</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ INSTALL BANNER ════════════════════════════════ -->
+<div id="install-banner">
+  <p>Add Village Rewards to your home screen.</p>
+  <button class="ib-btn" onclick="installPWA()">Install</button>
+  <button class="ib-x"   onclick="dismissInstall()">✕</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════════════════ */
+var SUPABASE_URL = 'https://hwtwfhvaeczofqktychc.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_Don37TvoZJDPBVNMXItdTg_fffvDUOp';
+var TRADER_PIN   = 'MONT';          // Change before launch
+var PTS_PER_DOLLAR   = 1;           // 1 point per $1
+var PTS_TO_DOLLAR    = 100;         // 100 pts = $1
+var CHECKIN_POINTS   = 8;           // Points per check-in
+
+/* ═══════════════════════════════════════════════════════
+   SUPABASE CLIENT
+═══════════════════════════════════════════════════════ */
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ═══════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════ */
+var currentShop    = null;   // { id, name }
+var currentCustomer = null;  // customer row
+var deferredPrompt = null;
+var activeTab      = 'purchase';
+
+/* ═══════════════════════════════════════════════════════
+   SCREEN NAV
+═══════════════════════════════════════════════════════ */
+function show(id) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  requestAnimationFrame(function() {
+    var el = document.getElementById(id);
+    if (el) el.classList.add('active');
+  });
+  window.scrollTo(0, 0);
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOADING / TOAST
+═══════════════════════════════════════════════════════ */
+function setLoading(on) {
+  document.getElementById('loader').classList.toggle('active', on);
+}
+
+function showToast(msg, isError) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(function() { t.classList.remove('show'); }, 3000);
+}
+
+/* ═══════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════ */
+function generateId() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var id = '';
+  for (var i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
+}
+
+function ptsToDollars(pts) {
+  return '$' + (pts / PTS_TO_DOLLAR).toFixed(2);
+}
+
+function formatDate(ts) {
+  return new Date(ts).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+/* ═══════════════════════════════════════════════════════
+   CUSTOMER FLOW
+═══════════════════════════════════════════════════════ */
+async function goCustomer() {
+  var savedId = localStorage.getItem('vr_my_id');
+  if (savedId) {
+    setLoading(true);
+    try {
+      var res = await sb.from('customers').select('*').eq('id', savedId).single();
+      if (res.data) {
+        currentCustomer = res.data;
+        await renderCustomerDashboard(res.data);
+        show('s-customer');
+        return;
+      }
+    } catch(e) {}
+    finally { setLoading(false); }
+  }
+  show('s-register');
+}
+
+async function register() {
+  var name  = document.getElementById('reg-name').value.trim();
+  var email = document.getElementById('reg-email').value.trim();
+  if (!name)  { showToast('Please enter your name.', true); return; }
+  if (!email || !email.includes('@')) { showToast('Please enter a valid email.', true); return; }
+
+  setLoading(true);
+  try {
+    // Check email not already registered
+    var existing = await sb.from('customers').select('id').eq('email', email).maybeSingle();
+    if (existing.data) {
+      // Return existing customer
+      var full = await sb.from('customers').select('*').eq('email', email).single();
+      localStorage.setItem('vr_my_id', full.data.id);
+      currentCustomer = full.data;
+      await renderCustomerDashboard(full.data);
+      show('s-customer');
+      showToast('Welcome back, ' + full.data.name.split(' ')[0] + '!');
+      return;
+    }
+
+    var id = generateId();
+    var res = await sb.from('customers').insert({
+      id: id, name: name, email: email, points: 0
+    }).select().single();
+
+    if (res.error) throw res.error;
+    localStorage.setItem('vr_my_id', id);
+    currentCustomer = res.data;
+    await renderCustomerDashboard(res.data);
+    show('s-customer');
+    showToast('Welcome to Village Rewards, ' + name.split(' ')[0] + '!');
+  } catch(e) {
+    showToast('Something went wrong. Please try again.', true);
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function renderCustomerDashboard(c) {
+  var firstName = c.name.split(' ')[0];
+  document.getElementById('c-greeting').textContent = 'Hello, ' + firstName;
+  document.getElementById('c-points').textContent = c.points.toLocaleString();
+  document.getElementById('c-value').textContent = ptsToDollars(c.points) + ' to spend';
+  document.getElementById('c-code').textContent = c.id;
+
+  // QR code
+  var canvas = document.getElementById('qr-canvas');
+  canvas.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(canvas, {
+      text: c.id, width: 180, height: 180,
+      colorDark: '#3d4535', colorLight: '#fff0dc',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+
+  // Transaction history
+  var res = await sb.from('transactions')
+    .select('*')
+    .eq('customer_id', c.id)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  var list = document.getElementById('tx-list');
+  if (!res.data || res.data.length === 0) {
+    list.innerHTML = '<p class="tx-empty">No activity yet. Start shopping!</p>';
+    return;
+  }
+
+  list.innerHTML = res.data.map(function(tx) {
+    var isEarn    = tx.type === 'purchase' || tx.type === 'bonus';
+    var isCheckin = tx.type === 'checkin';
+    var isRedeem  = tx.type === 'redeem';
+    var ptsClass  = isRedeem ? 'redeem' : isCheckin ? 'checkin' : 'earn';
+    var ptsPrefix = isRedeem ? '−' : '+';
+    var metaText  = (tx.shop_name || '') + ' · ' + formatDate(tx.created_at);
+    if (tx.type === 'purchase' && tx.amount) metaText = '$' + parseFloat(tx.amount).toFixed(2) + ' · ' + (tx.shop_name || '') + ' · ' + formatDate(tx.created_at);
+    if (tx.type === 'checkin') metaText = 'Check-in · ' + (tx.shop_name || '') + ' · ' + formatDate(tx.created_at);
+
+    return '<div class="tx-item">' +
+      '<div><div class="tx-shop">' + (isCheckin ? '⬡ ' : '') + (tx.shop_name || 'Village') + '</div>' +
+      '<div class="tx-meta">' + formatDate(tx.created_at) + (tx.amount ? ' · $' + parseFloat(tx.amount).toFixed(2) : '') + '</div></div>' +
+      '<div class="tx-pts ' + ptsClass + '">' + ptsPrefix + Math.abs(tx.points) + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════
+   TRADER FLOW
+═══════════════════════════════════════════════════════ */
+async function loadShops() {
+  var res = await sb.from('shops').select('*').eq('active', true).order('name');
+  var sel = document.getElementById('t-shop-select');
+  sel.innerHTML = '<option value="">Select your shop…</option>';
+  if (res.data) {
+    res.data.forEach(function(shop) {
+      var opt = document.createElement('option');
+      opt.value = shop.id;
+      opt.textContent = shop.name;
+      sel.appendChild(opt);
+    });
+  }
+  // Other option
+  var other = document.createElement('option');
+  other.value = 'other';
+  other.textContent = 'Other shop…';
+  sel.appendChild(other);
+}
+
+function onShopChange() {
+  var val = document.getElementById('t-shop-select').value;
+  document.getElementById('other-wrap').style.display = val === 'other' ? 'block' : 'none';
+}
+
+function traderLogin() {
+  var selEl = document.getElementById('t-shop-select');
+  var othEl = document.getElementById('t-shop-other');
+  var pin   = document.getElementById('t-pin').value.trim().toUpperCase();
+  var shopId   = selEl.value;
+  var shopName = shopId === 'other' ? othEl.value.trim() : selEl.options[selEl.selectedIndex].text;
+
+  if (!shopId)              { showToast('Please select your shop.', true); return; }
+  if (shopId === 'other' && !shopName) { showToast('Please enter your shop name.', true); return; }
+  if (!pin)                 { showToast('Please enter your PIN.', true); return; }
+  if (pin !== TRADER_PIN)   { showToast('Incorrect PIN. Contact Tyson at G&S.', true); return; }
+
+  currentShop = { id: shopId === 'other' ? null : shopId, name: shopName };
+  document.getElementById('t-shop-name-display').textContent = shopName;
+  resetTraderForms();
+  show('s-trader');
+}
+
+function traderLogout() {
+  currentShop = null;
+  show('s-welcome');
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  ['purchase','checkin','redeem'].forEach(function(t) {
+    document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === tab);
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  resetTraderForms();
+}
+
+function resetTraderForms() {
+  ['p-code','p-amount','ci-code','r-code','r-amount'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['p-lookup','p-preview','ci-lookup','r-lookup','r-preview'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  ['p-btn','ci-btn','r-btn'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.disabled = true;
+  });
+}
+
+/* ── Customer lookup ── */
+async function lookupCustomer(prefix) {
+  var code = document.getElementById(prefix + '-code').value.trim().toUpperCase();
+  var lookupEl = document.getElementById(prefix + '-lookup');
+
+  if (code.length < 6) {
+    lookupEl.style.display = 'none';
+    disableBtn(prefix);
+    return;
+  }
+
+  var res = await sb.from('customers').select('*').eq('id', code).maybeSingle();
+  lookupEl.style.display = 'block';
+  lookupEl.className = 'lookup-box';
+
+  if (res.data) {
+    lookupEl.innerHTML =
+      '<div class="lookup-name">' + res.data.name + '</div>' +
+      '<div class="lookup-pts">' + res.data.points.toLocaleString() + ' pts · ' + ptsToDollars(res.data.points) + ' to spend</div>';
+
+    if (prefix === 'p') { updatePurchasePreview(); }
+    else if (prefix === 'ci') { await checkCheckinEligibility(res.data, code); }
+    else if (prefix === 'r') { updateRedeemPreview(); }
+  } else {
+    lookupEl.className = 'lookup-box error';
+    lookupEl.innerHTML = '<div class="lookup-err">Customer not found. Check the code.</div>';
+    disableBtn(prefix);
+  }
+}
+
+function disableBtn(prefix) {
+  var map = { p: 'p-btn', ci: 'ci-btn', r: 'r-btn' };
+  var el = document.getElementById(map[prefix]);
+  if (el) el.disabled = true;
+}
+
+async function checkCheckinEligibility(customer, code) {
+  // Check cooldown via Supabase
+  var res = await sb.from('transactions')
+    .select('id')
+    .eq('customer_id', code)
+    .eq('type', 'checkin')
+    .eq('shop_name', currentShop.name)
+    .gte('created_at', new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString())
+    .limit(1);
+
+  var eligible = !res.data || res.data.length === 0;
+  var lookupEl = document.getElementById('ci-lookup');
+
+  if (!eligible) {
+    lookupEl.innerHTML +=
+      '<div style="font-size:11px;color:var(--accent);opacity:0.7;margin-top:6px;">Already checked in here recently. Come back later.</div>';
+  }
+
+  document.getElementById('ci-btn').disabled = !eligible;
+}
+
+/* ── Purchase points ── */
+function updatePurchasePreview() {
+  var code   = document.getElementById('p-code').value.trim().toUpperCase();
+  var amount = parseFloat(document.getElementById('p-amount').value) || 0;
+  var previewEl = document.getElementById('p-preview');
+  var btn = document.getElementById('p-btn');
+
+  if (amount > 0 && code.length === 6) {
+    var pts = Math.round(amount * PTS_PER_DOLLAR);
+    document.getElementById('p-preview-pts').textContent = pts;
+    document.getElementById('p-preview-sub').textContent = '$' + amount.toFixed(2) + ' purchase';
+    previewEl.style.display = 'flex';
+    btn.disabled = false;
+  } else {
+    previewEl.style.display = 'none';
+    btn.disabled = true;
+  }
+}
+
+async function awardPurchasePoints() {
+  var code   = document.getElementById('p-code').value.trim().toUpperCase();
+  var amount = parseFloat(document.getElementById('p-amount').value);
+  if (!code || !amount) return;
+
+  var pts = Math.round(amount * PTS_PER_DOLLAR);
+  setLoading(true);
+  try {
+    var res = await sb.from('transactions').insert({
+      customer_id: code,
+      shop_id:    currentShop.id,
+      shop_name:  currentShop.name,
+      type:       'purchase',
+      amount:     amount,
+      points:     pts
+    });
+    if (res.error) throw res.error;
+
+    // Get updated customer name
+    var cust = await sb.from('customers').select('name,points').eq('id', code).single();
+    showSuccess(pts, 'awarded', cust.data ? cust.data.name : 'Customer', amount, false);
+  } catch(e) {
+    showToast('Transaction failed. Please try again.', true);
+  } finally {
+    setLoading(false);
+    resetTraderForms();
+  }
+}
+
+/* ── Check-in points ── */
+async function awardCheckin() {
+  var code = document.getElementById('ci-code').value.trim().toUpperCase();
+  if (!code) return;
+
+  setLoading(true);
+  try {
+    var res = await sb.from('transactions').insert({
+      customer_id: code,
+      shop_id:    currentShop.id,
+      shop_name:  currentShop.name,
+      type:       'checkin',
+      amount:     null,
+      points:     CHECKIN_POINTS
+    });
+    if (res.error) throw res.error;
+
+    var cust = await sb.from('customers').select('name').eq('id', code).single();
+    showSuccess(CHECKIN_POINTS, 'checkin', cust.data ? cust.data.name : 'Customer', null, true);
+  } catch(e) {
+    showToast('Check-in failed. Please try again.', true);
+  } finally {
+    setLoading(false);
+    resetTraderForms();
+  }
+}
+
+/* ── Redeem points ── */
+function updateRedeemPreview() {
+  var code = document.getElementById('r-code').value.trim().toUpperCase();
+  var pts  = parseInt(document.getElementById('r-amount').value) || 0;
+  var previewEl = document.getElementById('r-preview');
+  var btn = document.getElementById('r-btn');
+
+  if (pts > 0 && code.length === 6) {
+    document.getElementById('r-preview-val').textContent = ptsToDollars(pts);
+    document.getElementById('r-preview-sub').textContent = pts + ' points';
+    previewEl.style.display = 'flex';
+    btn.disabled = false;
+  } else {
+    previewEl.style.display = 'none';
+    btn.disabled = true;
+  }
+}
+
+async function redeemPoints() {
+  var code = document.getElementById('r-code').value.trim().toUpperCase();
+  var pts  = parseInt(document.getElementById('r-amount').value);
+  if (!code || !pts) return;
+
+  // Check balance
+  var cust = await sb.from('customers').select('name,points').eq('id', code).single();
+  if (!cust.data || pts > cust.data.points) {
+    showToast('Insufficient points balance.', true);
+    return;
+  }
+
+  setLoading(true);
+  try {
+    var res = await sb.from('transactions').insert({
+      customer_id: code,
+      shop_id:    currentShop.id,
+      shop_name:  currentShop.name,
+      type:       'redeem',
+      amount:     null,
+      points:     -pts
+    });
+    if (res.error) throw res.error;
+    showSuccess(pts, 'redeemed', cust.data.name, null, false);
+  } catch(e) {
+    showToast('Redemption failed. Please try again.', true);
+  } finally {
+    setLoading(false);
+    resetTraderForms();
+  }
+}
+
+/* ── Success screen ── */
+function showSuccess(pts, type, name, amount, isCheckin) {
+  var icons = { awarded: '✦', redeemed: '✓', checkin: '⬡' };
+  var colors_map = { awarded: 'var(--accent)', redeemed: 'var(--danger)', checkin: 'rgba(168,194,133,0.7)' };
+  var labels = { awarded: 'Points Awarded', redeemed: 'Points Redeemed', checkin: 'Check-in Recorded' };
+
+  var details = {
+    awarded:  name + ' earned ' + pts + ' points on a $' + parseFloat(amount).toFixed(2) + ' purchase.',
+    redeemed: name + ' redeemed ' + pts + ' points (' + ptsToDollars(pts) + ' value).',
+    checkin:  name + ' checked in and earned ' + pts + ' Village Points.'
+  };
+
+  document.getElementById('suc-icon').textContent = icons[type] || '✦';
+  document.getElementById('suc-pts').textContent  = (type === 'redeemed' ? '−' : '+') + pts;
+  document.getElementById('suc-pts').style.color  = colors_map[type] || 'var(--accent)';
+  document.getElementById('suc-label').textContent  = labels[type];
+  document.getElementById('suc-detail').textContent = details[type];
+  show('s-success');
+}
+
+/* ═══════════════════════════════════════════════════════
+   PWA INSTALL
+═══════════════════════════════════════════════════════ */
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!localStorage.getItem('vr_install_dismissed')) {
+    document.getElementById('install-banner').classList.add('visible');
+  }
+});
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function() {
+      deferredPrompt = null;
+      document.getElementById('install-banner').classList.remove('visible');
+    });
+  }
+}
+
+function dismissInstall() {
+  document.getElementById('install-banner').classList.remove('visible');
+  localStorage.setItem('vr_install_dismissed', '1');
+}
+
+/* ═══════════════════════════════════════════════════════
+   SERVICE WORKER
+═══════════════════════════════════════════════════════ */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function(){});
+}
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+loadShops();
+</script>
+</body>
+</html>
