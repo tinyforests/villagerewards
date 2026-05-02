@@ -74,6 +74,12 @@
     .type-checkin{border-color:rgba(168,194,133,0.18);color:var(--accent);}
     .type-redeem{border-color:rgba(201,123,90,0.28);color:var(--danger);}
 
+
+    .filter-select {
+      background: var(--green); border: 1px solid var(--border-mid); color: var(--green);
+      font-family: var(--sans); font-size: 11px; padding: 7px 12px; outline: none; cursor: pointer;
+      background: var(--beige);
+    }
     .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(61,69,53,0.12);border-top-color:var(--green);border-radius:50%;animation:spin 0.7s linear infinite;}
     @keyframes spin{to{transform:rotate(360deg);}}
 
@@ -175,6 +181,7 @@
       <button class="nav-tab"        id="tab-network"       onclick="switchPage('network',this)">Network</button>
       <button class="nav-tab"        id="tab-matrix"        onclick="switchPage('matrix',this)">Cross-pollination</button>
       <button class="nav-tab"        id="tab-badges"        onclick="switchPage('badges',this)">Badges</button>
+      <button class="nav-tab"        id="tab-checkins"      onclick="switchPage('checkins',this)">Check-ins</button>
       <button class="nav-tab"        id="tab-customers"     onclick="switchPage('customers',this)">Customers</button>
       <button class="nav-tab"        id="tab-transactions"  onclick="switchPage('transactions',this)">Transactions</button>
     </div>
@@ -274,6 +281,64 @@
       </div>
     </div>
 
+
+    <!-- CHECK-INS -->
+    <div class="page" id="page-checkins">
+      <div class="section">
+        <div class="section-hd" style="margin-bottom:20px;">
+          <div>
+            <div class="section-title">Check-in activity</div>
+            <div class="section-sub" style="margin-top:4px;">Customer-initiated GPS check-ins · 150m radius enforced</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <label style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.45;">Filter by shop</label>
+            <select class="filter-select" id="checkin-shop-filter" onchange="filterCheckins()">
+              <option value="">All shops</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Summary cards -->
+        <div id="checkin-summary-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:28px;"></div>
+
+        <!-- Check-in table -->
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Customer</th>
+              <th>Shop</th>
+              <th>Distance</th>
+              <th>Code</th>
+              <th>Points</th>
+            </tr>
+          </thead>
+          <tbody id="checkin-body">
+            <tr><td colspan="6" class="empty"><div class="spinner"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-hd"><div class="section-title">Per-shop summary</div></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Shop</th>
+              <th>Total check-ins</th>
+              <th>Unique customers</th>
+              <th>Avg distance</th>
+              <th>This week</th>
+              <th>Last check-in</th>
+            </tr>
+          </thead>
+          <tbody id="shop-checkin-body">
+            <tr><td colspan="6" class="empty"><div class="spinner"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- CUSTOMERS -->
     <div class="page" id="page-customers">
       <div class="section">
@@ -348,9 +413,10 @@ function switchPage(id, btn){
   document.querySelectorAll('.nav-tab').forEach(function(t){t.classList.remove('active');});
   document.getElementById('page-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
-  if(id==='network') renderNetwork();
-  if(id==='matrix')  renderMatrix();
-  if(id==='badges')  renderBadges();
+  if(id==='network')  renderNetwork();
+  if(id==='matrix')   renderMatrix();
+  if(id==='badges')   renderBadges();
+  if(id==='checkins') loadCheckins();
 }
 
 /* ── Helpers ── */
@@ -706,6 +772,100 @@ function renderBadges(){
       }).join('')+'</div></div>';
   }).join('');
 }
+
+/* ══════════════════════════════════════════════════
+   CHECK-INS
+══════════════════════════════════════════════════ */
+var allCheckins = [];
+var allShopCheckinSummary = [];
+
+async function loadCheckins() {
+  var r = await sb.from('checkins_detail').select('*').order('created_at', { ascending: false }).limit(300);
+  allCheckins = r.data || [];
+
+  var rs = await sb.from('shop_checkin_summary').select('*');
+  allShopCheckinSummary = rs.data || [];
+
+  // Populate shop filter
+  var sel = document.getElementById('checkin-shop-filter');
+  if (sel) {
+    var shops = [...new Set(allCheckins.map(function(c) { return c.shop_name; }))].sort();
+    sel.innerHTML = '<option value="">All shops</option>' +
+      shops.map(function(s) { return '<option value="' + s + '">' + s + '</option>'; }).join('');
+  }
+
+  renderCheckinsTable(allCheckins);
+  renderShopCheckinSummary();
+  renderCheckinSummaryCards(allCheckins);
+}
+
+function filterCheckins() {
+  var shop = document.getElementById('checkin-shop-filter').value;
+  var filtered = shop ? allCheckins.filter(function(c) { return c.shop_name === shop; }) : allCheckins;
+  renderCheckinsTable(filtered);
+  renderCheckinSummaryCards(filtered);
+}
+
+function renderCheckinsTable(data) {
+  var body = document.getElementById('checkin-body');
+  if (!data || !data.length) {
+    body.innerHTML = '<tr><td colspan="6" class="empty">No check-ins recorded yet.</td></tr>';
+    return;
+  }
+  body.innerHTML = data.slice(0, 100).map(function(c) {
+    var distStr = c.distance_m != null ? c.distance_m + 'm' : '—';
+    var distColor = c.distance_m != null && c.distance_m <= 50 ? 'color:var(--accent);' : '';
+    return '<tr>' +
+      '<td>' + fmt(c.created_at) + '</td>' +
+      '<td><strong>' + c.customer_name + '</strong></td>' +
+      '<td>' + (c.shop_name || '—') + '</td>' +
+      '<td style="' + distColor + '">' + distStr + '</td>' +
+      '<td style="opacity:0.45;font-size:12px;">' + c.customer_id + '</td>' +
+      '<td class="pts-checkin">+' + c.points + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderShopCheckinSummary() {
+  var body = document.getElementById('shop-checkin-body');
+  if (!allShopCheckinSummary.length) {
+    body.innerHTML = '<tr><td colspan="6" class="empty">No check-in data yet.</td></tr>';
+    return;
+  }
+  body.innerHTML = allShopCheckinSummary.map(function(s) {
+    return '<tr>' +
+      '<td><strong>' + s.shop_name + '</strong></td>' +
+      '<td>' + (s.total_checkins || 0) + '</td>' +
+      '<td>' + (s.unique_customers || 0) + '</td>' +
+      '<td style="opacity:0.6;">' + (s.avg_distance_m ? s.avg_distance_m + 'm' : '—') + '</td>' +
+      '<td class="pts-earn">' + (s.checkins_this_week || 0) + '</td>' +
+      '<td style="opacity:0.4;font-size:12px;">' + (s.last_checkin ? fmt(s.last_checkin) : '—') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderCheckinSummaryCards(data) {
+  var row = document.getElementById('checkin-summary-row');
+  if (!row) return;
+  var total = data.length;
+  var unique = new Set(data.map(function(c) { return c.customer_id; })).size;
+  var avgDist = data.filter(function(c) { return c.distance_m != null; });
+  var avg = avgDist.length ? Math.round(avgDist.reduce(function(s, c) { return s + c.distance_m; }, 0) / avgDist.length) : null;
+  var today = data.filter(function(c) { return new Date(c.created_at) > new Date(Date.now() - 24*60*60*1000); }).length;
+
+  row.innerHTML = [
+    ['Total check-ins', total],
+    ['Unique customers', unique],
+    ['Today', today],
+    ['Avg distance', avg != null ? avg + 'm' : '—']
+  ].map(function(pair) {
+    return '<div style="background:var(--green);color:var(--beige);padding:18px 16px;">' +
+      '<div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.32;margin-bottom:8px;">' + pair[0] + '</div>' +
+      '<div style="font-family:var(--serif);font-size:32px;color:var(--accent);line-height:1;">' + pair[1] + '</div>' +
+    '</div>';
+  }).join('');
+}
+
 </script>
 </body>
 </html>
