@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Village Rewards · Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --green: #3d4535; --green-dark: #2c3127; --beige: #fff0dc;
+      --accent: #a8c285; --danger: #c97b5a; --mid: #505c42;
+      --serif: 'Abril Fatface', serif; --sans: 'IBM Plex Sans', sans-serif;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: var(--sans); background: var(--beige); color: var(--green); font-weight: 300; }
+
+    /* ── Auth ── */
+    #auth-screen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: var(--green);
+    }
+    .auth-box { width: 320px; padding: 48px 40px; }
+    .auth-box h1 { font-family: var(--serif); font-size: 32px; color: var(--beige); margin-bottom: 8px; }
+    .auth-box p  { font-size: 12px; color: var(--beige); opacity: 0.4; margin-bottom: 32px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .auth-field  { width:100%; background: rgba(255,240,220,0.08); border: 1px solid rgba(255,240,220,0.2); color: var(--beige); font-family: var(--sans); font-size: 15px; padding: 13px 14px; outline: none; border-radius:0; margin-bottom: 10px; }
+    .auth-btn    { width:100%; background: var(--beige); color: var(--green); border:none; padding:14px; font-family: var(--sans); font-size:11px; font-weight:500; letter-spacing:0.18em; text-transform:uppercase; cursor:pointer; margin-top:4px; }
+    .auth-error  { color: var(--danger); font-size:12px; margin-top:8px; display:none; }
+
+    /* ── Layout ── */
+    #admin { display:none; }
+    nav {
+      background: var(--green); padding: 18px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top:0; z-index:10;
+    }
+    .nav-logo { font-family: var(--serif); font-size: 16px; color: var(--beige); }
+    .nav-sub  { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--beige); opacity: 0.35; }
+    .nav-right { display:flex; gap:16px; align-items:center; }
+    .refresh-btn { background: rgba(255,240,220,0.1); border: 1px solid rgba(255,240,220,0.2); color: var(--beige); font-family: var(--sans); font-size: 10px; letter-spacing: 0.14em; text-transform:uppercase; padding: 8px 14px; cursor:pointer; transition: background 0.2s; }
+    .refresh-btn:hover { background: rgba(255,240,220,0.18); }
+    .signout-btn { background:none; border:none; color:var(--beige); opacity:0.35; font-family:var(--sans); font-size:10px; letter-spacing:0.14em; text-transform:uppercase; cursor:pointer; }
+    .signout-btn:hover { opacity:0.7; }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 40px; }
+
+    /* ── Stats row ── */
+    .stats-row { display: grid; grid-template-columns: repeat(6,1fr); gap: 3px; margin-bottom: 40px; }
+    .stat-card { background: var(--green); color: var(--beige); padding: 24px 20px; }
+    .stat-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.4; margin-bottom: 8px; }
+    .stat-value { font-family: var(--serif); font-size: 36px; line-height: 1; color: var(--accent); }
+    .stat-sub   { font-size: 10px; opacity: 0.35; margin-top: 4px; }
+
+    /* ── Section ── */
+    .section { margin-bottom: 40px; }
+    .section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; }
+    .section-title { font-family: var(--serif); font-size: 22px; }
+    .section-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.4; }
+
+    /* ── Tables ── */
+    .data-table { width:100%; border-collapse: collapse; }
+    .data-table th { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.4; padding: 8px 12px; text-align:left; border-bottom: 1px solid rgba(61,69,53,0.12); }
+    .data-table td { font-size: 13px; padding: 12px; border-bottom: 1px solid rgba(61,69,53,0.07); vertical-align: middle; }
+    .data-table tr:hover td { background: rgba(61,69,53,0.03); }
+    .data-table tr:last-child td { border-bottom: none; }
+
+    .pts-badge { display:inline-block; padding: 2px 8px; font-size: 11px; font-weight:500; }
+    .pts-earn   { color: var(--accent); }
+    .pts-redeem { color: var(--danger); }
+    .pts-checkin{ color: rgba(168,194,133,0.7); }
+
+    .type-badge {
+      display:inline-block; font-size:8px; letter-spacing:0.12em; text-transform:uppercase;
+      padding: 2px 8px; border: 1px solid rgba(61,69,53,0.2);
+    }
+    .type-purchase { border-color: rgba(168,194,133,0.4); color: var(--mid); }
+    .type-checkin  { border-color: rgba(168,194,133,0.25); color: var(--accent); }
+    .type-redeem   { border-color: rgba(201,123,90,0.35); color: var(--danger); }
+
+    .empty-state { padding: 32px; text-align:center; opacity:0.35; font-style:italic; font-size:14px; }
+
+    /* ── Tabs ── */
+    .tabs { display:flex; border-bottom: 1px solid rgba(61,69,53,0.12); margin-bottom:24px; }
+    .tab  { padding:10px 20px; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; cursor:pointer; border:none; background:none; color:var(--green); opacity:0.4; border-bottom:2px solid transparent; font-family:var(--sans); transition:all 0.2s; }
+    .tab.active { opacity:1; border-bottom-color: var(--accent); }
+
+    .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(61,69,53,0.15); border-top-color:var(--green); border-radius:50%; animation:spin 0.7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    @media(max-width:900px) {
+      .stats-row { grid-template-columns: repeat(3,1fr); }
+      main { padding: 24px; }
+      nav { padding: 16px 24px; }
+    }
+    @media(max-width:600px) {
+      .stats-row { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <h1>Admin</h1>
+    <p>Village Rewards · Mont Albert</p>
+    <input class="auth-field" id="admin-pw" type="password" placeholder="Admin password" onkeydown="if(event.key==='Enter')authLogin()" />
+    <button class="auth-btn" onclick="authLogin()">Sign in</button>
+    <p class="auth-error" id="auth-error">Incorrect password.</p>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin">
+  <nav>
+    <div>
+      <div class="nav-logo">Village Rewards</div>
+      <div class="nav-sub">Admin · Mont Albert</div>
+    </div>
+    <div class="nav-right">
+      <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+      <button class="signout-btn" onclick="signOut()">Sign out</button>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- Stats -->
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card"><div class="stat-label">Customers</div><div class="stat-value" id="st-customers">—</div></div>
+      <div class="stat-card"><div class="stat-label">Points issued</div><div class="stat-value" id="st-issued">—</div></div>
+      <div class="stat-card"><div class="stat-label">Points redeemed</div><div class="stat-value" id="st-redeemed">—</div></div>
+      <div class="stat-card"><div class="stat-label">Check-ins</div><div class="stat-value" id="st-checkins">—</div></div>
+      <div class="stat-card"><div class="stat-label">Total spend</div><div class="stat-value" id="st-spend">—</div></div>
+      <div class="stat-card"><div class="stat-label">New this week</div><div class="stat-value" id="st-new">—</div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchAdminTab('transactions')">Transactions</button>
+      <button class="tab" onclick="switchAdminTab('customers')">Customers</button>
+    </div>
+
+    <!-- Transactions -->
+    <div class="section" id="admin-transactions">
+      <table class="data-table" id="tx-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Customer</th>
+            <th>Shop</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Points</th>
+          </tr>
+        </thead>
+        <tbody id="tx-body"><tr><td colspan="6" class="empty-state"><div class="spinner"></div></td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- Customers -->
+    <div class="section" id="admin-customers" style="display:none;">
+      <table class="data-table" id="cust-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Points</th>
+            <th>Value</th>
+            <th>Joined</th>
+            <th>Last seen</th>
+          </tr>
+        </thead>
+        <tbody id="cust-body"><tr><td colspan="7" class="empty-state"><div class="spinner"></div></td></tr></tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<script>
+var SUPABASE_URL = 'https://hwtwfhvaeczofqktychc.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_Don37TvoZJDPBVNMXItdTg_fffvDUOp';
+var ADMIN_PW     = 'GSADMIN2026';   // Change this
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var PTS_TO_DOLLAR = 100;
+
+function authLogin() {
+  var pw = document.getElementById('admin-pw').value;
+  if (pw === ADMIN_PW) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('admin').style.display = 'block';
+    loadAll();
+  } else {
+    document.getElementById('auth-error').style.display = 'block';
+  }
+}
+
+function signOut() {
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('admin').style.display = 'none';
+  document.getElementById('admin-pw').value = '';
+}
+
+function switchAdminTab(tab) {
+  document.querySelectorAll('.tab').forEach(function(t,i) { t.classList.toggle('active', (i === 0 && tab==='transactions') || (i===1 && tab==='customers')); });
+  document.getElementById('admin-transactions').style.display = tab === 'transactions' ? 'block' : 'none';
+  document.getElementById('admin-customers').style.display    = tab === 'customers'    ? 'block' : 'none';
+}
+
+function fmt(ts) { return new Date(ts).toLocaleString('en-AU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }); }
+function pts2d(pts) { return '$' + (Math.abs(pts) / PTS_TO_DOLLAR).toFixed(2); }
+
+async function loadAll() {
+  await Promise.all([ loadStats(), loadTransactions(), loadCustomers() ]);
+}
+
+async function loadStats() {
+  var res = await sb.from('village_stats').select('*').single();
+  if (res.data) {
+    var d = res.data;
+    document.getElementById('st-customers').textContent  = (d.total_customers || 0).toLocaleString();
+    document.getElementById('st-issued').textContent     = (d.points_issued || 0).toLocaleString();
+    document.getElementById('st-redeemed').textContent   = (d.points_redeemed || 0).toLocaleString();
+    document.getElementById('st-checkins').textContent   = (d.total_checkins || 0).toLocaleString();
+    document.getElementById('st-spend').textContent      = '$' + parseFloat(d.total_spend || 0).toFixed(0);
+    document.getElementById('st-new').textContent        = (d.new_this_week || 0).toLocaleString();
+  }
+}
+
+async function loadTransactions() {
+  var res = await sb.from('transactions')
+    .select('*, customers(name)')
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  var body = document.getElementById('tx-body');
+  if (!res.data || res.data.length === 0) {
+    body.innerHTML = '<tr><td colspan="6" class="empty-state">No transactions yet.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = res.data.map(function(tx) {
+    var ptsClass = tx.type === 'redeem' ? 'pts-redeem' : tx.type === 'checkin' ? 'pts-checkin' : 'pts-earn';
+    var ptsSign  = tx.type === 'redeem' ? '−' : '+';
+    return '<tr>' +
+      '<td>' + fmt(tx.created_at) + '</td>' +
+      '<td>' + (tx.customers ? tx.customers.name : tx.customer_id) + '</td>' +
+      '<td>' + (tx.shop_name || '—') + '</td>' +
+      '<td><span class="type-badge type-' + tx.type + '">' + tx.type + '</span></td>' +
+      '<td>' + (tx.amount ? '$' + parseFloat(tx.amount).toFixed(2) : '—') + '</td>' +
+      '<td class="pts-badge ' + ptsClass + '">' + ptsSign + Math.abs(tx.points) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+async function loadCustomers() {
+  var res = await sb.from('customers')
+    .select('*')
+    .order('joined_at', { ascending: false });
+
+  var body = document.getElementById('cust-body');
+  if (!res.data || res.data.length === 0) {
+    body.innerHTML = '<tr><td colspan="7" class="empty-state">No customers yet.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = res.data.map(function(c) {
+    return '<tr>' +
+      '<td><strong>' + c.id + '</strong></td>' +
+      '<td>' + c.name + '</td>' +
+      '<td style="opacity:0.6;">' + c.email + '</td>' +
+      '<td><strong>' + c.points.toLocaleString() + '</strong></td>' +
+      '<td style="color:var(--mid);">' + pts2d(c.points) + '</td>' +
+      '<td style="opacity:0.55;">' + fmt(c.joined_at) + '</td>' +
+      '<td style="opacity:0.45;">' + fmt(c.last_seen) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+</script>
+</body>
+</html>
