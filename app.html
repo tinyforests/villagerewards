@@ -306,6 +306,42 @@
     #install-banner p   { font-size: 12px; opacity: 0.75; line-height: 1.4; flex: 1; }
     #install-banner .ib-btn { background: var(--accent); border: none; color: var(--green-dark); font-family: var(--sans); font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; padding: 10px 14px; cursor: pointer; flex-shrink: 0; }
     #install-banner .ib-x   { background: none; border: none; color: var(--beige); opacity: 0.35; font-size: 18px; cursor: pointer; padding: 0 4px; }
+
+    /* ── Check-in screen ── */
+    #s-checkin .body { min-height: calc(100dvh - 60px); }
+    .locate-btn {
+      width: 100%; padding: 18px; background: var(--accent); color: var(--green-dark);
+      border: none; font-family: var(--sans); font-size: 11px; font-weight: 500;
+      letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer;
+      transition: opacity 0.2s; margin-top: 28px;
+    }
+    .locate-btn:disabled { opacity: 0.35; cursor: default; }
+    .locate-status {
+      font-size: 12px; opacity: 0.45; text-align: center; margin-top: 14px;
+      min-height: 18px; letter-spacing: 0.08em;
+    }
+    .shops-nearby { margin-top: 24px; display: flex; flex-direction: column; gap: 0; }
+    .shop-nearby-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 0; border-bottom: 1px solid rgba(255,240,220,0.08);
+      transition: opacity 0.2s;
+    }
+    .shop-nearby-item:last-child { border-bottom: none; }
+    .shop-nearby-item.too-far { opacity: 0.3; pointer-events: none; }
+    .shop-nearby-item.checked { opacity: 0.45; pointer-events: none; }
+    .sni-name { font-size: 15px; opacity: 0.85; }
+    .sni-dist { font-size: 11px; opacity: 0.35; margin-top: 3px; }
+    .sni-dist.close { color: var(--accent); opacity: 0.8; }
+    .sni-btn {
+      flex-shrink: 0; padding: 10px 16px; background: rgba(168,194,133,0.12);
+      border: 1px solid rgba(168,194,133,0.3); color: var(--accent);
+      font-family: var(--sans); font-size: 10px; font-weight: 500;
+      letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .sni-btn:hover { background: rgba(168,194,133,0.22); }
+    .sni-btn.done { background: none; border-color: rgba(255,240,220,0.1); color: var(--beige); opacity: 0.35; cursor: default; }
+    .no-shops-msg { font-size: 13px; opacity: 0.4; text-align: center; padding: 28px 0; line-height: 1.7; font-style: italic; }
   </style>
 </head>
 <body>
@@ -382,12 +418,12 @@
   </div>
 
   <!-- Check-in CTA -->
-  <div class="checkin-cta" id="checkin-cta">
+  <div class="checkin-cta" id="checkin-cta" onclick="show('s-checkin')" style="cursor:pointer;">
     <div class="cta-text">
       <strong>Just visiting?</strong>
-      Check in at any shop to earn points — no purchase needed.
+      Tap to check in at a nearby shop and earn points.
     </div>
-    <div class="cta-pts">+8</div>
+    <div class="cta-pts">+8 →</div>
   </div>
 
   <div class="history-section">
@@ -401,6 +437,25 @@
     <div class="badges-grid" id="badges-grid">
       <div style="grid-column:1/-1;text-align:center;opacity:0.25;font-size:12px;padding:12px;">Earn badges by exploring the village.</div>
     </div>
+  </div>
+</div>
+
+
+<!-- ═══ CHECK-IN SCREEN ════════════════════════════ -->
+<div class="screen" id="s-checkin">
+  <div class="bar">
+    <button class="back-btn" onclick="show('s-customer')">← Back</button>
+    <span class="sub">Check In</span>
+  </div>
+  <div class="body">
+    <h2 class="display-sm">Check in.<br />Earn points.</h2>
+    <p class="hint" style="margin-top:12px;">We'll find participating shops near you. One check-in per shop every 4 hours.</p>
+
+    <button class="locate-btn" id="locate-btn" onclick="locateAndLoad()">
+      Find shops near me
+    </button>
+    <div class="locate-status" id="locate-status"></div>
+    <div class="shops-nearby" id="shops-nearby"></div>
   </div>
 </div>
 
@@ -1036,6 +1091,162 @@ if ('serviceWorker' in navigator) {
    INIT
 ═══════════════════════════════════════════════════════ */
 loadShops();
+
+
+/* ═══════════════════════════════════════════════════════
+   GEOLOCATION CHECK-IN
+═══════════════════════════════════════════════════════ */
+var CHECKIN_RADIUS_M = 150;
+
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  var R = 6371000;
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLon = (lon2 - lon1) * Math.PI / 180;
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function fmtDist(m) {
+  return m < 1000 ? Math.round(m) + 'm' : (m/1000).toFixed(1) + 'km';
+}
+
+async function locateAndLoad() {
+  var btn = document.getElementById('locate-btn');
+  var status = document.getElementById('locate-status');
+  var list = document.getElementById('shops-nearby');
+
+  if (!navigator.geolocation) {
+    status.textContent = 'Location not supported on this device.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Locating…';
+  status.textContent = 'Getting your location…';
+  list.innerHTML = '';
+
+  navigator.geolocation.getCurrentPosition(
+    async function(pos) {
+      var userLat = pos.coords.latitude;
+      var userLng = pos.coords.longitude;
+      status.textContent = 'Found you. Loading nearby shops…';
+
+      // Load shops with coordinates
+      var r = await sb.from('shops').select('*').eq('active', true).not('lat', 'is', null);
+      var shops = r.data || [];
+
+      if (!shops.length) {
+        list.innerHTML = '<p class="no-shops-msg">No shops with location data yet.<br/>Ask Tyson at G&S to set up coordinates.</p>';
+        btn.disabled = false;
+        btn.textContent = 'Try again';
+        status.textContent = '';
+        return;
+      }
+
+      // Calculate distances
+      var shopsWithDist = shops.map(function(s) {
+        var dist = haversineDistance(userLat, userLng, parseFloat(s.lat), parseFloat(s.lng));
+        return Object.assign({}, s, { dist: Math.round(dist) });
+      }).sort(function(a, b) { return a.dist - b.dist; });
+
+      // Check recent check-ins for this customer
+      var myId = localStorage.getItem('vr_my_id');
+      var cutoff = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+      var recentRes = await sb.from('transactions')
+        .select('shop_name')
+        .eq('customer_id', myId)
+        .eq('type', 'checkin')
+        .gte('created_at', cutoff);
+      var recentShops = (recentRes.data || []).map(function(t) { return t.shop_name; });
+
+      status.textContent = '';
+      btn.disabled = false;
+      btn.textContent = 'Refresh location';
+
+      if (shopsWithDist.every(function(s) { return s.dist > CHECKIN_RADIUS_M; })) {
+        list.innerHTML = '<p class="no-shops-msg">No participating shops within ' + CHECKIN_RADIUS_M + 'm.<br/>Move closer to Union Road to check in.</p>' +
+          shopsWithDist.slice(0,3).map(function(s) {
+            return '<div class="shop-nearby-item too-far">' +
+              '<div><div class="sni-name">' + s.name + '</div>' +
+              '<div class="sni-dist">' + fmtDist(s.dist) + ' away</div></div>' +
+              '<div class="sni-btn done">Too far</div></div>';
+          }).join('');
+        return;
+      }
+
+      list.innerHTML = shopsWithDist.map(function(s) {
+        var inRange = s.dist <= CHECKIN_RADIUS_M;
+        var alreadyIn = recentShops.includes(s.name);
+        var cls = alreadyIn ? 'checked' : (!inRange ? 'too-far' : '');
+        var btnLabel = alreadyIn ? 'Checked in' : (!inRange ? 'Too far' : 'Check in +' + CHECKIN_POINTS);
+        var btnCls = (alreadyIn || !inRange) ? 'done' : '';
+        var distCls = inRange ? 'close' : '';
+        var onclick = (!alreadyIn && inRange) ? 'onclick="doCheckin('' + s.id + '','' + s.name + '',' + s.dist + ',' + userLat + ',' + userLng + ')"' : '';
+
+        return '<div class="shop-nearby-item ' + cls + '">' +
+          '<div><div class="sni-name">' + s.name + '</div>' +
+          '<div class="sni-dist ' + distCls + '">' + fmtDist(s.dist) + ' away' + (inRange ? ' · In range' : '') + '</div></div>' +
+          '<button class="sni-btn ' + btnCls + '" ' + onclick + '>' + btnLabel + '</button>' +
+        '</div>';
+      }).join('');
+    },
+    function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Try again';
+      var msgs = {
+        1: 'Location access denied. Please allow location in your browser settings.',
+        2: 'Location unavailable. Try again in a moment.',
+        3: 'Location request timed out. Try again.'
+      };
+      status.textContent = msgs[err.code] || 'Location error. Please try again.';
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+  );
+}
+
+async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng) {
+  var myId = localStorage.getItem('vr_my_id');
+  if (!myId) { showToast('Please register first.', true); return; }
+
+  setLoading(true);
+  try {
+    var res = await sb.from('transactions').insert({
+      customer_id:  myId,
+      shop_id:      shopId,
+      shop_name:    shopName,
+      type:         'checkin',
+      amount:       null,
+      points:       CHECKIN_POINTS,
+      customer_lat: customerLat,
+      customer_lng: customerLng,
+      distance_m:   distanceM
+    });
+    if (res.error) throw res.error;
+
+    // Reload customer dashboard in background
+    var cust = await sb.from('customers').select('*').eq('id', myId).single();
+    if (cust.data) {
+      currentCustomer = cust.data;
+      renderCustomerDashboard(cust.data);
+      renderBadges(myId);
+    }
+
+    // Show success then return to dashboard
+    showToast('+' + CHECKIN_POINTS + ' points — checked in at ' + shopName + '!');
+    setTimeout(function() { show('s-customer'); }, 1200);
+
+    // Refresh nearby list to show updated state
+    setTimeout(function() { locateAndLoad(); }, 1300);
+
+  } catch(e) {
+    console.error('Check-in error:', e);
+    showToast(e.message || 'Check-in failed. Try again.', true);
+  } finally {
+    setLoading(false);
+  }
+}
 
 /* ═══ BADGES ═══ */
 var CUSTOMER_BADGES = [
