@@ -6,276 +6,704 @@
   <title>Village Rewards · Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <style>
     :root {
-      --green: #3d4535; --green-dark: #2c3127; --beige: #fff0dc;
-      --accent: #a8c285; --danger: #c97b5a; --mid: #505c42;
-      --serif: 'Abril Fatface', serif; --sans: 'IBM Plex Sans', sans-serif;
+      --green:#3d4535;--green-dark:#2c3127;--green-mid:#505c42;
+      --beige:#fff0dc;--beige-dim:#e8d9c3;--beige-faint:rgba(255,240,220,0.07);
+      --accent:#a8c285;--accent-dim:rgba(168,194,133,0.15);
+      --danger:#c97b5a;
+      --serif:'Abril Fatface',serif;--sans:'IBM Plex Sans',sans-serif;
+      --border:rgba(61,69,53,0.1);--border-mid:rgba(61,69,53,0.18);
     }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: var(--sans); background: var(--beige); color: var(--green); font-weight: 300; }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:var(--sans);background:var(--beige);color:var(--green);font-weight:300;overflow-x:hidden;}
 
-    /* ── Auth ── */
-    #auth-screen {
-      min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      background: var(--green);
+    #auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--green);}
+    .auth-box{width:320px;padding:48px 40px;}
+    .auth-box h1{font-family:var(--serif);font-size:32px;color:var(--beige);margin-bottom:6px;}
+    .auth-box p{font-size:11px;color:var(--beige);opacity:0.35;margin-bottom:32px;letter-spacing:0.16em;text-transform:uppercase;}
+    .auth-field{width:100%;background:rgba(255,240,220,0.08);border:1px solid rgba(255,240,220,0.2);color:var(--beige);font-family:var(--sans);font-size:15px;padding:13px 14px;outline:none;margin-bottom:10px;}
+    .auth-btn{width:100%;background:var(--beige);color:var(--green);border:none;padding:14px;font-family:var(--sans);font-size:11px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;}
+    .auth-err{color:var(--danger);font-size:12px;margin-top:8px;display:none;}
+
+    #admin{display:none;}
+
+    nav{background:var(--green);padding:0 40px;display:flex;align-items:stretch;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(255,240,220,0.06);}
+    .nav-brand{display:flex;flex-direction:column;justify-content:center;padding:16px 0;}
+    .nav-logo{font-family:var(--serif);font-size:15px;color:var(--beige);}
+    .nav-sub{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--beige);opacity:0.28;margin-top:3px;}
+    .nav-tabs{display:flex;align-items:stretch;}
+    .nav-tab{padding:0 18px;background:none;border:none;border-bottom:2px solid transparent;color:var(--beige);font-family:var(--sans);font-size:10px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;opacity:0.32;transition:opacity 0.2s,border-color 0.2s;white-space:nowrap;}
+    .nav-tab:hover{opacity:0.65;}
+    .nav-tab.active{opacity:1;border-bottom-color:var(--accent);}
+    .nav-actions{display:flex;align-items:center;gap:10px;}
+    .btn-sm{background:rgba(255,240,220,0.08);border:1px solid rgba(255,240,220,0.15);color:var(--beige);font-family:var(--sans);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;padding:7px 14px;cursor:pointer;}
+    .btn-sm.ghost{background:none;border:none;opacity:0.25;}
+    .btn-sm.ghost:hover{opacity:0.6;}
+
+    main{max-width:1280px;margin:0 auto;padding:36px 40px;}
+
+    .stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-bottom:36px;}
+    .stat-card{background:var(--green);color:var(--beige);padding:20px 18px;position:relative;overflow:hidden;}
+    .stat-card::after{content:'';position:absolute;right:-16px;top:-16px;width:70px;height:70px;border-radius:50%;border:1px solid rgba(255,240,220,0.05);}
+    .stat-lbl{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.32;margin-bottom:8px;}
+    .stat-val{font-family:var(--serif);font-size:36px;line-height:1;color:var(--accent);}
+    .stat-sub{font-size:10px;opacity:0.28;margin-top:4px;}
+
+    .page{display:none;}
+    .page.active{display:block;}
+
+    .section{margin-bottom:32px;}
+    .section-hd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;}
+    .section-title{font-family:var(--serif);font-size:20px;}
+    .section-sub{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;opacity:0.32;}
+
+    table{width:100%;border-collapse:collapse;}
+    th{font-size:9px;letter-spacing:0.16em;text-transform:uppercase;opacity:0.32;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border-mid);}
+    td{font-size:13px;padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+    tr:hover td{background:rgba(61,69,53,0.02);}
+    tr:last-child td{border-bottom:none;}
+    .empty{padding:28px;text-align:center;opacity:0.28;font-style:italic;font-size:14px;}
+
+    .pts-earn{color:var(--accent);font-weight:500;}
+    .pts-redeem{color:var(--danger);font-weight:500;}
+    .pts-checkin{color:rgba(168,194,133,0.65);font-weight:500;}
+    .type-pill{display:inline-block;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;padding:2px 8px;border:1px solid var(--border-mid);}
+    .type-purchase{border-color:rgba(168,194,133,0.3);color:var(--green-mid);}
+    .type-checkin{border-color:rgba(168,194,133,0.18);color:var(--accent);}
+    .type-redeem{border-color:rgba(201,123,90,0.28);color:var(--danger);}
+
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(61,69,53,0.12);border-top-color:var(--green);border-radius:50%;animation:spin 0.7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ── Network graph ── */
+    .graph-wrap{background:var(--green-dark);overflow:hidden;position:relative;}
+    #network-svg{width:100%;height:500px;display:block;}
+    .graph-hint{position:absolute;top:14px;right:18px;font-size:9px;color:var(--beige);opacity:0.25;letter-spacing:0.12em;text-transform:uppercase;}
+    .graph-legend{position:absolute;bottom:14px;left:18px;display:flex;gap:18px;}
+    .graph-legend-item{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--beige);opacity:0.4;}
+    .legend-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);}
+    .legend-line{width:22px;height:2px;background:rgba(168,194,133,0.4);}
+
+    .graph-tooltip{position:fixed;background:var(--green-dark);border:1px solid rgba(255,240,220,0.18);padding:10px 14px;font-size:12px;color:var(--beige);pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:500;min-width:150px;}
+    .graph-tooltip.show{opacity:1;}
+    .tt-name{font-weight:500;margin-bottom:4px;font-size:13px;}
+    .tt-row{opacity:0.55;font-size:11px;margin-top:2px;}
+
+    /* ── Matrix ── */
+    .matrix-wrap{overflow-x:auto;margin-bottom:20px;}
+    .matrix-table{border-collapse:collapse;}
+    .matrix-table th{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;padding:8px 6px;text-align:center;white-space:nowrap;opacity:0.45;border-bottom:1px solid var(--border-mid);}
+    .matrix-table td{width:60px;height:54px;text-align:center;vertical-align:middle;border:1px solid rgba(0,0,0,0.04);transition:opacity 0.15s;cursor:default;}
+    .matrix-table td:hover{opacity:0.82;}
+    .m-val{font-family:var(--serif);font-size:17px;line-height:1;display:block;}
+    .m-sub{font-size:9px;opacity:0.55;display:block;margin-top:2px;}
+    .m-row-lbl{font-size:10px;padding:0 14px 0 0;text-align:right;white-space:nowrap;opacity:0.6;font-weight:500;}
+    .m-diag{background:rgba(61,69,53,0.08)!important;color:rgba(61,69,53,0.2);}
+    .matrix-legend{display:flex;align-items:center;gap:8px;margin-top:12px;}
+    .ml-lbl{font-size:10px;opacity:0.35;letter-spacing:0.1em;text-transform:uppercase;}
+    .ml-scale{display:flex;gap:2px;}
+    .ml-swatch{width:18px;height:10px;}
+
+    /* ── Badges ── */
+    .badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-bottom:28px;}
+    .badge-card{background:var(--green);color:var(--beige);padding:26px 22px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden;}
+    .badge-card::before{content:'';position:absolute;right:-20px;bottom:-20px;width:90px;height:90px;border-radius:50%;border:1px solid rgba(255,240,220,0.05);}
+    .badge-icon{font-size:26px;opacity:0.55;}
+    .badge-name{font-family:var(--serif);font-size:19px;line-height:1.1;}
+    .badge-desc{font-size:12px;opacity:0.45;line-height:1.6;}
+    .badge-stats{display:flex;align-items:flex-end;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,240,220,0.08);}
+    .badge-count{font-family:var(--serif);font-size:30px;color:var(--accent);}
+    .badge-pct{font-size:9px;opacity:0.35;letter-spacing:0.1em;text-transform:uppercase;margin-top:3px;}
+    .badge-bar{height:2px;background:rgba(255,240,220,0.08);margin-top:10px;}
+    .badge-bar-fill{height:100%;background:var(--accent);transition:width 0.7s ease;}
+
+    .earner-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+    .earner-row:last-child{border:none;}
+    .earner-name{font-size:14px;}
+    .earner-meta{font-size:11px;opacity:0.32;margin-top:2px;}
+    .earner-badges-wrap{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:320px;}
+    .earner-badge{font-size:8px;letter-spacing:0.1em;text-transform:uppercase;padding:2px 7px;border:1px solid rgba(168,194,133,0.28);color:var(--accent);}
+
+    /* ── Feed ── */
+    .feed-item{display:grid;grid-template-columns:8px 1fr auto;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);animation:fdIn 0.35s ease;}
+    @keyframes fdIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+    .feed-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+    .feed-dot.purchase{background:var(--accent);}
+    .feed-dot.checkin{background:rgba(168,194,133,0.45);}
+    .feed-dot.redeem{background:var(--danger);}
+    .feed-shop{font-size:13px;opacity:0.8;}
+    .feed-time{font-size:11px;opacity:0.28;margin-top:2px;}
+    .feed-pts{font-size:14px;font-weight:500;}
+
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+
+    @media(max-width:960px){
+      .stats-row{grid-template-columns:repeat(3,1fr);}
+      .badge-grid{grid-template-columns:1fr 1fr;}
+      .two-col{grid-template-columns:1fr;}
+      main{padding:24px;}
+      nav{padding:0 24px;}
+      .nav-tabs{display:none;}
     }
-    .auth-box { width: 320px; padding: 48px 40px; }
-    .auth-box h1 { font-family: var(--serif); font-size: 32px; color: var(--beige); margin-bottom: 8px; }
-    .auth-box p  { font-size: 12px; color: var(--beige); opacity: 0.4; margin-bottom: 32px; letter-spacing: 0.1em; text-transform: uppercase; }
-    .auth-field  { width:100%; background: rgba(255,240,220,0.08); border: 1px solid rgba(255,240,220,0.2); color: var(--beige); font-family: var(--sans); font-size: 15px; padding: 13px 14px; outline: none; border-radius:0; margin-bottom: 10px; }
-    .auth-btn    { width:100%; background: var(--beige); color: var(--green); border:none; padding:14px; font-family: var(--sans); font-size:11px; font-weight:500; letter-spacing:0.18em; text-transform:uppercase; cursor:pointer; margin-top:4px; }
-    .auth-error  { color: var(--danger); font-size:12px; margin-top:8px; display:none; }
-
-    /* ── Layout ── */
-    #admin { display:none; }
-    nav {
-      background: var(--green); padding: 18px 40px;
-      display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top:0; z-index:10;
-    }
-    .nav-logo { font-family: var(--serif); font-size: 16px; color: var(--beige); }
-    .nav-sub  { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--beige); opacity: 0.35; }
-    .nav-right { display:flex; gap:16px; align-items:center; }
-    .refresh-btn { background: rgba(255,240,220,0.1); border: 1px solid rgba(255,240,220,0.2); color: var(--beige); font-family: var(--sans); font-size: 10px; letter-spacing: 0.14em; text-transform:uppercase; padding: 8px 14px; cursor:pointer; transition: background 0.2s; }
-    .refresh-btn:hover { background: rgba(255,240,220,0.18); }
-    .signout-btn { background:none; border:none; color:var(--beige); opacity:0.35; font-family:var(--sans); font-size:10px; letter-spacing:0.14em; text-transform:uppercase; cursor:pointer; }
-    .signout-btn:hover { opacity:0.7; }
-
-    main { max-width: 1200px; margin: 0 auto; padding: 40px; }
-
-    /* ── Stats row ── */
-    .stats-row { display: grid; grid-template-columns: repeat(6,1fr); gap: 3px; margin-bottom: 40px; }
-    .stat-card { background: var(--green); color: var(--beige); padding: 24px 20px; }
-    .stat-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.4; margin-bottom: 8px; }
-    .stat-value { font-family: var(--serif); font-size: 36px; line-height: 1; color: var(--accent); }
-    .stat-sub   { font-size: 10px; opacity: 0.35; margin-top: 4px; }
-
-    /* ── Section ── */
-    .section { margin-bottom: 40px; }
-    .section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; }
-    .section-title { font-family: var(--serif); font-size: 22px; }
-    .section-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.4; }
-
-    /* ── Tables ── */
-    .data-table { width:100%; border-collapse: collapse; }
-    .data-table th { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.4; padding: 8px 12px; text-align:left; border-bottom: 1px solid rgba(61,69,53,0.12); }
-    .data-table td { font-size: 13px; padding: 12px; border-bottom: 1px solid rgba(61,69,53,0.07); vertical-align: middle; }
-    .data-table tr:hover td { background: rgba(61,69,53,0.03); }
-    .data-table tr:last-child td { border-bottom: none; }
-
-    .pts-badge { display:inline-block; padding: 2px 8px; font-size: 11px; font-weight:500; }
-    .pts-earn   { color: var(--accent); }
-    .pts-redeem { color: var(--danger); }
-    .pts-checkin{ color: rgba(168,194,133,0.7); }
-
-    .type-badge {
-      display:inline-block; font-size:8px; letter-spacing:0.12em; text-transform:uppercase;
-      padding: 2px 8px; border: 1px solid rgba(61,69,53,0.2);
-    }
-    .type-purchase { border-color: rgba(168,194,133,0.4); color: var(--mid); }
-    .type-checkin  { border-color: rgba(168,194,133,0.25); color: var(--accent); }
-    .type-redeem   { border-color: rgba(201,123,90,0.35); color: var(--danger); }
-
-    .empty-state { padding: 32px; text-align:center; opacity:0.35; font-style:italic; font-size:14px; }
-
-    /* ── Tabs ── */
-    .tabs { display:flex; border-bottom: 1px solid rgba(61,69,53,0.12); margin-bottom:24px; }
-    .tab  { padding:10px 20px; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; cursor:pointer; border:none; background:none; color:var(--green); opacity:0.4; border-bottom:2px solid transparent; font-family:var(--sans); transition:all 0.2s; }
-    .tab.active { opacity:1; border-bottom-color: var(--accent); }
-
-    .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(61,69,53,0.15); border-top-color:var(--green); border-radius:50%; animation:spin 0.7s linear infinite; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-
-    @media(max-width:900px) {
-      .stats-row { grid-template-columns: repeat(3,1fr); }
-      main { padding: 24px; }
-      nav { padding: 16px 24px; }
-    }
-    @media(max-width:600px) {
-      .stats-row { grid-template-columns: repeat(2,1fr); }
+    @media(max-width:600px){
+      .stats-row{grid-template-columns:repeat(2,1fr);}
     }
   </style>
 </head>
 <body>
 
-<!-- AUTH -->
 <div id="auth-screen">
   <div class="auth-box">
     <h1>Admin</h1>
     <p>Village Rewards · Mont Albert</p>
-    <input class="auth-field" id="admin-pw" type="password" placeholder="Admin password" onkeydown="if(event.key==='Enter')authLogin()" />
+    <input class="auth-field" id="admin-pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')authLogin()"/>
     <button class="auth-btn" onclick="authLogin()">Sign in</button>
-    <p class="auth-error" id="auth-error">Incorrect password.</p>
+    <p class="auth-err" id="auth-err">Incorrect password.</p>
   </div>
 </div>
 
-<!-- ADMIN -->
 <div id="admin">
   <nav>
-    <div>
+    <div class="nav-brand">
       <div class="nav-logo">Village Rewards</div>
       <div class="nav-sub">Admin · Mont Albert</div>
     </div>
-    <div class="nav-right">
-      <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
-      <button class="signout-btn" onclick="signOut()">Sign out</button>
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tab-overview"      onclick="switchPage('overview',this)">Overview</button>
+      <button class="nav-tab"        id="tab-network"       onclick="switchPage('network',this)">Network</button>
+      <button class="nav-tab"        id="tab-matrix"        onclick="switchPage('matrix',this)">Cross-pollination</button>
+      <button class="nav-tab"        id="tab-badges"        onclick="switchPage('badges',this)">Badges</button>
+      <button class="nav-tab"        id="tab-customers"     onclick="switchPage('customers',this)">Customers</button>
+      <button class="nav-tab"        id="tab-transactions"  onclick="switchPage('transactions',this)">Transactions</button>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-sm" onclick="loadAll()">↻ Refresh</button>
+      <button class="btn-sm ghost" onclick="signOut()">Sign out</button>
     </div>
   </nav>
 
   <main>
-
-    <!-- Stats -->
-    <div class="stats-row" id="stats-row">
-      <div class="stat-card"><div class="stat-label">Customers</div><div class="stat-value" id="st-customers">—</div></div>
-      <div class="stat-card"><div class="stat-label">Points issued</div><div class="stat-value" id="st-issued">—</div></div>
-      <div class="stat-card"><div class="stat-label">Points redeemed</div><div class="stat-value" id="st-redeemed">—</div></div>
-      <div class="stat-card"><div class="stat-label">Check-ins</div><div class="stat-value" id="st-checkins">—</div></div>
-      <div class="stat-card"><div class="stat-label">Total spend</div><div class="stat-value" id="st-spend">—</div></div>
-      <div class="stat-card"><div class="stat-label">New this week</div><div class="stat-value" id="st-new">—</div></div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-lbl">Customers</div><div class="stat-val" id="st-c">—</div><div class="stat-sub" id="st-c-sub"></div></div>
+      <div class="stat-card"><div class="stat-lbl">Points issued</div><div class="stat-val" id="st-p">—</div></div>
+      <div class="stat-card"><div class="stat-lbl">Redeemed</div><div class="stat-val" id="st-r">—</div></div>
+      <div class="stat-card"><div class="stat-lbl">Check-ins</div><div class="stat-val" id="st-ci">—</div></div>
+      <div class="stat-card"><div class="stat-lbl">Total spend</div><div class="stat-val" id="st-s">—</div></div>
+      <div class="stat-card"><div class="stat-lbl">New this week</div><div class="stat-val" id="st-n">—</div></div>
     </div>
 
-    <!-- Tabs -->
-    <div class="tabs">
-      <button class="tab active" onclick="switchAdminTab('transactions')">Transactions</button>
-      <button class="tab" onclick="switchAdminTab('customers')">Customers</button>
+    <!-- OVERVIEW -->
+    <div class="page active" id="page-overview">
+      <div class="two-col">
+        <div class="section">
+          <div class="section-hd">
+            <div class="section-title">Live activity</div>
+            <div class="section-sub" id="feed-status">Connecting…</div>
+          </div>
+          <div id="live-feed"></div>
+        </div>
+        <div class="section">
+          <div class="section-hd"><div class="section-title">Shop performance</div></div>
+          <table>
+            <thead><tr><th>Shop</th><th>Transactions</th><th>Customers</th><th>Points</th></tr></thead>
+            <tbody id="shop-body"><tr><td colspan="4" class="empty"><div class="spinner"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
-    <!-- Transactions -->
-    <div class="section" id="admin-transactions">
-      <table class="data-table" id="tx-table">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Customer</th>
-            <th>Shop</th>
-            <th>Type</th>
-            <th>Amount</th>
-            <th>Points</th>
-          </tr>
-        </thead>
-        <tbody id="tx-body"><tr><td colspan="6" class="empty-state"><div class="spinner"></div></td></tr></tbody>
-      </table>
+    <!-- NETWORK -->
+    <div class="page" id="page-network">
+      <div class="section">
+        <div class="section-hd">
+          <div>
+            <div class="section-title">Village network</div>
+            <div class="section-sub" style="margin-top:4px;">Customer flow between shops · node size = activity · line weight = journeys</div>
+          </div>
+        </div>
+        <div class="graph-wrap">
+          <svg id="network-svg"></svg>
+          <div class="graph-hint">Drag nodes to explore</div>
+          <div class="graph-legend">
+            <div class="graph-legend-item"><div class="legend-dot"></div>Shop (size = volume)</div>
+            <div class="graph-legend-item"><div class="legend-line"></div>Customer journey</div>
+          </div>
+        </div>
+        <div id="network-empty" style="display:none;" class="empty">No cross-shop journeys yet. More transactions needed.</div>
+      </div>
     </div>
 
-    <!-- Customers -->
-    <div class="section" id="admin-customers" style="display:none;">
-      <table class="data-table" id="cust-table">
-        <thead>
-          <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Points</th>
-            <th>Value</th>
-            <th>Joined</th>
-            <th>Last seen</th>
-          </tr>
-        </thead>
-        <tbody id="cust-body"><tr><td colspan="7" class="empty-state"><div class="spinner"></div></td></tr></tbody>
-      </table>
+    <!-- MATRIX -->
+    <div class="page" id="page-matrix">
+      <div class="section">
+        <div class="section-hd">
+          <div>
+            <div class="section-title">Cross-pollination</div>
+            <div class="section-sub" style="margin-top:4px;">Row = origin shop · Column = destination · Intensity = frequency</div>
+          </div>
+        </div>
+        <div class="matrix-wrap"><div id="matrix-container"><div class="empty"><div class="spinner"></div></div></div></div>
+        <div class="matrix-legend">
+          <span class="ml-lbl">Fewer</span>
+          <div class="ml-scale" id="ml-scale"></div>
+          <span class="ml-lbl">More journeys</span>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-hd"><div class="section-title">Top journeys</div></div>
+        <table>
+          <thead><tr><th>From</th><th>To</th><th>Journeys</th><th>Unique customers</th></tr></thead>
+          <tbody id="journey-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BADGES -->
+    <div class="page" id="page-badges">
+      <div class="section">
+        <div class="section-hd">
+          <div class="section-title">Badge distribution</div>
+        </div>
+        <div class="badge-grid" id="badge-grid"><div class="empty" style="grid-column:1/-1;"><div class="spinner"></div></div></div>
+      </div>
+      <div class="section">
+        <div class="section-hd"><div class="section-title">Top earners</div></div>
+        <div id="earner-list"></div>
+      </div>
+    </div>
+
+    <!-- CUSTOMERS -->
+    <div class="page" id="page-customers">
+      <div class="section">
+        <table>
+          <thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Points</th><th>Value</th><th>Visits</th><th>Shops</th><th>Spend</th><th>Joined</th></tr></thead>
+          <tbody id="cust-body"><tr><td colspan="9" class="empty"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div class="page" id="page-transactions">
+      <div class="section">
+        <table>
+          <thead><tr><th>Time</th><th>Customer</th><th>Shop</th><th>Type</th><th>Amount</th><th>Points</th></tr></thead>
+          <tbody id="tx-body"><tr><td colspan="6" class="empty"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
     </div>
 
   </main>
 </div>
 
+<div class="graph-tooltip" id="graph-tooltip">
+  <div class="tt-name" id="tt-name"></div>
+  <div class="tt-row" id="tt-row1"></div>
+  <div class="tt-row" id="tt-row2"></div>
+</div>
+
 <script>
-var SUPABASE_URL = 'https://hwtwfhvaeczofqktychc.supabase.co';
-var SUPABASE_KEY = 'sb_publishable_Don37TvoZJDPBVNMXItdTg_fffvDUOp';
-var ADMIN_PW     = 'GSADMIN2026';   // Change this
-var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var SUPABASE_URL  = 'https://hwtwfhvaeczofqktychc.supabase.co';
+var SUPABASE_KEY  = 'sb_publishable_Don37TvoZJDPBVNMXItdTg_fffvDUOp';
+var ADMIN_PW      = 'GSADMIN2026';
 var PTS_TO_DOLLAR = 100;
 
-function authLogin() {
-  var pw = document.getElementById('admin-pw').value;
-  if (pw === ADMIN_PW) {
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('admin').style.display = 'block';
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ── Badge definitions ── */
+var BADGES = [
+  { id:'pioneer',  name:'Pioneer',          icon:'◆', desc:'One of the first to join the village.',        check:function(s){return isEarlyAdopter(s.joined_at)&&s.total_transactions>=1;}},
+  { id:'explorer', name:'Village Explorer',  icon:'⬡', desc:'Visited 3 or more different shops.',          check:function(s){return s.unique_shops>=3;}},
+  { id:'legend',   name:'Local Legend',      icon:'◎', desc:'10 or more village transactions.',            check:function(s){return s.total_transactions>=10;}},
+  { id:'crosser',  name:'Cross-Shopper',     icon:'↔', desc:'Visited 5 or more different shops.',          check:function(s){return s.unique_shops>=5;}},
+  { id:'regular',  name:'Check-in Regular',  icon:'◈', desc:'Checked in 5 or more times.',                check:function(s){return s.total_checkins>=5;}},
+  { id:'spender',  name:'Village Supporter', icon:'◉', desc:'$100 or more spent across the village.',     check:function(s){return parseFloat(s.total_spend||0)>=100;}}
+];
+
+var EARLY_CUTOFF = null;
+function isEarlyAdopter(d){return EARLY_CUTOFF&&new Date(d)<=EARLY_CUTOFF;}
+
+/* ── Auth ── */
+function authLogin(){
+  if(document.getElementById('admin-pw').value===ADMIN_PW){
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('admin').style.display='block';
     loadAll();
+    initFeed();
+    subscribeRealtime();
   } else {
-    document.getElementById('auth-error').style.display = 'block';
+    document.getElementById('auth-err').style.display='block';
   }
 }
-
-function signOut() {
-  document.getElementById('auth-screen').style.display = 'flex';
-  document.getElementById('admin').style.display = 'none';
-  document.getElementById('admin-pw').value = '';
+function signOut(){
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('admin').style.display='none';
+  document.getElementById('admin-pw').value='';
 }
 
-function switchAdminTab(tab) {
-  document.querySelectorAll('.tab').forEach(function(t,i) { t.classList.toggle('active', (i === 0 && tab==='transactions') || (i===1 && tab==='customers')); });
-  document.getElementById('admin-transactions').style.display = tab === 'transactions' ? 'block' : 'none';
-  document.getElementById('admin-customers').style.display    = tab === 'customers'    ? 'block' : 'none';
+/* ── Page nav ── */
+function switchPage(id, btn){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='network') renderNetwork();
+  if(id==='matrix')  renderMatrix();
+  if(id==='badges')  renderBadges();
 }
 
-function fmt(ts) { return new Date(ts).toLocaleString('en-AU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }); }
-function pts2d(pts) { return '$' + (Math.abs(pts) / PTS_TO_DOLLAR).toFixed(2); }
+/* ── Helpers ── */
+function fmt(ts){return new Date(ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+function pts2d(p){return '$'+(Math.abs(p||0)/PTS_TO_DOLLAR).toFixed(2);}
 
-async function loadAll() {
-  await Promise.all([ loadStats(), loadTransactions(), loadCustomers() ]);
+/* ── Data store ── */
+var allTx=[],allStats=[],allShopStats=[],crossData=[];
+
+/* ── Load all ── */
+async function loadAll(){
+  await Promise.all([loadStats(),loadTx(),loadCustomerStats(),loadShopStats(),loadCross()]);
+  renderOverview();
 }
 
-async function loadStats() {
-  var res = await sb.from('village_stats').select('*').single();
-  if (res.data) {
-    var d = res.data;
-    document.getElementById('st-customers').textContent  = (d.total_customers || 0).toLocaleString();
-    document.getElementById('st-issued').textContent     = (d.points_issued || 0).toLocaleString();
-    document.getElementById('st-redeemed').textContent   = (d.points_redeemed || 0).toLocaleString();
-    document.getElementById('st-checkins').textContent   = (d.total_checkins || 0).toLocaleString();
-    document.getElementById('st-spend').textContent      = '$' + parseFloat(d.total_spend || 0).toFixed(0);
-    document.getElementById('st-new').textContent        = (d.new_this_week || 0).toLocaleString();
-  }
+async function loadStats(){
+  var r=await sb.from('village_stats').select('*').single();
+  if(!r.data)return;
+  var d=r.data;
+  document.getElementById('st-c').textContent=(d.total_customers||0).toLocaleString();
+  document.getElementById('st-c-sub').textContent='+'+( d.new_this_week||0)+' this week';
+  document.getElementById('st-p').textContent=(d.points_issued||0).toLocaleString();
+  document.getElementById('st-r').textContent=(d.points_redeemed||0).toLocaleString();
+  document.getElementById('st-ci').textContent=(d.total_checkins||0).toLocaleString();
+  document.getElementById('st-s').textContent='$'+parseFloat(d.total_spend||0).toFixed(0);
+  document.getElementById('st-n').textContent=(d.new_this_week||0).toLocaleString();
 }
 
-async function loadTransactions() {
-  var res = await sb.from('transactions')
-    .select('*, customers(name)')
-    .order('created_at', { ascending: false })
-    .limit(100);
-
-  var body = document.getElementById('tx-body');
-  if (!res.data || res.data.length === 0) {
-    body.innerHTML = '<tr><td colspan="6" class="empty-state">No transactions yet.</td></tr>';
-    return;
-  }
-
-  body.innerHTML = res.data.map(function(tx) {
-    var ptsClass = tx.type === 'redeem' ? 'pts-redeem' : tx.type === 'checkin' ? 'pts-checkin' : 'pts-earn';
-    var ptsSign  = tx.type === 'redeem' ? '−' : '+';
-    return '<tr>' +
-      '<td>' + fmt(tx.created_at) + '</td>' +
-      '<td>' + (tx.customers ? tx.customers.name : tx.customer_id) + '</td>' +
-      '<td>' + (tx.shop_name || '—') + '</td>' +
-      '<td><span class="type-badge type-' + tx.type + '">' + tx.type + '</span></td>' +
-      '<td>' + (tx.amount ? '$' + parseFloat(tx.amount).toFixed(2) : '—') + '</td>' +
-      '<td class="pts-badge ' + ptsClass + '">' + ptsSign + Math.abs(tx.points) + '</td>' +
-    '</tr>';
+async function loadTx(){
+  var r=await sb.from('transactions').select('*,customers(name)').order('created_at',{ascending:false}).limit(200);
+  allTx=r.data||[];
+  var body=document.getElementById('tx-body');
+  if(!allTx.length){body.innerHTML='<tr><td colspan="6" class="empty">No transactions yet.</td></tr>';return;}
+  body.innerHTML=allTx.slice(0,100).map(function(tx){
+    var cls=tx.type==='redeem'?'pts-redeem':tx.type==='checkin'?'pts-checkin':'pts-earn';
+    var sign=tx.type==='redeem'?'−':'+';
+    return'<tr><td>'+fmt(tx.created_at)+'</td>'+
+      '<td>'+(tx.customers?tx.customers.name:tx.customer_id)+'</td>'+
+      '<td>'+(tx.shop_name||'—')+'</td>'+
+      '<td><span class="type-pill type-'+tx.type+'">'+tx.type+'</span></td>'+
+      '<td>'+(tx.amount?'$'+parseFloat(tx.amount).toFixed(2):'—')+'</td>'+
+      '<td class="'+cls+'">'+sign+Math.abs(tx.points)+'</td></tr>';
   }).join('');
 }
 
-async function loadCustomers() {
-  var res = await sb.from('customers')
-    .select('*')
-    .order('joined_at', { ascending: false });
+async function loadCustomerStats(){
+  var r=await sb.from('customer_stats').select('*').order('total_transactions',{ascending:false});
+  allStats=r.data||[];
+  if(allStats.length){
+    var dates=allStats.map(function(c){return new Date(c.joined_at);}).sort(function(a,b){return a-b;});
+    EARLY_CUTOFF=new Date(dates[0].getTime()+7*24*60*60*1000);
+  }
+  var body=document.getElementById('cust-body');
+  if(!allStats.length){body.innerHTML='<tr><td colspan="9" class="empty">No customers yet.</td></tr>';return;}
+  body.innerHTML=allStats.map(function(c){
+    var earnedBadges=BADGES.filter(function(b){return b.check(c);});
+    return'<tr><td><strong>'+c.id+'</strong></td>'+
+      '<td>'+c.name+'</td>'+
+      '<td style="opacity:0.5;font-size:12px;">'+c.email+'</td>'+
+      '<td><strong>'+(c.points||0).toLocaleString()+'</strong></td>'+
+      '<td style="opacity:0.5;">'+pts2d(c.points||0)+'</td>'+
+      '<td>'+(c.total_transactions||0)+'</td>'+
+      '<td>'+(c.unique_shops||0)+'</td>'+
+      '<td>'+(c.total_spend?'$'+parseFloat(c.total_spend).toFixed(0):'—')+'</td>'+
+      '<td style="opacity:0.4;font-size:12px;">'+fmt(c.joined_at)+'</td></tr>';
+  }).join('');
+}
 
-  var body = document.getElementById('cust-body');
-  if (!res.data || res.data.length === 0) {
-    body.innerHTML = '<tr><td colspan="7" class="empty-state">No customers yet.</td></tr>';
+async function loadShopStats(){
+  var r=await sb.from('shop_stats').select('*').order('total_transactions',{ascending:false});
+  allShopStats=r.data||[];
+}
+
+async function loadCross(){
+  var r=await sb.from('cross_pollination').select('*').order('journey_count',{ascending:false});
+  crossData=r.data||[];
+}
+
+/* ── Overview ── */
+function renderOverview(){
+  var body=document.getElementById('shop-body');
+  if(!allShopStats.length){body.innerHTML='<tr><td colspan="4" class="empty">No data yet.</td></tr>';return;}
+  body.innerHTML=allShopStats.map(function(s){
+    return'<tr><td><strong>'+s.shop_name+'</strong></td>'+
+      '<td>'+(s.total_transactions||0)+'</td>'+
+      '<td>'+(s.unique_customers||0)+'</td>'+
+      '<td class="pts-earn">+'+(s.points_issued||0)+'</td></tr>';
+  }).join('');
+}
+
+/* ── Realtime feed ── */
+async function initFeed(){
+  var r=await sb.from('transactions').select('*,customers(name)').order('created_at',{ascending:false}).limit(10);
+  if(!r.data)return;
+  var feed=document.getElementById('live-feed');
+  feed.innerHTML=r.data.map(function(tx){
+    var name=tx.customers?tx.customers.name.split(' ')[0]:tx.customer_id;
+    var cls=tx.type==='redeem'?'pts-redeem':tx.type==='checkin'?'pts-checkin':'pts-earn';
+    var sign=tx.type==='redeem'?'−':'+';
+    return'<div class="feed-item">'+
+      '<div class="feed-dot '+tx.type+'"></div>'+
+      '<div><div class="feed-shop">'+name+' · '+(tx.shop_name||'Village')+'</div>'+
+      '<div class="feed-time">'+fmt(tx.created_at)+' · '+tx.type+'</div></div>'+
+      '<div class="feed-pts '+cls+'">'+sign+Math.abs(tx.points)+'</div></div>';
+  }).join('');
+  document.getElementById('feed-status').textContent='Live';
+}
+
+function subscribeRealtime(){
+  sb.channel('vr-admin')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'transactions'},async function(payload){
+      var tx=payload.new;
+      var cust=await sb.from('customers').select('name').eq('id',tx.customer_id).maybeSingle();
+      var name=cust.data?cust.data.name.split(' ')[0]:tx.customer_id;
+      var cls=tx.type==='redeem'?'pts-redeem':tx.type==='checkin'?'pts-checkin':'pts-earn';
+      var sign=tx.type==='redeem'?'−':'+';
+      var feed=document.getElementById('live-feed');
+      var el=document.createElement('div');
+      el.className='feed-item';
+      el.innerHTML='<div class="feed-dot '+tx.type+'"></div>'+
+        '<div><div class="feed-shop">'+name+' · '+(tx.shop_name||'Village')+'</div>'+
+        '<div class="feed-time">'+fmt(tx.created_at)+' · '+tx.type+'</div></div>'+
+        '<div class="feed-pts '+cls+'">'+sign+Math.abs(tx.points)+'</div>';
+      feed.insertBefore(el,feed.firstChild);
+      if(feed.children.length>15)feed.removeChild(feed.lastChild);
+      loadStats();
+    })
+    .subscribe(function(status){
+      document.getElementById('feed-status').textContent=status==='SUBSCRIBED'?'Live':'Connecting…';
+    });
+}
+
+/* ══════════════════════════════════════════════════
+   NETWORK GRAPH
+══════════════════════════════════════════════════ */
+var networkDone=false;
+function renderNetwork(){
+  if(networkDone)return;
+  networkDone=true;
+
+  var svgEl=document.getElementById('network-svg');
+  var W=svgEl.parentElement.offsetWidth||800, H=500;
+
+  if(!allShopStats.length||!crossData.length){
+    document.getElementById('network-empty').style.display='block';
     return;
   }
 
-  body.innerHTML = res.data.map(function(c) {
-    return '<tr>' +
-      '<td><strong>' + c.id + '</strong></td>' +
-      '<td>' + c.name + '</td>' +
-      '<td style="opacity:0.6;">' + c.email + '</td>' +
-      '<td><strong>' + c.points.toLocaleString() + '</strong></td>' +
-      '<td style="color:var(--mid);">' + pts2d(c.points) + '</td>' +
-      '<td style="opacity:0.55;">' + fmt(c.joined_at) + '</td>' +
-      '<td style="opacity:0.45;">' + fmt(c.last_seen) + '</td>' +
-    '</tr>';
+  var shopNames=[...new Set(allShopStats.map(function(s){return s.shop_name;}))];
+  var nodes=shopNames.map(function(name){
+    var s=allShopStats.find(function(x){return x.shop_name===name;})||{};
+    return{id:name,count:s.total_transactions||1,customers:s.unique_customers||0};
+  });
+
+  var links=crossData.map(function(d){
+    return{source:d.from_shop,target:d.to_shop,value:d.journey_count,uniq:d.unique_customers};
+  });
+
+  var maxN=d3.max(nodes,function(d){return d.count;})||1;
+  var maxL=d3.max(links,function(d){return d.value;})||1;
+  var rScale=d3.scaleSqrt().domain([0,maxN]).range([14,38]);
+  var wScale=d3.scaleLinear().domain([0,maxL]).range([1.5,9]);
+  var oScale=d3.scaleLinear().domain([0,maxL]).range([0.12,0.65]);
+
+  var svg=d3.select('#network-svg').attr('viewBox','0 0 '+W+' '+H).attr('width',W).attr('height',H);
+  svg.selectAll('*').remove();
+
+  svg.append('defs').append('marker')
+    .attr('id','narrow').attr('viewBox','0 -4 8 8').attr('refX',8).attr('refY',0)
+    .attr('markerWidth',5).attr('markerHeight',5).attr('orient','auto')
+    .append('path').attr('d','M0,-3.5L8,0L0,3.5').attr('fill','rgba(168,194,133,0.55)');
+
+  var sim=d3.forceSimulation(nodes)
+    .force('link',d3.forceLink(links).id(function(d){return d.id;}).distance(function(d){return 110+wScale(d.value)*10;}))
+    .force('charge',d3.forceManyBody().strength(-350))
+    .force('center',d3.forceCenter(W/2,H/2))
+    .force('collide',d3.forceCollide().radius(function(d){return rScale(d.count)+22;}));
+
+  var link=svg.append('g').selectAll('line').data(links).enter().append('line')
+    .attr('stroke','#a8c285')
+    .attr('stroke-opacity',function(d){return oScale(d.value);})
+    .attr('stroke-width',function(d){return wScale(d.value);})
+    .attr('marker-end','url(#narrow)');
+
+  var node=svg.append('g').selectAll('g').data(nodes).enter().append('g')
+    .attr('cursor','grab')
+    .call(d3.drag()
+      .on('start',function(e,d){if(!e.active)sim.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y;})
+      .on('drag', function(e,d){d.fx=e.x;d.fy=e.y;})
+      .on('end',  function(e,d){if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null;}))
+    .on('mousemove',function(e,d){
+      var tt=document.getElementById('graph-tooltip');
+      document.getElementById('tt-name').textContent=d.id;
+      document.getElementById('tt-row1').textContent=d.count+' transactions';
+      document.getElementById('tt-row2').textContent=d.customers+' unique customers';
+      tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY-10)+'px';
+      tt.classList.add('show');
+    })
+    .on('mouseleave',function(){document.getElementById('graph-tooltip').classList.remove('show');});
+
+  node.append('circle').attr('r',function(d){return rScale(d.count)+6;})
+    .attr('fill','none').attr('stroke','rgba(168,194,133,0.12)').attr('stroke-width',1);
+  node.append('circle').attr('r',function(d){return rScale(d.count);})
+    .attr('fill','rgba(168,194,133,0.12)').attr('stroke','#a8c285').attr('stroke-width',1.5);
+  node.append('text')
+    .text(function(d){var w=d.id.split(' ');return w.length>2?w.slice(0,2).join(' '):d.id;})
+    .attr('text-anchor','middle').attr('dominant-baseline','central')
+    .attr('fill','#fff0dc').attr('font-family',"'IBM Plex Sans',sans-serif")
+    .attr('font-size',function(d){return Math.min(11,rScale(d.count)*0.5);})
+    .attr('font-weight',300).attr('pointer-events','none');
+
+  sim.on('tick',function(){
+    link
+      .attr('x1',function(d){return d.source.x;}).attr('y1',function(d){return d.source.y;})
+      .attr('x2',function(d){
+        var dx=d.target.x-d.source.x,dy=d.target.y-d.source.y,dist=Math.sqrt(dx*dx+dy*dy)||1;
+        return d.target.x-(dx/dist)*(rScale(d.target.count)+9);
+      })
+      .attr('y2',function(d){
+        var dx=d.target.x-d.source.x,dy=d.target.y-d.source.y,dist=Math.sqrt(dx*dx+dy*dy)||1;
+        return d.target.y-(dy/dist)*(rScale(d.target.count)+9);
+      });
+    node.attr('transform',function(d){
+      d.x=Math.max(rScale(d.count)+10,Math.min(W-rScale(d.count)-10,d.x));
+      d.y=Math.max(rScale(d.count)+10,Math.min(H-rScale(d.count)-10,d.y));
+      return'translate('+d.x+','+d.y+')';
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   CROSS-POLLINATION MATRIX
+══════════════════════════════════════════════════ */
+var matrixDone=false;
+function renderMatrix(){
+  if(matrixDone)return;
+  matrixDone=true;
+
+  if(!crossData.length){
+    document.getElementById('matrix-container').innerHTML='<div class="empty">No cross-shop journeys yet. Transactions needed first.</div>';
+    document.getElementById('journey-body').innerHTML='<tr><td colspan="4" class="empty">No journeys yet.</td></tr>';
+    return;
+  }
+
+  var shops=[...new Set(crossData.flatMap(function(d){return[d.from_shop,d.to_shop];}))].sort();
+  var lookup={};
+  var maxVal=0;
+  crossData.forEach(function(d){
+    lookup[d.from_shop+'|||'+d.to_shop]={count:d.journey_count,uniq:d.unique_customers};
+    if(d.journey_count>maxVal)maxVal=d.journey_count;
+  });
+
+  function cellBg(val){
+    if(!val)return'transparent';
+    var t=Math.pow(val/maxVal,0.5);
+    return'rgba(168,194,133,'+(0.08+t*0.72)+')';
+  }
+  function cellColor(val){return val?'#fff0dc':'rgba(61,69,53,0.2)';}
+
+  var html='<table class="matrix-table"><thead><tr><th></th>';
+  shops.forEach(function(s){html+='<th>'+s.split(' ').slice(0,2).join(' ')+'</th>';});
+  html+='</tr></thead><tbody>';
+  shops.forEach(function(from){
+    html+='<tr><td class="m-row-lbl">'+from.split(' ').slice(0,2).join(' ')+'</td>';
+    shops.forEach(function(to){
+      if(from===to){html+='<td class="m-diag">—</td>';return;}
+      var key=from+'|||'+to;
+      var d=lookup[key];
+      var val=d?d.count:0;
+      html+='<td style="background:'+cellBg(val)+';color:'+cellColor(val)+'">';
+      if(val){
+        html+='<span class="m-val">'+val+'</span><span class="m-sub">'+(d?d.uniq:0)+' ppl</span>';
+      } else {
+        html+='<span class="m-val" style="opacity:0.12">·</span>';
+      }
+      html+='</td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('matrix-container').innerHTML=html;
+
+  // Scale legend
+  var scale=document.getElementById('ml-scale');
+  scale.innerHTML='';
+  [0.1,0.3,0.5,0.7,0.9,1.0].forEach(function(v){
+    var sw=document.createElement('div');
+    sw.className='ml-swatch';sw.style.background=cellBg(v*maxVal);scale.appendChild(sw);
+  });
+
+  // Journey table
+  var body=document.getElementById('journey-body');
+  body.innerHTML=crossData.slice(0,10).map(function(d){
+    return'<tr><td>'+d.from_shop+'</td><td>'+d.to_shop+'</td>'+
+      '<td><strong>'+d.journey_count+'</strong></td>'+
+      '<td>'+d.unique_customers+'</td></tr>';
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════
+   BADGES
+══════════════════════════════════════════════════ */
+var badgesDone=false;
+function renderBadges(){
+  if(badgesDone)return;
+  badgesDone=true;
+
+  if(!allStats.length){
+    document.getElementById('badge-grid').innerHTML='<div class="empty" style="grid-column:1/-1;">Load data first.</div>';
+    return;
+  }
+
+  var total=allStats.length;
+  var counts={};
+  var holders={};
+  BADGES.forEach(function(b){counts[b.id]=0;holders[b.id]=[];});
+  allStats.forEach(function(c){
+    BADGES.forEach(function(b){
+      if(b.check(c)){counts[b.id]++;holders[b.id].push(c);}
+    });
+  });
+
+  document.getElementById('badge-grid').innerHTML=BADGES.map(function(b){
+    var n=counts[b.id];
+    var pct=total>0?Math.round((n/total)*100):0;
+    return'<div class="badge-card">'+
+      '<div class="badge-icon">'+b.icon+'</div>'+
+      '<div class="badge-name">'+b.name+'</div>'+
+      '<div class="badge-desc">'+b.desc+'</div>'+
+      '<div class="badge-stats">'+
+        '<div><div class="badge-count">'+n+'</div><div class="badge-pct">customers</div></div>'+
+        '<div style="text-align:right"><div class="badge-count" style="font-size:20px;opacity:0.55">'+pct+'%</div><div class="badge-pct">of village</div></div>'+
+      '</div>'+
+      '<div class="badge-bar"><div class="badge-bar-fill" style="width:'+pct+'%"></div></div>'+
+    '</div>';
+  }).join('');
+
+  // Top earners
+  var earners=allStats.map(function(c){
+    return{c:c,badges:BADGES.filter(function(b){return b.check(c);})};
+  }).filter(function(x){return x.badges.length>0;})
+    .sort(function(a,b){return b.badges.length-a.badges.length;})
+    .slice(0,8);
+
+  var el=document.getElementById('earner-list');
+  if(!earners.length){el.innerHTML='<div class="empty">No badges earned yet.</div>';return;}
+  el.innerHTML=earners.map(function(x){
+    return'<div class="earner-row">'+
+      '<div><div class="earner-name">'+x.c.name+'</div>'+
+      '<div class="earner-meta">'+x.c.total_transactions+' transactions · '+x.c.unique_shops+' shops</div></div>'+
+      '<div class="earner-badges-wrap">'+x.badges.map(function(b){
+        return'<span class="earner-badge">'+b.icon+' '+b.name+'</span>';
+      }).join('')+'</div></div>';
   }).join('');
 }
 </script>
