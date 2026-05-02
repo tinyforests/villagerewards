@@ -183,6 +183,17 @@
     .customer-code { margin-top: 14px; font-family: var(--serif); font-size: 28px; letter-spacing: 0.2em; }
     .code-hint { font-size: 11px; opacity: 0.3; margin-top: 4px; }
 
+    /* -- Badges -- */
+    .badges-section { padding: 20px 24px 32px; border-top: 1px solid rgba(255,240,220,0.08); }
+    .badges-title { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.32; margin-bottom: 14px; }
+    .badges-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .badge-item { padding: 14px 8px; text-align: center; border: 1px solid rgba(255,240,220,0.08); }
+    .badge-item.earned { border-color: rgba(168,194,133,0.3); background: rgba(168,194,133,0.06); }
+    .badge-item.locked { opacity: 0.25; }
+    .bi-icon { font-size: 18px; margin-bottom: 5px; display: block; }
+    .bi-name { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.3; display: block; }
+    .bi-earned-lbl { font-size: 8px; color: var(--accent); opacity: 0.7; margin-top: 3px; display: block; letter-spacing: 0.1em; text-transform: uppercase; }
+
     /* Check-in CTA */
     .checkin-cta {
       margin: 20px 24px 0;
@@ -383,6 +394,12 @@
     <div class="history-title">Recent activity</div>
     <div class="tx-list" id="tx-list">
       <p class="tx-empty">No activity yet. Start shopping!</p>
+    </div>
+  </div>
+  <div class="badges-section">
+    <div class="badges-title">Your badges</div>
+    <div class="badges-grid" id="badges-grid">
+      <div style="grid-column:1/-1;text-align:center;opacity:0.25;font-size:12px;padding:12px;">Earn badges by exploring the village.</div>
     </div>
   </div>
 </div>
@@ -650,10 +667,11 @@ async function register() {
     localStorage.setItem('vr_my_id', id);
     currentCustomer = res.data;
     await renderCustomerDashboard(res.data);
+    renderBadges(id);
     show('s-customer');
     showToast('Welcome to Village Rewards, ' + name.split(' ')[0] + '!');
   } catch(e) {
-    showToast('Something went wrong. Please try again.', true);
+    console.error('Register error:', e); showToast(e.message || JSON.stringify(e) || 'Something went wrong.', true);
   } finally {
     setLoading(false);
   }
@@ -1018,6 +1036,32 @@ if ('serviceWorker' in navigator) {
    INIT
 ═══════════════════════════════════════════════════════ */
 loadShops();
+
+/* ═══ BADGES ═══ */
+var CUSTOMER_BADGES = [
+  { id:'pioneer',  name:'Pioneer',       icon:'◆', check:function(s){return s.total_transactions>=1;}},
+  { id:'explorer', name:'Explorer',      icon:'⬡', check:function(s){return s.unique_shops>=3;}},
+  { id:'legend',   name:'Legend',        icon:'◎', check:function(s){return s.total_transactions>=10;}},
+  { id:'crosser',  name:'Cross-shopper', icon:'↔', check:function(s){return s.unique_shops>=5;}},
+  { id:'regular',  name:'Regular',       icon:'◈', check:function(s){return s.total_checkins>=5;}},
+  { id:'spender',  name:'Supporter',     icon:'◉', check:function(s){return parseFloat(s.total_spend||0)>=100;}}
+];
+async function renderBadges(cid) {
+  var r = await sb.from('customer_stats').select('*').eq('id',cid).maybeSingle();
+  if (!r.data) return;
+  var st = r.data;
+  var g = document.getElementById('badges-grid');
+  if (!g) return;
+  g.innerHTML = CUSTOMER_BADGES.map(function(b) {
+    var earned = b.check(st);
+    return '<div class="badge-item '+(earned?'earned':'locked')+'">' +
+      '<span class="bi-icon">'+b.icon+'</span>' +
+      '<span class="bi-name">'+b.name+'</span>' +
+      (earned?'<span class="bi-earned-lbl">Earned</span>':'') +
+    '</div>';
+  }).join('');
+}
+
 </script>
 </body>
 </html>
