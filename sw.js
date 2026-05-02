@@ -8,7 +8,7 @@ var CACHE_NAME = 'village-rewards-v1';
 /* Assets to cache on install so the app loads offline */
 var PRECACHE = [
   '/',
-  '/index.html',
+  '/app.html',
   'https://fonts.googleapis.com/css2?family=Abril+Fatface&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'
 ];
@@ -80,7 +80,7 @@ self.addEventListener('fetch', function(e) {
       .catch(function() {
         /* Offline fallback */
         return caches.match(e.request).then(function(cached) {
-          return cached || caches.match('/index.html');
+          return cached || caches.match('/app.html');
         });
       })
   );
