@@ -685,6 +685,7 @@ async function goCustomer() {
       if (res.data) {
         currentCustomer = res.data;
         await renderCustomerDashboard(res.data);
+        renderBadges(savedId);
         show('s-customer');
         return;
       }
@@ -710,6 +711,7 @@ async function register() {
       localStorage.setItem('vr_my_id', full.data.id);
       currentCustomer = full.data;
       await renderCustomerDashboard(full.data);
+      renderBadges(full.data.id);
       show('s-customer');
       showToast('Welcome back, ' + full.data.name.split(' ')[0] + '!');
       return;
