@@ -451,6 +451,7 @@
     <h2 class="display-sm">Check in.<br />Earn points.</h2>
     <p class="hint" style="margin-top:12px;">We'll find participating shops near you. One check-in per shop every 4 hours.</p>
 
+    <div id="dev-banner" style="display:none;background:rgba(201,123,90,0.15);border:1px solid rgba(201,123,90,0.35);padding:10px 14px;margin-top:16px;font-size:11px;color:var(--danger);letter-spacing:0.1em;text-transform:uppercase;">⚠ Dev mode — 150m check bypassed</div>
     <button class="locate-btn" id="locate-btn" onclick="locateAndLoad()">
       Find shops near me
     </button>
@@ -1097,6 +1098,7 @@ loadShops();
    GEOLOCATION CHECK-IN
 ═══════════════════════════════════════════════════════ */
 var CHECKIN_RADIUS_M = 150;
+var DEV_MODE = true; // SET TO false BEFORE GOING LIVE — bypasses 150m check for testing
 
 function haversineDistance(lat1, lon1, lat2, lon2) {
   var R = 6371000;
@@ -1113,6 +1115,8 @@ function fmtDist(m) {
 }
 
 async function locateAndLoad() {
+  var banner = document.getElementById('dev-banner');
+  if (banner) banner.style.display = DEV_MODE ? 'block' : 'none';
   var btn = document.getElementById('locate-btn');
   var status = document.getElementById('locate-status');
   var list = document.getElementById('shops-nearby');
@@ -1165,8 +1169,8 @@ async function locateAndLoad() {
       btn.disabled = false;
       btn.textContent = 'Refresh location';
 
-      if (shopsWithDist.every(function(s) { return s.dist > CHECKIN_RADIUS_M; })) {
-        list.innerHTML = '<p class="no-shops-msg">No participating shops within ' + CHECKIN_RADIUS_M + 'm.<br/>Move closer to Union Road to check in.</p>' +
+      if (!DEV_MODE && shopsWithDist.every(function(s) { return s.dist > CHECKIN_RADIUS_M; })) {
+        list.innerHTML = '<p class="no-shops-msg">No participating shops within ' + CHECKIN_RADIUS_M + 'm.<br/>Move closer to Hamilton or Churchill Street to check in.</p>' +
           shopsWithDist.slice(0,3).map(function(s) {
             return '<div class="shop-nearby-item too-far">' +
               '<div><div class="sni-name">' + s.name + '</div>' +
@@ -1177,7 +1181,7 @@ async function locateAndLoad() {
       }
 
       list.innerHTML = shopsWithDist.map(function(s) {
-        var inRange = s.dist <= CHECKIN_RADIUS_M;
+        var inRange = DEV_MODE || s.dist <= CHECKIN_RADIUS_M;
         var alreadyIn = recentShops.includes(s.name);
         var cls = alreadyIn ? 'checked' : (!inRange ? 'too-far' : '');
         var btnLabel = alreadyIn ? 'Checked in' : (!inRange ? 'Too far' : 'Check in +' + CHECKIN_POINTS);
