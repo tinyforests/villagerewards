@@ -1271,19 +1271,32 @@ var CUSTOMER_BADGES = [
   { id:'spender',  name:'Supporter',     icon:'◉', check:function(s){return parseFloat(s.total_spend||0)>=100;}}
 ];
 async function renderBadges(cid) {
-  var r = await sb.from('customer_stats').select('*').eq('id',cid).maybeSingle();
-  if (!r.data) return;
-  var st = r.data;
   var g = document.getElementById('badges-grid');
   if (!g) return;
+
+  // Always render all badges locked first — instant display
   g.innerHTML = CUSTOMER_BADGES.map(function(b) {
-    var earned = b.check(st);
-    return '<div class="badge-item '+(earned?'earned':'locked')+'">' +
+    return '<div class="badge-item locked">' +
       '<span class="bi-icon">'+b.icon+'</span>' +
       '<span class="bi-name">'+b.name+'</span>' +
-      (earned?'<span class="bi-earned-lbl">Earned</span>':'') +
     '</div>';
   }).join('');
+
+  // Then query customer_stats and update earned state
+  try {
+    var r = await sb.from('customer_stats').select('*').eq('id', cid).maybeSingle();
+    var st = r.data || {};
+    g.innerHTML = CUSTOMER_BADGES.map(function(b) {
+      var earned = b.check(st);
+      return '<div class="badge-item '+(earned?'earned':'locked')+'">' +
+        '<span class="bi-icon">'+b.icon+'</span>' +
+        '<span class="bi-name">'+b.name+'</span>' +
+        (earned?'<span class="bi-earned-lbl">Earned</span>':'') +
+      '</div>';
+    }).join('');
+  } catch(e) {
+    console.log('Badges: customer_stats not available yet.', e);
+  }
 }
 
 </script>
