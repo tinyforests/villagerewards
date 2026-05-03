@@ -1183,12 +1183,12 @@ async function locateAndLoad() {
         var btnLabel = alreadyIn ? 'Checked in' : (!inRange ? 'Too far' : 'Check in +' + CHECKIN_POINTS);
         var btnCls = (alreadyIn || !inRange) ? 'done' : '';
         var distCls = inRange ? 'close' : '';
-        var onclick = (!alreadyIn && inRange) ? 'onclick="doCheckin('' + s.id + '','' + s.name + '',' + s.dist + ',' + userLat + ',' + userLng + ')"' : '';
+        var onclickAttr = (!alreadyIn && inRange) ? 'onclick="doCheckin(' + JSON.stringify(s.id) + ',' + JSON.stringify(s.name) + ',' + s.dist + ',' + userLat + ',' + userLng + ')"' : '';
 
         return '<div class="shop-nearby-item ' + cls + '">' +
           '<div><div class="sni-name">' + s.name + '</div>' +
           '<div class="sni-dist ' + distCls + '">' + fmtDist(s.dist) + ' away' + (inRange ? ' · In range' : '') + '</div></div>' +
-          '<button class="sni-btn ' + btnCls + '" ' + onclick + '>' + btnLabel + '</button>' +
+          '<button class="sni-btn ' + btnCls + '" ' + onclickAttr + '>' + btnLabel + '</button>' +
         '</div>';
       }).join('');
     },
