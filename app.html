@@ -627,6 +627,7 @@ var currentShop    = null;   // { id, name }
 var currentCustomer = null;  // customer row
 var deferredPrompt = null;
 var activeTab      = 'purchase';
+var nearbyShops    = [];  // populated by locateAndLoad
 
 /* ═══════════════════════════════════════════════════════
    SCREEN NAV
@@ -1180,6 +1181,7 @@ async function locateAndLoad() {
         return;
       }
 
+      nearbyShops = shopsWithDist;
       list.innerHTML = shopsWithDist.map(function(s) {
         var inRange = DEV_MODE || s.dist <= CHECKIN_RADIUS_M;
         var alreadyIn = recentShops.includes(s.name);
@@ -1187,7 +1189,8 @@ async function locateAndLoad() {
         var btnLabel = alreadyIn ? 'Checked in' : (!inRange ? 'Too far' : 'Check in +' + CHECKIN_POINTS);
         var btnCls = (alreadyIn || !inRange) ? 'done' : '';
         var distCls = inRange ? 'close' : '';
-        var onclickAttr = (!alreadyIn && inRange) ? 'onclick="doCheckin(' + JSON.stringify(s.id) + ',' + JSON.stringify(s.name) + ',' + s.dist + ',' + userLat + ',' + userLng + ')"' : '';
+        var idx = nearbyShops.indexOf(s);
+        var onclickAttr = (!alreadyIn && inRange) ? 'onclick="doCheckinByIndex(' + idx + ',' + userLat + ',' + userLng + ')"' : '';
 
         return '<div class="shop-nearby-item ' + cls + '">' +
           '<div><div class="sni-name">' + s.name + '</div>' +
@@ -1208,6 +1211,12 @@ async function locateAndLoad() {
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
   );
+}
+
+function doCheckinByIndex(idx, customerLat, customerLng) {
+  var s = nearbyShops[idx];
+  if (!s) return;
+  doCheckin(s.id, s.name, s.dist, customerLat, customerLng);
 }
 
 async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng) {
