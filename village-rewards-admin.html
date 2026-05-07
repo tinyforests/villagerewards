@@ -180,6 +180,7 @@
       <button class="nav-tab active" id="tab-overview"      onclick="switchPage('overview',this)">Overview</button>
       <button class="nav-tab"        id="tab-network"       onclick="switchPage('network',this)">Network</button>
       <button class="nav-tab"        id="tab-matrix"        onclick="switchPage('matrix',this)">Cross-pollination</button>
+      <button class="nav-tab"        id="tab-heatmap"       onclick="switchPage('heatmap',this)">Heatmap</button>
       <button class="nav-tab"        id="tab-badges"        onclick="switchPage('badges',this)">Badges</button>
       <button class="nav-tab"        id="tab-checkins"      onclick="switchPage('checkins',this)">Check-ins</button>
       <button class="nav-tab"        id="tab-customers"     onclick="switchPage('customers',this)">Customers</button>
@@ -265,6 +266,57 @@
           <tbody id="journey-body"></tbody>
         </table>
       </div>
+    </div>
+
+
+    <!-- HEATMAP -->
+    <div class="page" id="page-heatmap">
+
+      <!-- Summary row -->
+      <div class="section">
+        <div class="section-hd" style="margin-bottom:20px;">
+          <div>
+            <div class="section-title">Activity heatmap</div>
+            <div class="section-sub" style="margin-top:4px;">Transaction volume by hour and day of week · darker = more active</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <label style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.45;">Type</label>
+            <select class="filter-select" id="heatmap-type-filter" onchange="renderHeatmap()">
+              <option value="all">All activity</option>
+              <option value="purchase">Purchases only</option>
+              <option value="checkin">Check-ins only</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Peak stats -->
+        <div id="heatmap-peaks" style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:28px;"></div>
+
+        <!-- Heatmap grid -->
+        <div style="overflow-x:auto;">
+          <div id="heatmap-grid" style="min-width:600px;"></div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-top:16px;">
+          <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.35;">Quieter</span>
+          <div id="heatmap-legend-scale" style="display:flex;gap:2px;"></div>
+          <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.35;">Busier</span>
+        </div>
+      </div>
+
+      <!-- Day of week bar chart -->
+      <div class="section" style="margin-top:8px;">
+        <div class="section-hd"><div class="section-title">By day of week</div></div>
+        <div id="day-bars" style="display:flex;flex-direction:column;gap:6px;margin-top:8px;"></div>
+      </div>
+
+      <!-- Hour of day bar chart -->
+      <div class="section" style="margin-top:8px;">
+        <div class="section-hd"><div class="section-title">By hour of day</div></div>
+        <div id="hour-bars" style="display:flex;gap:3px;align-items:flex-end;height:120px;margin-top:8px;"></div>
+        <div id="hour-labels" style="display:flex;gap:3px;margin-top:4px;"></div>
+      </div>
+
     </div>
 
     <!-- BADGES -->
@@ -417,6 +469,7 @@ function switchPage(id, btn){
   if(id==='matrix')   renderMatrix();
   if(id==='badges')   renderBadges();
   if(id==='checkins') loadCheckins();
+  if(id==='heatmap')   renderHeatmap();
 }
 
 /* ── Helpers ── */
@@ -863,6 +916,167 @@ function renderCheckinSummaryCards(data) {
       '<div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.32;margin-bottom:8px;">' + pair[0] + '</div>' +
       '<div style="font-family:var(--serif);font-size:32px;color:var(--accent);line-height:1;">' + pair[1] + '</div>' +
     '</div>';
+  }).join('');
+}
+
+
+/* ══════════════════════════════════════════════════
+   ACTIVITY HEATMAP
+══════════════════════════════════════════════════ */
+var heatmapDone = false;
+
+function renderHeatmap() {
+  heatmapDone = false; // allow re-render on filter change
+
+  var typeFilter = document.getElementById('heatmap-type-filter');
+  var filterVal  = typeFilter ? typeFilter.value : 'all';
+
+  var data = allTx.filter(function(tx) {
+    if (filterVal === 'purchase') return tx.type === 'purchase';
+    if (filterVal === 'checkin')  return tx.type === 'checkin';
+    return tx.type === 'purchase' || tx.type === 'checkin';
+  });
+
+  if (!data.length) {
+    document.getElementById('heatmap-grid').innerHTML = '<div class="empty">No transaction data yet.</div>';
+    return;
+  }
+
+  var days  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var hours = Array.from({length:24}, function(_,i){ return i; });
+
+  // Build a 7×24 grid  [dayIndex][hourIndex] = count
+  var grid = Array.from({length:7}, function(){ return new Array(24).fill(0); });
+  var dayTotals  = new Array(7).fill(0);
+  var hourTotals = new Array(24).fill(0);
+
+  data.forEach(function(tx) {
+    var d = new Date(tx.created_at);
+    var dow = (d.getDay() + 6) % 7; // 0=Mon
+    var hr  = d.getHours();
+    grid[dow][hr]++;
+    dayTotals[dow]++;
+    hourTotals[hr]++;
+  });
+
+  var maxCell = Math.max(...grid.flat());
+  var maxDay  = Math.max(...dayTotals);
+  var maxHour = Math.max(...hourTotals);
+
+  // Colour function — green ramp
+  function cellColor(val) {
+    if (!val) return 'rgba(61,69,53,0.06)';
+    var t = Math.pow(val / maxCell, 0.6);
+    return 'rgba(168,194,133,' + (0.12 + t * 0.82) + ')';
+  }
+  function cellText(val) {
+    if (!val) return 'rgba(61,69,53,0.2)';
+    var t = val / maxCell;
+    return t > 0.5 ? '#2c3127' : '#3d4535';
+  }
+
+  // ── Peak stats ────────────────────────────────
+  var peakDayIdx  = dayTotals.indexOf(maxDay);
+  var peakHourIdx = hourTotals.indexOf(maxHour);
+  var quietDayIdx = dayTotals.indexOf(Math.min(...dayTotals));
+  var total       = data.length;
+
+  function fmtHour(h) {
+    if (h === 0) return '12am';
+    if (h < 12)  return h + 'am';
+    if (h === 12) return '12pm';
+    return (h-12) + 'pm';
+  }
+
+  var peaks = [
+    ['Busiest day',    days[peakDayIdx] + ' (' + maxDay + ' transactions)'],
+    ['Peak hour',      fmtHour(peakHourIdx) + '–' + fmtHour(peakHourIdx+1) + ' (' + maxHour + ' transactions)'],
+    ['Quietest day',   days[quietDayIdx] + ' (' + dayTotals[quietDayIdx] + ' transactions)'],
+    ['Total analysed', total + ' transactions'],
+  ];
+
+  document.getElementById('heatmap-peaks').innerHTML = peaks.map(function(p) {
+    return '<div style="background:var(--green);color:var(--beige);padding:18px 16px;">' +
+      '<div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.32;margin-bottom:8px;">' + p[0] + '</div>' +
+      '<div style="font-family:var(--serif);font-size:15px;color:var(--accent);line-height:1.3;">' + p[1] + '</div>' +
+    '</div>';
+  }).join('');
+
+  // ── Heatmap grid ──────────────────────────────
+  var cellW = 28, cellH = 26, labelW = 42, headerH = 22;
+  var gridW = labelW + 24 * (cellW + 1);
+  var gridH = headerH + 7 * (cellH + 1);
+
+  var svgParts = [
+    '<svg width="' + gridW + '" height="' + gridH + '" style="display:block;font-family:IBM Plex Sans,sans-serif;">',
+  ];
+
+  // Hour headers
+  hours.forEach(function(h) {
+    var x = labelW + h * (cellW + 1) + cellW / 2;
+    if (h % 3 === 0) {
+      svgParts.push('<text x="' + x + '" y="14" text-anchor="middle" font-size="9" fill="rgba(61,69,53,0.4)">' + fmtHour(h) + '</text>');
+    }
+  });
+
+  // Day rows
+  days.forEach(function(day, di) {
+    var y = headerH + di * (cellH + 1);
+    svgParts.push('<text x="' + (labelW - 4) + '" y="' + (y + cellH/2 + 4) + '" text-anchor="end" font-size="10" fill="rgba(61,69,53,0.55)">' + day + '</text>');
+
+    hours.forEach(function(h) {
+      var x   = labelW + h * (cellW + 1);
+      var val = grid[di][h];
+      var bg  = cellColor(val);
+      var tc  = cellText(val);
+      svgParts.push('<rect x="' + x + '" y="' + y + '" width="' + cellW + '" height="' + cellH + '" fill="' + bg + '" rx="2"/>');
+      if (val > 0) {
+        svgParts.push('<text x="' + (x + cellW/2) + '" y="' + (y + cellH/2 + 4) + '" text-anchor="middle" font-size="9" fill="' + tc + '">' + val + '</text>');
+      }
+    });
+  });
+
+  svgParts.push('</svg>');
+  document.getElementById('heatmap-grid').innerHTML = svgParts.join('');
+
+  // ── Legend scale ──────────────────────────────
+  var scale = document.getElementById('heatmap-legend-scale');
+  scale.innerHTML = '';
+  [0, 0.2, 0.4, 0.6, 0.8, 1.0].forEach(function(v) {
+    var sw = document.createElement('div');
+    sw.style.cssText = 'width:18px;height:10px;background:' + cellColor(v * maxCell) + ';border-radius:2px;';
+    scale.appendChild(sw);
+  });
+
+  // ── Day bars ──────────────────────────────────
+  var dayBars = document.getElementById('day-bars');
+  dayBars.innerHTML = days.map(function(day, i) {
+    var pct = maxDay > 0 ? Math.round((dayTotals[i] / maxDay) * 100) : 0;
+    var isMax = i === peakDayIdx;
+    return '<div style="display:grid;grid-template-columns:40px 1fr 36px;gap:8px;align-items:center;">' +
+      '<span style="font-size:11px;opacity:0.55;text-align:right;">' + day + '</span>' +
+      '<div style="height:20px;background:rgba(61,69,53,0.06);border-radius:2px;">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + (isMax ? 'rgba(168,194,133,0.9)' : 'rgba(168,194,133,0.45)') + ';border-radius:2px;transition:width 0.6s ease;"></div>' +
+      '</div>' +
+      '<span style="font-size:11px;opacity:' + (isMax ? '0.9' : '0.45') + ';font-weight:' + (isMax ? '500' : '300') + ';">' + dayTotals[i] + '</span>' +
+    '</div>';
+  }).join('');
+
+  // ── Hour bars ─────────────────────────────────
+  var hourBars   = document.getElementById('hour-bars');
+  var hourLabels = document.getElementById('hour-labels');
+  var barW = 'calc(' + (100/24) + '% - 3px)';
+
+  hourBars.innerHTML = hours.map(function(h) {
+    var pct = maxHour > 0 ? Math.round((hourTotals[h] / maxHour) * 100) : 0;
+    var isMax = h === peakHourIdx;
+    return '<div style="flex:1;display:flex;align-items:flex-end;">' +
+      '<div style="width:100%;background:' + (isMax ? 'rgba(168,194,133,0.9)' : 'rgba(168,194,133,0.4)') + ';height:' + pct + '%;border-radius:2px 2px 0 0;min-height:2px;transition:height 0.6s ease;" title="' + fmtHour(h) + ': ' + hourTotals[h] + '"></div>' +
+    '</div>';
+  }).join('');
+
+  hourLabels.innerHTML = hours.map(function(h) {
+    return '<div style="flex:1;text-align:center;font-size:9px;opacity:' + (h % 6 === 0 ? '0.5' : '0.2') + ';">' + (h % 6 === 0 ? fmtHour(h) : '') + '</div>';
   }).join('');
 }
 
