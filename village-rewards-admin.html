@@ -951,9 +951,14 @@ function renderHeatmap() {
   var hourTotals = new Array(24).fill(0);
 
   data.forEach(function(tx) {
+    // Use Melbourne local time (handles UTC+10/11 automatically)
     var d = new Date(tx.created_at);
-    var dow = (d.getDay() + 6) % 7; // 0=Mon
-    var hr  = d.getHours();
+    var localStr = d.toLocaleString('en-AU', { timeZone: 'Australia/Melbourne', hour12: false, weekday: 'short', hour: '2-digit' });
+    var parts = localStr.split(', ');
+    var dowMap = { Mon:0, Tue:1, Wed:2, Thu:3, Fri:4, Sat:5, Sun:6 };
+    var dow = dowMap[parts[0]] !== undefined ? dowMap[parts[0]] : (d.getDay() + 6) % 7;
+    var hr = parseInt(parts[1]) || 0;
+    if (hr === 24) hr = 0;
     grid[dow][hr]++;
     dayTotals[dow]++;
     hourTotals[hr]++;
