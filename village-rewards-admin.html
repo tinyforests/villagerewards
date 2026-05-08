@@ -1029,14 +1029,24 @@ function renderHeatmap() {
     svgParts.push('<text x="' + (labelW - 4) + '" y="' + (y + cellH/2 + 4) + '" text-anchor="end" font-size="10" fill="rgba(61,69,53,0.55)">' + day + '</text>');
 
     hours.forEach(function(h) {
-      var x   = labelW + h * (cellW + 1);
-      var val = grid[di][h];
-      var bg  = cellColor(val);
-      var tc  = cellText(val);
-      svgParts.push('<rect x="' + x + '" y="' + y + '" width="' + cellW + '" height="' + cellH + '" fill="' + bg + '" rx="2"/>');
+      var x      = labelW + h * (cellW + 1);
+      var val    = grid[di][h];
+      var bg     = cellColor(val);
+      var tc     = cellText(val);
+      var tipTxt = days[di] + ' ' + fmtHour(h) + '\u2013' + fmtHour(h+1) + ': ' + val + ' transaction' + (val !== 1 ? 's' : '');
+
+      // wrap in group with mouse events
+      svgParts.push(
+        '<g class="hm-cell" data-tip="' + tipTxt + '" data-val="' + val + '"' +
+        ' onmouseenter="hmShowTip(event,this)"' +
+        ' onmouseleave="hmHideTip()"' +
+        ' style="cursor:' + (val > 0 ? 'default' : 'default') + ';">'
+      );
+      svgParts.push('<rect x="' + x + '" y="' + y + '" width="' + cellW + '" height="' + cellH + '" fill="' + bg + '" rx="2" class="hm-rect" data-x="' + x + '" data-y="' + y + '"/>');
       if (val > 0) {
-        svgParts.push('<text x="' + (x + cellW/2) + '" y="' + (y + cellH/2 + 4) + '" text-anchor="middle" font-size="9" fill="' + tc + '">' + val + '</text>');
+        svgParts.push('<text x="' + (x + cellW/2) + '" y="' + (y + cellH/2 + 4) + '" text-anchor="middle" font-size="9" fill="' + tc + '" pointer-events="none">' + val + '</text>');
       }
+      svgParts.push('</g>');
     });
   });
 
@@ -1147,6 +1157,62 @@ function renderHeatmap() {
   '</svg>';
 }
 
+
+/* ── Heatmap cell tooltip ── */
+function hmShowTip(e, el) {
+  var tip  = document.getElementById('hm-tooltip');
+  var txt  = el.getAttribute('data-tip');
+  var val  = parseInt(el.getAttribute('data-val') || '0');
+  if (!tip) return;
+  tip.querySelector('.hmt-text').textContent = txt;
+  // colour dot based on value
+  var dot = tip.querySelector('.hmt-dot');
+  dot.style.background = val > 0 ? 'var(--accent)' : 'rgba(61,69,53,0.3)';
+  tip.style.opacity = '1';
+  tip.style.pointerEvents = 'none';
+  hmMoveTip(e);
+}
+
+function hmMoveTip(e) {
+  var tip = document.getElementById('hm-tooltip');
+  if (!tip) return;
+  var x = e.clientX + 14;
+  var y = e.clientY - 10;
+  // keep within viewport
+  if (x + 200 > window.innerWidth)  x = e.clientX - 210;
+  if (y + 60  > window.innerHeight) y = e.clientY - 60;
+  tip.style.left = x + 'px';
+  tip.style.top  = y + 'px';
+}
+
+function hmHideTip() {
+  var tip = document.getElementById('hm-tooltip');
+  if (tip) tip.style.opacity = '0';
+}
+
+// Follow mouse while over cell
+document.addEventListener('mousemove', function(e) {
+  var tip = document.getElementById('hm-tooltip');
+  if (tip && tip.style.opacity === '1') hmMoveTip(e);
+});
+
 </script>
+
+<!-- Heatmap tooltip -->
+<div id="hm-tooltip" style="
+  position:fixed;z-index:600;
+  background:var(--green-dark);
+  border:1px solid rgba(255,240,220,0.18);
+  padding:10px 14px;
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--sans);font-size:12px;color:var(--beige);
+  pointer-events:none;opacity:0;
+  transition:opacity 0.12s;
+  min-width:180px;
+">
+  <div class="hmt-dot" style="width:8px;height:8px;border-radius:50%;flex-shrink:0;"></div>
+  <span class="hmt-text"></span>
+</div>
+
 </body>
 </html>
