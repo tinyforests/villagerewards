@@ -313,10 +313,7 @@
       <!-- Hour of day bar chart -->
       <div class="section" style="margin-top:8px;">
         <div class="section-hd"><div class="section-title">By hour of day</div></div>
-        <div style="position:relative;">
-          <div id="hour-bars" style="display:flex;gap:3px;align-items:flex-end;height:220px;margin-top:8px;border-bottom:1px solid var(--border-mid);position:relative;"></div>
-          <div id="hour-labels" style="display:flex;gap:3px;margin-top:6px;"></div>
-        </div>
+        <div id="hour-chart-wrap" style="margin-top:12px;overflow-x:auto;"></div>
       </div>
 
     </div>
@@ -1070,44 +1067,84 @@ function renderHeatmap() {
   }).join('');
 
   // ── Hour bars ─────────────────────────────────
-  var hourBars   = document.getElementById('hour-bars');
-  var hourLabels = document.getElementById('hour-labels');
-  var barW = 'calc(' + (100/24) + '% - 3px)';
+  // ── Proper SVG bar chart ──────────────────────────
+  var wrap    = document.getElementById('hour-chart-wrap');
+  var margin  = { top: 32, right: 20, bottom: 36, left: 44 };
+  var chartW  = Math.max(wrap.offsetWidth || 900, 700);
+  var chartH  = 260;
+  var plotW   = chartW - margin.left - margin.right;
+  var plotH   = chartH - margin.top - margin.bottom;
+  var barW    = Math.floor(plotW / 24) - 3;
+  var yTicks  = 5;
 
-  hourBars.innerHTML = hours.map(function(h) {
-    var pct    = maxHour > 0 ? Math.round((hourTotals[h] / maxHour) * 100) : 0;
-    var isMax  = h === peakHourIdx;
-    var isPeak = hourTotals[h] > 0 && pct >= 60;
+  // y-axis gridlines & labels
+  var gridLines = '';
+  var yLabels   = '';
+  for (var i = 0; i <= yTicks; i++) {
+    var yVal = Math.round((maxHour / yTicks) * i);
+    var yPos = plotH - Math.round((yVal / maxHour) * plotH);
+    gridLines += '<line x1="0" y1="' + yPos + '" x2="' + plotW + '" y2="' + yPos + '" stroke="rgba(61,69,53,0.08)" stroke-width="1"/>';
+    yLabels   += '<text x="-8" y="' + (yPos + 4) + '" text-anchor="end" font-size="10" fill="rgba(61,69,53,0.4)">' + yVal + '</text>';
+  }
+
+  // bars
+  var bars = '';
+  hours.forEach(function(h) {
     var count  = hourTotals[h];
+    var barH   = maxHour > 0 ? Math.round((count / maxHour) * plotH) : 0;
+    var x      = Math.round((h / 24) * plotW) + 1;
+    var y      = plotH - barH;
+    var isMax  = h === peakHourIdx;
+    var isPeak = count > 0 && count >= maxHour * 0.6;
 
-    // colour: peak = solid accent, high = medium, low = faint
-    var barColor = isMax
-      ? 'var(--accent)'
+    var fill = isMax
+      ? '#a8c285'
       : isPeak
-        ? 'rgba(168,194,133,0.7)'
-        : 'rgba(168,194,133,0.35)';
+        ? 'rgba(168,194,133,0.72)'
+        : count > 0
+          ? 'rgba(168,194,133,0.38)'
+          : 'rgba(61,69,53,0.04)';
 
-    // show count label on bars that are tall enough
-    var label = (pct >= 20 && count > 0)
-      ? '<div style="position:absolute;bottom:' + (pct + 2) + '%;left:50%;transform:translateX(-50%);font-size:9px;font-weight:500;color:var(--green);opacity:0.8;white-space:nowrap;">' + count + '</div>'
-      : '';
+    // bar rect
+    if (barH > 0) {
+      bars += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + barH + '" fill="' + fill + '" rx="2">' +
+        '<title>' + fmtHour(h) + '–' + fmtHour(h+1) + ': ' + count + ' transactions</title></rect>';
+    } else {
+      bars += '<rect x="' + x + '" y="' + (plotH-2) + '" width="' + barW + '" height="2" fill="rgba(61,69,53,0.06)" rx="1"/>';
+    }
 
-    // peak marker arrow
-    var marker = isMax
-      ? '<div style="position:absolute;bottom:' + (pct + 8) + '%;left:50%;transform:translateX(-50%);font-size:8px;color:var(--accent);font-weight:500;white-space:nowrap;">▲ peak</div>'
-      : '';
+    // count label above bar
+    if (count > 0 && barH > 16) {
+      bars += '<text x="' + (x + barW/2) + '" y="' + (y - 4) + '" text-anchor="middle" font-size="9" font-weight="500" fill="rgba(61,69,53,0.7)">' + count + '</text>';
+    }
 
-    return '<div style="flex:1;display:flex;align-items:flex-end;position:relative;">' +
-      marker + label +
-      '<div style="width:100%;background:' + barColor + ';height:' + Math.max(pct, count > 0 ? 2 : 0) + '%;border-radius:2px 2px 0 0;transition:height 0.7s ease;" title="' + fmtHour(h) + '–' + fmtHour(h+1) + ': ' + count + ' transactions"></div>' +
-    '</div>';
-  }).join('');
+    // peak marker
+    if (isMax && barH > 0) {
+      bars += '<text x="' + (x + barW/2) + '" y="' + (y - 16) + '" text-anchor="middle" font-size="9" font-weight="500" fill="#a8c285">▲ peak</text>';
+    }
 
-  hourLabels.innerHTML = hours.map(function(h) {
-    var isMax = h === peakHourIdx;
-    var show  = h % 3 === 0;
-    return '<div style="flex:1;text-align:center;font-size:9px;color:' + (isMax ? 'var(--accent)' : 'var(--green)') + ';opacity:' + (isMax ? '0.9' : show ? '0.4' : '0.15') + ';font-weight:' + (isMax ? '500' : '300') + ';">' + (show ? fmtHour(h) : (isMax ? fmtHour(h) : '')) + '</div>';
-  }).join('');
+    // x-axis labels every 3 hours
+    if (h % 3 === 0) {
+      bars += '<text x="' + (x + barW/2) + '" y="' + (plotH + 18) + '" text-anchor="middle" font-size="10" fill="' + (isMax ? "#a8c285" : "rgba(61,69,53,0.45)") + '" font-weight="' + (isMax ? "500" : "300") + '">' + fmtHour(h) + '</text>';
+    }
+  });
+
+  // Y-axis label
+  var yAxisLabel = '<text transform="rotate(-90)" x="' + (-plotH/2) + '" y="-32" text-anchor="middle" font-size="10" fill="rgba(61,69,53,0.35)" letter-spacing="1">TRANSACTIONS</text>';
+
+  // Assemble SVG
+  wrap.innerHTML = '<svg width="' + chartW + '" height="' + chartH + '" style="display:block;font-family:IBM Plex Sans,sans-serif;overflow:visible;">' +
+    '<g transform="translate(' + margin.left + ',' + margin.top + ')">' +
+      yAxisLabel +
+      gridLines +
+      yLabels +
+      // baseline
+      '<line x1="0" y1="' + plotH + '" x2="' + plotW + '" y2="' + plotH + '" stroke="rgba(61,69,53,0.2)" stroke-width="1.5"/>' +
+      // y axis
+      '<line x1="0" y1="0" x2="0" y2="' + plotH + '" stroke="rgba(61,69,53,0.15)" stroke-width="1"/>' +
+      bars +
+    '</g>' +
+  '</svg>';
 }
 
 </script>
