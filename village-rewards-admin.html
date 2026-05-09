@@ -123,6 +123,12 @@
     .badge-count{font-family:var(--serif);font-size:30px;color:var(--accent);}
     .badge-pct{font-size:9px;opacity:0.35;letter-spacing:0.1em;text-transform:uppercase;margin-top:3px;}
     .badge-bar{height:2px;background:rgba(255,240,220,0.08);margin-top:10px;}
+    .badge-criteria{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,240,220,0.08);}
+    .badge-criteria-label{font-size:8px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.35;margin-bottom:8px;}
+    .badge-criteria-item{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;}
+    .badge-criteria-item:last-child{margin-bottom:0;}
+    .badge-criteria-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0.6;flex-shrink:0;margin-top:5px;}
+    .badge-criteria-text{font-size:11px;opacity:0.55;line-height:1.55;}
     .badge-bar-fill{height:100%;background:var(--accent);transition:width 0.7s ease;}
 
     .earner-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
@@ -429,12 +435,54 @@ var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* ── Badge definitions ── */
 var BADGES = [
-  { id:'pioneer',  name:'Pioneer',          icon:'◆', desc:'One of the first to join the village.',        check:function(s){return isEarlyAdopter(s.joined_at)&&s.total_transactions>=1;}},
-  { id:'explorer', name:'Village Explorer',  icon:'⬡', desc:'Visited 3 or more different shops.',          check:function(s){return s.unique_shops>=3;}},
-  { id:'legend',   name:'Local Legend',      icon:'◎', desc:'10 or more village transactions.',            check:function(s){return s.total_transactions>=10;}},
-  { id:'crosser',  name:'Cross-Shopper',     icon:'↔', desc:'Visited 5 or more different shops.',          check:function(s){return s.unique_shops>=5;}},
-  { id:'regular',  name:'Check-in Regular',  icon:'◈', desc:'Checked in 5 or more times.',                check:function(s){return s.total_checkins>=5;}},
-  { id:'spender',  name:'Village Supporter', icon:'◉', desc:'$100 or more spent across the village.',     check:function(s){return parseFloat(s.total_spend||0)>=100;}}
+  { id:'pioneer',  name:'Pioneer',          icon:'◆',
+    desc:'One of the first to join the village.',
+    criteria: [
+      'Registered within the first 7 days of the system launching',
+      'Must have completed at least 1 transaction',
+      'One-time founding member badge — window closes permanently after 7 days'
+    ],
+    check:function(s){return isEarlyAdopter(s.joined_at)&&s.total_transactions>=1;}},
+  { id:'explorer', name:'Village Explorer',  icon:'⬡',
+    desc:'Visited 3 or more different shops.',
+    criteria: [
+      'Transactions or check-ins recorded at 3 or more distinct shops',
+      'Shop visits can be across any time period — no time limit',
+      'Both purchases and check-ins count toward unique shop count'
+    ],
+    check:function(s){return s.unique_shops>=3;}},
+  { id:'legend',   name:'Local Legend',      icon:'◎',
+    desc:'10 or more village transactions.',
+    criteria: [
+      '10 or more total transactions of any type',
+      'Purchases, check-ins, and redemptions all count',
+      'Demonstrates consistent long-term engagement with the village'
+    ],
+    check:function(s){return s.total_transactions>=10;}},
+  { id:'crosser',  name:'Cross-Shopper',     icon:'↔',
+    desc:'Visited 5 or more different shops.',
+    criteria: [
+      'Transactions or check-ins at 5 or more distinct shops',
+      'Higher tier of Village Explorer — full strip engagement',
+      'Demonstrates the village-wide movement this system is designed to create'
+    ],
+    check:function(s){return s.unique_shops>=5;}},
+  { id:'regular',  name:'Check-in Regular',  icon:'◈',
+    desc:'Checked in 5 or more times.',
+    criteria: [
+      '5 or more GPS check-ins recorded across any shops',
+      'Rewards visiting behaviour independent of spending',
+      'Each check-in requires GPS verification within 150m of the shop'
+    ],
+    check:function(s){return s.total_checkins>=5;}},
+  { id:'spender',  name:'Village Supporter', icon:'◉',
+    desc:'$100 or more spent across the village.',
+    criteria: [
+      '$100 or more in total purchase spend tracked through the system',
+      'Accumulates across all participating shops over any time period',
+      'Check-ins and redemptions do not count — purchases only'
+    ],
+    check:function(s){return parseFloat(s.total_spend||0)>=100;}}
 ];
 
 var EARLY_CUTOFF = null;
@@ -794,10 +842,18 @@ function renderBadges(){
   document.getElementById('badge-grid').innerHTML=BADGES.map(function(b){
     var n=counts[b.id];
     var pct=total>0?Math.round((n/total)*100):0;
+    var criteriaHtml = b.criteria
+      ? '<div class="badge-criteria"><div class="badge-criteria-label">How it's earned</div>' +
+        b.criteria.map(function(c){
+          return '<div class="badge-criteria-item"><div class="badge-criteria-dot"></div><div class="badge-criteria-text">'+c+'</div></div>';
+        }).join('') + '</div>'
+      : '';
+
     return'<div class="badge-card">'+
       '<div class="badge-icon">'+b.icon+'</div>'+
       '<div class="badge-name">'+b.name+'</div>'+
       '<div class="badge-desc">'+b.desc+'</div>'+
+      criteriaHtml +
       '<div class="badge-stats">'+
         '<div><div class="badge-count">'+n+'</div><div class="badge-pct">customers</div></div>'+
         '<div style="text-align:right"><div class="badge-count" style="font-size:20px;opacity:0.55">'+pct+'%</div><div class="badge-pct">of village</div></div>'+
