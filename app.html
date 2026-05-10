@@ -390,6 +390,15 @@
         <div class="field-label">Email address</div>
         <input class="field" id="reg-email" type="email" placeholder="you@example.com" autocomplete="email" />
       </div>
+      <div>
+        <div class="field-label">Postcode <span style="opacity:0.4;font-size:9px;letter-spacing:0.1em;">(optional)</span></div>
+        <input class="field" id="reg-postcode" type="tel" placeholder="e.g. 3129" maxlength="4" pattern="[0-9]{4}" autocomplete="postal-code" />
+      </div>
+      <div>
+        <div class="field-label">Birth year <span style="opacity:0.4;font-size:9px;letter-spacing:0.1em;">(optional)</span></div>
+        <input class="field" id="reg-birthyear" type="tel" placeholder="e.g. 1985" maxlength="4" pattern="[0-9]{4}" />
+        <div class="hint" style="margin-top:6px;">Helps us understand our community. Never shared.</div>
+      </div>
       <button class="btn btn-primary" onclick="register()" style="margin-top:8px;">Start earning</button>
       <p class="hint" style="text-align:center;">No spam. Just your points balance.</p>
     </div>
@@ -696,10 +705,16 @@ async function goCustomer() {
 }
 
 async function register() {
-  var name  = document.getElementById('reg-name').value.trim();
-  var email = document.getElementById('reg-email').value.trim();
+  var name      = document.getElementById('reg-name').value.trim();
+  var email     = document.getElementById('reg-email').value.trim();
+  var postcode  = document.getElementById('reg-postcode').value.trim();
+  var birthyear = document.getElementById('reg-birthyear').value.trim();
   if (!name)  { showToast('Please enter your name.', true); return; }
   if (!email || !email.includes('@')) { showToast('Please enter a valid email.', true); return; }
+  if (postcode  && !/^[0-9]{4}$/.test(postcode))  { showToast('Please enter a valid 4-digit postcode.', true); return; }
+  if (birthyear && (!/^[0-9]{4}$/.test(birthyear) || parseInt(birthyear) < 1900 || parseInt(birthyear) > new Date().getFullYear())) {
+    showToast('Please enter a valid birth year.', true); return;
+  }
 
   setLoading(true);
   try {
@@ -718,9 +733,10 @@ async function register() {
     }
 
     var id = generateId();
-    var res = await sb.from('customers').insert({
-      id: id, name: name, email: email, points: 0
-    }).select().single();
+    var insertData = { id: id, name: name, email: email, points: 0 };
+    if (postcode)  insertData.postcode   = postcode;
+    if (birthyear) insertData.birth_year = parseInt(birthyear);
+    var res = await sb.from('customers').insert(insertData).select().single();
 
     if (res.error) throw res.error;
     localStorage.setItem('vr_my_id', id);
@@ -1204,10 +1220,15 @@ async function locateAndLoad() {
     function(err) {
       btn.disabled = false;
       btn.textContent = 'Try again';
+      var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
       var msgs = {
-        1: 'Location access denied. Please allow location in your browser settings.',
-        2: 'Location unavailable. Try again in a moment.',
-        3: 'Location request timed out. Try again.'
+        1: isIOS
+          ? 'Location blocked on iPhone. Go to Settings → Privacy → Location Services → Safari → While Using. Then try again.'
+          : 'Location access denied. Please allow location in your browser settings.',
+        2: 'Location unavailable. Make sure you have a signal and try again.',
+        3: isIOS
+          ? 'Location timed out. Try moving outside or near a window, then tap again.'
+          : 'Location timed out. Please try again.'
       };
       status.textContent = msgs[err.code] || 'Location error. Please try again.';
     },
