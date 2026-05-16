@@ -843,7 +843,7 @@ function renderBadges(){
     var n=counts[b.id];
     var pct=total>0?Math.round((n/total)*100):0;
     var criteriaHtml = b.criteria
-      ? '<div class="badge-criteria"><div class="badge-criteria-label">How it's earned</div>' +
+      ? '<div class="badge-criteria"><div class="badge-criteria-label">How it\'s earned</div>' +
         b.criteria.map(function(c){
           return '<div class="badge-criteria-item"><div class="badge-criteria-dot"></div><div class="badge-criteria-text">'+c+'</div></div>';
         }).join('') + '</div>'
