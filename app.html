@@ -619,7 +619,8 @@
 ═══════════════════════════════════════════════════════ */
 var SUPABASE_URL = 'https://hwtwfhvaeczofqktychc.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3dHdmaHZhZWN6b2Zxa3R5Y2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MjA1NTcsImV4cCI6MjA5MzI5NjU1N30.F2UBLZBIhULAXiuI5ApHqQEsnS8YkYkEwU-6dfVrcmw';
-var TRADER_PIN   = 'MONT';          // Change before launch
+// TODO: Replace client-side PIN auth with Supabase Auth (trader accounts with email login).
+// var TRADER_PIN = '...'; // REMOVED — do not hardcode credentials in client-side JS.
 var PTS_PER_DOLLAR   = 1;           // 1 point per $1
 var PTS_TO_DOLLAR    = 100;         // 100 pts = $1
 var CHECKIN_POINTS   = 8;           // Points per check-in
@@ -837,8 +838,9 @@ function traderLogin() {
 
   if (!shopId)              { showToast('Please select your shop.', true); return; }
   if (shopId === 'other' && !shopName) { showToast('Please enter your shop name.', true); return; }
-  if (!pin)                 { showToast('Please enter your PIN.', true); return; }
-  if (pin !== TRADER_PIN)   { showToast('Incorrect PIN. Contact Tyson at G&S.', true); return; }
+  // TODO: Replace PIN check with Supabase Auth — trader accounts with email login.
+  if (!pin) { showToast('Trader login is temporarily disabled. Contact Tyson at G&S.', true); return; }
+  showToast('Trader login is temporarily disabled. Contact Tyson at G&S.', true); return;
 
   currentShop = { id: shopId === 'other' ? null : shopId, name: shopName };
   document.getElementById('t-shop-name-display').textContent = shopName;
@@ -1117,7 +1119,7 @@ loadShops();
    GEOLOCATION CHECK-IN
 ═══════════════════════════════════════════════════════ */
 var CHECKIN_RADIUS_M = 150;
-var DEV_MODE = true; // SET TO false BEFORE GOING LIVE — bypasses 150m check for testing
+var DEV_MODE = false; // GPS enforcement active — set true locally to bypass 150m radius check
 
 function haversineDistance(lat1, lon1, lat2, lon2) {
   var R = 6371000;

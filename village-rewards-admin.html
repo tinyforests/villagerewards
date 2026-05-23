@@ -428,7 +428,8 @@
 <script>
 var SUPABASE_URL  = 'https://hwtwfhvaeczofqktychc.supabase.co';
 var SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3dHdmaHZhZWN6b2Zxa3R5Y2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MjA1NTcsImV4cCI6MjA5MzI5NjU1N30.F2UBLZBIhULAXiuI5ApHqQEsnS8YkYkEwU-6dfVrcmw';
-var ADMIN_PW      = 'GSADMIN2026';
+// TODO: Replace client-side password auth with Supabase Auth (email magic link or SSO).
+// var ADMIN_PW = '...'; // REMOVED — do not hardcode credentials in client-side JS.
 var PTS_TO_DOLLAR = 100;
 
 var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -489,16 +490,11 @@ var EARLY_CUTOFF = null;
 function isEarlyAdopter(d){return EARLY_CUTOFF&&new Date(d)<=EARLY_CUTOFF;}
 
 /* ── Auth ── */
+// TODO: Implement Supabase Auth here — supabase.auth.signInWithOtp({ email }) or similar.
+// Admin access is disabled until proper server-side authentication is wired up.
 function authLogin(){
-  if(document.getElementById('admin-pw').value===ADMIN_PW){
-    document.getElementById('auth-screen').style.display='none';
-    document.getElementById('admin').style.display='block';
-    loadAll();
-    initFeed();
-    subscribeRealtime();
-  } else {
-    document.getElementById('auth-err').style.display='block';
-  }
+  document.getElementById('auth-err').textContent = 'Admin login is currently disabled. Contact the site administrator.';
+  document.getElementById('auth-err').style.display='block';
 }
 function signOut(){
   document.getElementById('auth-screen').style.display='flex';
