@@ -619,8 +619,7 @@
 ═══════════════════════════════════════════════════════ */
 var SUPABASE_URL = 'https://hwtwfhvaeczofqktychc.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3dHdmaHZhZWN6b2Zxa3R5Y2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MjA1NTcsImV4cCI6MjA5MzI5NjU1N30.F2UBLZBIhULAXiuI5ApHqQEsnS8YkYkEwU-6dfVrcmw';
-// TODO: Replace client-side PIN auth with Supabase Auth (trader accounts with email login).
-// var TRADER_PIN = '...'; // REMOVED — do not hardcode credentials in client-side JS.
+var TRADER_PIN = null; // Fetched from Supabase pilot_config table at startup — not hardcoded here
 var PTS_PER_DOLLAR   = 1;           // 1 point per $1
 var PTS_TO_DOLLAR    = 100;         // 100 pts = $1
 var CHECKIN_POINTS   = 8;           // Points per check-in
@@ -824,6 +823,27 @@ async function loadShops() {
   sel.appendChild(other);
 }
 
+/* ── Pilot config ──────────────────────────────────────
+   Reads the trader pilot code from Supabase so it is
+   never stored in client source or the git repo.
+
+   Supabase setup (run once in SQL editor):
+
+     CREATE TABLE pilot_config (
+       key   VARCHAR(100) PRIMARY KEY,
+       value TEXT NOT NULL
+     );
+     ALTER TABLE pilot_config ENABLE ROW LEVEL SECURITY;
+     CREATE POLICY pilot_config_anon_read ON pilot_config
+       FOR SELECT USING (true);
+     INSERT INTO pilot_config (key, value)
+       VALUES ('trader_pilot_code', 'YOUR_CODE_HERE');
+─────────────────────────────────────────────────────── */
+async function loadPilotConfig() {
+  var r = await sb.from('pilot_config').select('value').eq('key', 'trader_pilot_code').single();
+  if (r.data) TRADER_PIN = r.data.value;
+}
+
 function onShopChange() {
   var val = document.getElementById('t-shop-select').value;
   document.getElementById('other-wrap').style.display = val === 'other' ? 'block' : 'none';
@@ -838,9 +858,9 @@ function traderLogin() {
 
   if (!shopId)              { showToast('Please select your shop.', true); return; }
   if (shopId === 'other' && !shopName) { showToast('Please enter your shop name.', true); return; }
-  // TODO: Replace PIN check with Supabase Auth — trader accounts with email login.
-  if (!pin) { showToast('Trader login is temporarily disabled. Contact Tyson at G&S.', true); return; }
-  showToast('Trader login is temporarily disabled. Contact Tyson at G&S.', true); return;
+  if (!pin)                 { showToast('Please enter your pilot code.', true); return; }
+  if (!TRADER_PIN)          { showToast('System not ready — please try again in a moment.', true); return; }
+  if (pin !== TRADER_PIN)   { showToast('Incorrect pilot code. Contact Tyson at G&S.', true); return; }
 
   currentShop = { id: shopId === 'other' ? null : shopId, name: shopName };
   document.getElementById('t-shop-name-display').textContent = shopName;
@@ -1113,6 +1133,7 @@ if ('serviceWorker' in navigator) {
    INIT
 ═══════════════════════════════════════════════════════ */
 loadShops();
+loadPilotConfig();
 
 
 /* ═══════════════════════════════════════════════════════
