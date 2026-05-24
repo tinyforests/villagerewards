@@ -25,7 +25,11 @@
     .auth-box p{font-size:11px;color:var(--beige);opacity:0.35;margin-bottom:32px;letter-spacing:0.16em;text-transform:uppercase;}
     .auth-field{width:100%;background:rgba(255,240,220,0.08);border:1px solid rgba(255,240,220,0.2);color:var(--beige);font-family:var(--sans);font-size:15px;padding:13px 14px;outline:none;margin-bottom:10px;}
     .auth-btn{width:100%;background:var(--beige);color:var(--green);border:none;padding:14px;font-family:var(--sans);font-size:11px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;}
+    .auth-btn:disabled{opacity:0.45;cursor:default;}
+    .auth-btn-ghost{background:transparent;border:1px solid rgba(255,240,220,0.2);color:var(--beige);margin-top:10px;}
+    .auth-btn-ghost:hover{border-color:rgba(255,240,220,0.5);}
     .auth-err{color:var(--danger);font-size:12px;margin-top:8px;display:none;}
+    #auth-sent .auth-sent-detail{font-size:13px;letter-spacing:0;text-transform:none;opacity:0.55;margin-bottom:28px;line-height:1.65;}
 
     #admin{display:none;}
 
@@ -168,11 +172,23 @@
 
 <div id="auth-screen">
   <div class="auth-box">
-    <h1>Admin</h1>
-    <p>Village Rewards · Mont Albert</p>
-    <input class="auth-field" id="admin-pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')authLogin()"/>
-    <button class="auth-btn" onclick="authLogin()">Sign in</button>
-    <p class="auth-err" id="auth-err">Incorrect password.</p>
+
+    <div id="auth-form">
+      <h1>Admin</h1>
+      <p>Village Rewards · Mont Albert</p>
+      <input class="auth-field" id="admin-email" type="email" placeholder="Email address"
+             onkeydown="if(event.key==='Enter')authLogin()"/>
+      <button class="auth-btn" id="auth-btn" onclick="authLogin()">Send sign-in link</button>
+      <p class="auth-err" id="auth-err"></p>
+    </div>
+
+    <div id="auth-sent" style="display:none;">
+      <h1>Check your email</h1>
+      <p>Village Rewards · Mont Albert</p>
+      <p class="auth-sent-detail" id="auth-sent-msg"></p>
+      <button class="auth-btn auth-btn-ghost" onclick="authReset()">Use a different email</button>
+    </div>
+
   </div>
 </div>
 
@@ -489,17 +505,117 @@ var BADGES = [
 var EARLY_CUTOFF = null;
 function isEarlyAdopter(d){return EARLY_CUTOFF&&new Date(d)<=EARLY_CUTOFF;}
 
-/* ── Auth ── */
-// TODO: Implement Supabase Auth here — supabase.auth.signInWithOtp({ email }) or similar.
-// Admin access is disabled until proper server-side authentication is wired up.
-function authLogin(){
-  document.getElementById('auth-err').textContent = 'Admin login is currently disabled. Contact the site administrator.';
-  document.getElementById('auth-err').style.display='block';
+/* ═══════════════════════════════════════════════════════
+   AUTH — Supabase email magic link
+
+   Supabase setup required before this will work:
+   1. Auth → Providers → enable "Email" (magic link, not password)
+   2. Auth → URL Configuration → add redirect URL:
+        https://villagerewards.com.au/village-rewards-admin.html
+   3. Run in Supabase SQL editor:
+
+        CREATE TABLE admin_users (
+          id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          email      VARCHAR(200) UNIQUE NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+        ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
+        CREATE POLICY admin_self_check ON admin_users FOR SELECT
+          USING (auth.jwt() ->> 'email' = email);
+
+   4. Insert authorised admin emails:
+        INSERT INTO admin_users (email) VALUES ('hello@gardenerandson.com.au');
+═══════════════════════════════════════════════════════ */
+
+/* Check for an existing session on page load (handles browser refresh) */
+sb.auth.getSession().then(function(result) {
+  if (result.data.session) {
+    verifyAdminAndLoad(result.data.session);
+  }
+});
+
+/* Handle magic link redirect and all auth state transitions */
+sb.auth.onAuthStateChange(function(event, session) {
+  if (event === 'SIGNED_IN' && session) {
+    verifyAdminAndLoad(session);
+  }
+  if (event === 'SIGNED_OUT') {
+    showAuthScreen();
+  }
+});
+
+async function verifyAdminAndLoad(session) {
+  var r = await sb.from('admin_users').select('id').eq('email', session.user.email).maybeSingle();
+  if (r.data) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('admin').style.display = 'block';
+    loadAll();
+    initFeed();
+    subscribeRealtime();
+  } else {
+    await sb.auth.signOut();
+    showAuthScreen('Your account (' + session.user.email + ') is not authorised for admin access.');
+  }
 }
-function signOut(){
-  document.getElementById('auth-screen').style.display='flex';
-  document.getElementById('admin').style.display='none';
-  document.getElementById('admin-pw').value='';
+
+async function authLogin() {
+  var email = document.getElementById('admin-email').value.trim().toLowerCase();
+  if (!email || !email.includes('@')) {
+    showAuthError('Please enter a valid email address.');
+    return;
+  }
+  var btn = document.getElementById('auth-btn');
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+  hideAuthError();
+
+  var result = await sb.auth.signInWithOtp({
+    email: email,
+    options: { emailRedirectTo: window.location.origin + window.location.pathname }
+  });
+
+  if (result.error) {
+    btn.textContent = 'Send sign-in link';
+    btn.disabled = false;
+    showAuthError(result.error.message || 'Failed to send link. Please try again.');
+    return;
+  }
+
+  document.getElementById('auth-form').style.display = 'none';
+  document.getElementById('auth-sent').style.display = 'block';
+  document.getElementById('auth-sent-msg').textContent =
+    'We sent a sign-in link to ' + email + '. Check your inbox — it may take a minute.';
+}
+
+function authReset() {
+  document.getElementById('auth-form').style.display = 'block';
+  document.getElementById('auth-sent').style.display = 'none';
+  var btn = document.getElementById('auth-btn');
+  btn.textContent = 'Send sign-in link';
+  btn.disabled = false;
+  document.getElementById('admin-email').value = '';
+  hideAuthError();
+}
+
+function showAuthScreen(errorMsg) {
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('admin').style.display = 'none';
+  authReset();
+  if (errorMsg) showAuthError(errorMsg);
+}
+
+function showAuthError(msg) {
+  var el = document.getElementById('auth-err');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideAuthError() {
+  document.getElementById('auth-err').style.display = 'none';
+}
+
+async function signOut() {
+  await sb.auth.signOut();
 }
 
 /* ── Page nav ── */
