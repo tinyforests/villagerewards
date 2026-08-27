@@ -342,6 +342,57 @@
     .sni-btn:hover { background: rgba(168,194,133,0.22); }
     .sni-btn.done { background: none; border-color: rgba(255,240,220,0.1); color: var(--beige); opacity: 0.35; cursor: default; }
     .no-shops-msg { font-size: 13px; opacity: 0.4; text-align: center; padding: 28px 0; line-height: 1.7; font-style: italic; }
+
+    /* ── Tiered rewards marketplace ── */
+    .rewards-cta {
+      margin: 20px 24px 0; padding: 18px 20px;
+      background: rgba(168,194,133,0.08); border: 1px solid rgba(168,194,133,0.25);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer;
+    }
+    .rewards-cta .cta-text { font-size: 13px; line-height: 1.5; opacity: 0.8; }
+    .rewards-cta .cta-text strong { font-weight: 500; color: var(--accent); display: block; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .rewards-cta .cta-arrow { font-family: var(--serif); font-size: 26px; color: var(--accent); flex-shrink: 0; }
+
+    .tier-block { margin-bottom: 28px; }
+    .tier-block.locked { opacity: 0.4; }
+    .tier-head { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid rgba(255,240,220,0.12); margin-bottom: 14px; }
+    .tier-head .tl { font-family: var(--serif); font-size: 24px; }
+    .tier-head .ts { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.5; }
+    .reward-card { border: 1px solid rgba(255,240,220,0.12); padding: 16px; margin-bottom: 10px; }
+    .reward-card .rc-shop { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.5; }
+    .reward-card .rc-title { font-size: 17px; margin-top: 4px; }
+    .reward-card .rc-desc { font-size: 13px; opacity: 0.6; margin-top: 4px; line-height: 1.5; }
+    .reward-card .rc-val { font-size: 12px; opacity: 0.4; margin-top: 6px; }
+    .reward-card .rc-redeem { margin-top: 12px; }
+    .tier-empty { font-size: 12px; opacity: 0.35; font-style: italic; padding: 6px 0; }
+
+    /* Redemption QR screen */
+    #s-redemption .body { display: flex; flex-direction: column; align-items: center; text-align: center; min-height: calc(100dvh - 60px); }
+    .redeem-shop { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.5; margin-top: 8px; }
+    .redeem-title { font-family: var(--serif); font-size: 26px; margin-top: 6px; }
+    .redeem-qr { background: var(--beige); padding: 14px; margin-top: 24px; }
+    .redeem-qr canvas, .redeem-qr img { display: block; }
+    .redeem-count { font-size: 15px; opacity: 0.7; margin-top: 20px; letter-spacing: 0.08em; }
+    .redeem-count strong { color: var(--accent); }
+    .redeem-hint { font-size: 12px; opacity: 0.4; margin-top: 10px; line-height: 1.6; max-width: 260px; }
+
+    /* Validate tab */
+    .val-result { padding: 16px; margin-top: 16px; border: 1px solid rgba(255,240,220,0.12); font-size: 14px; line-height: 1.6; display: none; }
+    .val-result.ok  { border-color: rgba(168,194,133,0.4); background: rgba(168,194,133,0.06); }
+    .val-result.err { border-color: rgba(201,123,90,0.4); background: rgba(201,123,90,0.06); color: var(--danger); }
+
+    /* ═══ DEMO_MODE START — tier progress + demo browser (remove with demo block) ═══ */
+    .tiers-progress { padding: 20px 24px 4px; border-bottom: 1px solid rgba(255,240,220,0.1); }
+    .tp-title { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.35; margin-bottom: 14px; }
+    .tp-row { padding: 10px 0; }
+    .tp-row.unlocked { cursor: pointer; }
+    .tp-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+    .tp-lvl { font-size: 13px; opacity: 0.8; }
+    .tp-status { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.4; }
+    .tp-row.unlocked .tp-status { color: var(--accent); opacity: 0.8; }
+    .tp-bar { height: 6px; background: rgba(255,240,220,0.1); overflow: hidden; }
+    .tp-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
+    /* ═══ DEMO_MODE END ═══ */
   </style>
 </head>
 <body>
@@ -419,6 +470,10 @@
     <div class="pts-val" id="c-value">$0.00 to spend</div>
   </div>
 
+  <!-- DEMO_MODE START: tier progress bars (remove with demo block) -->
+  <div class="tiers-progress" id="tiers-progress" style="display:none;"></div>
+  <!-- DEMO_MODE END -->
+
   <div class="qr-section">
     <div class="qr-label">Your village code</div>
     <div id="qr-canvas"></div>
@@ -433,6 +488,15 @@
       Tap to check in at a nearby shop and earn points.
     </div>
     <div class="cta-pts">+8 →</div>
+  </div>
+
+  <!-- Rewards marketplace CTA (real, DB-backed) -->
+  <div class="rewards-cta" id="real-rewards-cta" onclick="openRewards()">
+    <div class="cta-text">
+      <strong>Rewards marketplace</strong>
+      Browse rewards you can unlock and redeem across the village.
+    </div>
+    <div class="cta-arrow">◆ →</div>
   </div>
 
   <div class="history-section">
@@ -468,6 +532,75 @@
     <div class="shops-nearby" id="shops-nearby"></div>
   </div>
 </div>
+
+<!-- ═══ REWARDS MARKETPLACE ═══════════════════════════ -->
+<div class="screen" id="s-rewards">
+  <div class="bar">
+    <button class="back-btn" onclick="show('s-customer')">← Back</button>
+    <span class="sub">Rewards</span>
+  </div>
+  <div class="body">
+    <h2 class="display-sm">Village<br />rewards</h2>
+    <p class="hint" id="rewards-balance" style="margin-top:12px;"></p>
+    <div id="tiers-list" style="margin-top:24px;"></div>
+  </div>
+</div>
+
+<!-- ═══ REDEMPTION QR ══════════════════════════════════ -->
+<div class="screen" id="s-redemption">
+  <div class="bar"><span class="logo">Village Rewards</span></div>
+  <div class="body">
+    <div class="redeem-shop" id="rd-shop"></div>
+    <div class="redeem-title" id="rd-title"></div>
+    <div class="redeem-qr" id="rd-qr"></div>
+    <div class="redeem-count" id="rd-count"></div>
+    <p class="redeem-hint">Show this to the merchant. They confirm the code to complete it. Your points reset to zero once confirmed.</p>
+    <button class="btn btn-outline" style="margin-top:28px;max-width:300px;" onclick="cancelRedemption()">Cancel</button>
+  </div>
+</div>
+
+<!-- ═══ DEMO_MODE START — demo tier browser + mock redemption (remove with demo block) ═══ -->
+<!-- ═══ DEMO: TIER REWARD BROWSER ══════════════════════ -->
+<div class="screen" id="s-tiers">
+  <div class="bar">
+    <button class="back-btn" onclick="show('s-customer')">← Back</button>
+    <span class="sub">Rewards</span>
+  </div>
+  <div class="body">
+    <h2 class="display-sm" id="dt-title">Rewards</h2>
+    <p class="hint" id="dt-sub" style="margin-top:12px;"></p>
+    <div id="dt-list" style="margin-top:24px;"></div>
+  </div>
+</div>
+
+<!-- ═══ DEMO: CONFIRM + MOCK QR ════════════════════════ -->
+<div class="screen" id="s-tier-redeem">
+  <div class="bar">
+    <button class="back-btn" onclick="show('s-tiers')">← Back</button>
+    <span class="sub">Redeem</span>
+  </div>
+  <div class="body" style="text-align:center;">
+    <!-- confirmation view -->
+    <div id="dr-confirm-view">
+      <div class="redeem-shop" id="dr-shop"></div>
+      <div class="redeem-title" id="dr-title"></div>
+      <p class="hint" id="dr-desc" style="margin-top:14px;"></p>
+      <p class="redeem-hint" style="margin:18px auto 0;">Redeeming resets your points to zero. You start earning again straight away.</p>
+      <button class="btn btn-accent"  style="margin-top:28px;max-width:320px;" onclick="demoDoRedeem()">Redeem now</button>
+      <button class="btn btn-outline" style="margin-top:10px;max-width:320px;" onclick="show('s-tiers')">Cancel</button>
+    </div>
+    <!-- mock QR view -->
+    <div id="dr-qr-view" style="display:none;">
+      <div class="redeem-shop" id="dr-shop2"></div>
+      <div class="redeem-title">Show this to the merchant</div>
+      <div class="redeem-qr" id="dr-qr" style="display:inline-block;margin-top:24px;"></div>
+      <div class="customer-code" id="dr-code" style="font-size:16px;margin-top:14px;"></div>
+      <p class="redeem-hint" style="margin:12px auto 0;">DEMO — this code is not live yet.</p>
+      <button class="btn btn-outline" style="margin-top:24px;max-width:320px;" onclick="show('s-customer')">Done</button>
+    </div>
+  </div>
+</div>
+<!-- ═══ DEMO_MODE END ═══ -->
 
 <!-- ═══ TRADER LOGIN ══════════════════════════════════ -->
 <div class="screen" id="s-trader-login">
@@ -517,6 +650,7 @@
       <button class="tab-btn active" id="tab-purchase-btn" onclick="switchTab('purchase')">Purchase</button>
       <button class="tab-btn" id="tab-checkin-btn"  onclick="switchTab('checkin')">Check-in</button>
       <button class="tab-btn" id="tab-redeem-btn"   onclick="switchTab('redeem')">Redeem</button>
+      <button class="tab-btn" id="tab-validate-btn" onclick="switchTab('validate')">Validate</button>
     </div>
 
     <!-- PURCHASE TAB -->
@@ -586,6 +720,30 @@
 
       <button class="btn btn-danger" id="r-btn" onclick="redeemPoints()" disabled style="margin-top:18px;">
         Confirm Redemption
+      </button>
+    </div>
+
+    <!-- VALIDATE TAB (tiered marketplace) -->
+    <div class="tab-panel" id="tab-validate">
+      <div class="checkin-info">
+        <strong>Confirm a reward redemption.</strong>
+        Enter the customer's redemption code and your shop code.
+        This resets their points to zero — only do it as they collect the reward.
+      </div>
+
+      <div class="field-label">Redemption code</div>
+      <input class="field" id="v-code" type="text" placeholder="e.g. 3F9A2B7C1D0E"
+        oninput="this.value=this.value.toUpperCase()" />
+
+      <div style="margin-top:18px;">
+        <div class="field-label">Your shop code</div>
+        <input class="field" id="v-shopcode" type="password" placeholder="Shop login code" />
+      </div>
+
+      <div id="v-result" class="val-result"></div>
+
+      <button class="btn btn-accent" id="v-btn" onclick="traderValidate()" style="margin-top:18px;">
+        Validate Redemption
       </button>
     </div>
   </div>
@@ -759,6 +917,9 @@ async function renderCustomerDashboard(c) {
   document.getElementById('c-value').textContent = ptsToDollars(c.points) + ' to spend';
   document.getElementById('c-code').textContent = c.id;
 
+  /* DEMO_MODE hook — tier progress bars (remove this line with the demo block) */
+  if (window.DEMO_MODE) renderTierProgressDemo();
+
   // QR code
   var canvas = document.getElementById('qr-canvas');
   canvas.innerHTML = '';
@@ -805,7 +966,7 @@ async function renderCustomerDashboard(c) {
    TRADER FLOW
 ═══════════════════════════════════════════════════════ */
 async function loadShops() {
-  var res = await sb.from('shops').select('*').eq('active', true).order('name');
+  var res = await sb.from('shops').select('id,name').eq('active', true).order('name');
   var sel = document.getElementById('t-shop-select');
   sel.innerHTML = '<option value="">Select your shop…</option>';
   if (res.data) {
@@ -875,7 +1036,7 @@ function traderLogout() {
 
 function switchTab(tab) {
   activeTab = tab;
-  ['purchase','checkin','redeem'].forEach(function(t) {
+  ['purchase','checkin','redeem','validate'].forEach(function(t) {
     document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === tab);
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
   });
@@ -883,10 +1044,10 @@ function switchTab(tab) {
 }
 
 function resetTraderForms() {
-  ['p-code','p-amount','ci-code','r-code','r-amount'].forEach(function(id) {
+  ['p-code','p-amount','ci-code','r-code','r-amount','v-code'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.value = '';
   });
-  ['p-lookup','p-preview','ci-lookup','r-lookup','r-preview'].forEach(function(id) {
+  ['p-lookup','p-preview','ci-lookup','r-lookup','r-preview','v-result'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.style.display = 'none';
   });
   ['p-btn','ci-btn','r-btn'].forEach(function(id) {
@@ -1180,7 +1341,7 @@ async function locateAndLoad() {
       status.textContent = 'Found you. Loading nearby shops…';
 
       // Load shops with coordinates
-      var r = await sb.from('shops').select('*').eq('active', true).not('lat', 'is', null);
+      var r = await sb.from('shops').select('id,name,lat,lng').eq('active', true).not('lat', 'is', null);
       var shops = r.data || [];
 
       if (!shops.length) {
@@ -1344,6 +1505,309 @@ async function renderBadges(cid) {
     console.log('Badges: customer_stats not available yet.', e);
   }
 }
+
+/* ═══════════════════════════════════════════════════════
+   TIERED REWARDS MARKETPLACE (V2)
+═══════════════════════════════════════════════════════ */
+var rewardsCache      = {};    // reward_id -> { title, shop }
+var activeRedemption  = null;  // { code, title, shop, expires }
+var redemptionPoll    = null;
+var redemptionCountdown = null;
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Customer: browse tiers & rewards ── */
+async function openRewards() {
+  if (!currentCustomer) { showToast('Please register first.', true); return; }
+  show('s-rewards');
+
+  var bal = currentCustomer.points || 0;
+  document.getElementById('rewards-balance').textContent =
+    'You have ' + bal.toLocaleString() + ' points. Redeeming a reward resets your points to zero.';
+
+  var list = document.getElementById('tiers-list');
+  list.innerHTML = '<p class="tier-empty">Loading rewards…</p>';
+
+  try {
+    var tiersRes = await sb.from('tiers').select('*').order('display_order');
+    var rewRes   = await sb.from('rewards').select('*').eq('is_active', true);
+    var shopRes  = await sb.from('shops').select('id,name');
+
+    var tiers   = tiersRes.data || [];
+    var rewards = rewRes.data || [];
+    var shopMap = {};
+    (shopRes.data || []).forEach(function(s) { shopMap[s.id] = s.name; });
+
+    if (!tiers.length) { list.innerHTML = '<p class="tier-empty">No reward tiers set up yet.</p>'; return; }
+
+    rewardsCache = {};
+    list.innerHTML = tiers.map(function(t) {
+      var unlocked = bal >= t.points_required;
+      var tierRewards = rewards.filter(function(r) { return r.tier_id === t.id; });
+      var head = '<div class="tier-head"><span class="tl">' + t.tier_level + ' pts</span>' +
+        '<span class="ts">' + (unlocked ? 'Unlocked' : ((t.points_required - bal) + ' more') ) + '</span></div>';
+
+      var body;
+      if (!tierRewards.length) {
+        body = '<p class="tier-empty">No rewards at this tier yet.</p>';
+      } else {
+        body = tierRewards.map(function(r) {
+          var shopName = shopMap[r.merchant_id] || 'Village shop';
+          rewardsCache[r.id] = { title: r.reward_title, shop: shopName };
+          var btn = unlocked
+            ? '<button class="btn btn-accent rc-redeem" onclick="confirmRedeem(\'' + r.id + '\')">Redeem</button>'
+            : '';
+          return '<div class="reward-card">' +
+            '<div class="rc-shop">' + esc(shopName) + '</div>' +
+            '<div class="rc-title">' + esc(r.reward_title) + '</div>' +
+            (r.reward_description ? '<div class="rc-desc">' + esc(r.reward_description) + '</div>' : '') +
+            (r.estimated_value ? '<div class="rc-val">Worth ~$' + parseFloat(r.estimated_value).toFixed(0) + '</div>' : '') +
+            btn + '</div>';
+        }).join('');
+      }
+      return '<div class="tier-block ' + (unlocked ? '' : 'locked') + '">' + head + body + '</div>';
+    }).join('');
+  } catch(e) {
+    console.error('openRewards error:', e);
+    list.innerHTML = '<p class="tier-empty">Could not load rewards. Pull down to retry.</p>';
+  }
+}
+
+function confirmRedeem(rewardId) {
+  var r = rewardsCache[rewardId];
+  if (!r) return;
+  if (!confirm('Redeem "' + r.title + '" at ' + r.shop + '?\n\nThis resets your points to zero.')) return;
+  doRedeem(rewardId);
+}
+
+async function doRedeem(rewardId) {
+  setLoading(true);
+  try {
+    var res = await sb.rpc('redeem_reward', { p_customer_id: currentCustomer.id, p_reward_id: rewardId });
+    if (res.error) throw res.error;
+    var d = res.data;
+    activeRedemption = {
+      code:    d.redemption_code,
+      title:   d.reward_title,
+      shop:    (rewardsCache[rewardId] || {}).shop || '',
+      expires: new Date(d.expires_at)
+    };
+    showRedemptionScreen();
+  } catch(e) {
+    console.error('redeem error:', e);
+    showToast(e.message || 'Could not redeem. Please try again.', true);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function showRedemptionScreen() {
+  var rd = activeRedemption;
+  if (!rd) return;
+  document.getElementById('rd-shop').textContent  = rd.shop;
+  document.getElementById('rd-title').textContent = rd.title;
+  var qr = document.getElementById('rd-qr');
+  qr.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(qr, {
+      text: rd.code, width: 190, height: 190,
+      colorDark: '#3d4535', colorLight: '#fff0dc',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+  show('s-redemption');
+  startRedemptionTimers();
+}
+
+function startRedemptionTimers() {
+  stopRedemptionTimers();
+  var countEl = document.getElementById('rd-count');
+  function tick() {
+    if (!activeRedemption) { stopRedemptionTimers(); return; }
+    var ms = activeRedemption.expires - new Date();
+    if (ms <= 0) {
+      stopRedemptionTimers();
+      countEl.innerHTML = 'Expired — please redeem again.';
+      return;
+    }
+    var s = Math.floor(ms / 1000), m = Math.floor(s / 60);
+    s = s % 60;
+    countEl.innerHTML = 'Expires in <strong>' + m + ':' + (s < 10 ? '0' : '') + s + '</strong>';
+  }
+  tick();
+  redemptionCountdown = setInterval(tick, 1000);
+  redemptionPoll      = setInterval(pollRedemption, 2500);
+}
+
+function stopRedemptionTimers() {
+  if (redemptionCountdown) clearInterval(redemptionCountdown);
+  if (redemptionPoll)      clearInterval(redemptionPoll);
+  redemptionCountdown = null;
+  redemptionPoll = null;
+}
+
+async function pollRedemption() {
+  if (!activeRedemption) return;
+  try {
+    var res = await sb.from('redemptions').select('status')
+      .eq('redemption_code', activeRedemption.code).maybeSingle();
+    if (res.data && res.data.status === 'validated') {
+      stopRedemptionTimers();
+      var title = activeRedemption.title;
+      activeRedemption = null;
+      var c = await sb.from('customers').select('*').eq('id', currentCustomer.id).single();
+      if (c.data) {
+        currentCustomer = c.data;
+        renderCustomerDashboard(c.data);
+        renderBadges(c.data.id);
+      }
+      showToast('Redeemed: ' + title + '. Enjoy!');
+      show('s-customer');
+    }
+  } catch(e) { /* keep polling */ }
+}
+
+function cancelRedemption() {
+  // Points were never deducted (that happens on merchant validation), so a
+  // cancelled redemption just expires on its own after 10 minutes.
+  stopRedemptionTimers();
+  activeRedemption = null;
+  openRewards();
+}
+
+/* ── Trader: validate a redemption ── */
+async function traderValidate() {
+  var code     = document.getElementById('v-code').value.trim().toUpperCase();
+  var shopCode = document.getElementById('v-shopcode').value.trim();
+  var out      = document.getElementById('v-result');
+
+  if (!code || !shopCode) { showToast('Enter the redemption code and your shop code.', true); return; }
+
+  setLoading(true);
+  try {
+    var res = await sb.rpc('validate_redemption', { p_redemption_code: code, p_login_code: shopCode });
+    if (res.error) throw res.error;
+    var d = res.data;
+    out.style.display = 'block';
+    out.className = 'val-result ok';
+    out.innerHTML = '<strong>' + esc(d.customer_name) + '</strong> redeemed <strong>' + esc(d.reward_title) +
+      '</strong> (tier ' + d.tier + ').<br />Points reset from ' + d.points_reset_from + ' to 0.';
+    document.getElementById('v-code').value = '';
+  } catch(e) {
+    console.error('validate error:', e);
+    out.style.display = 'block';
+    out.className = 'val-result err';
+    out.textContent = e.message || 'Validation failed. Check the code and try again.';
+  } finally {
+    setLoading(false);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   DEMO_MODE START — hardcoded tier browser for Mont Albert
+   meeting. Uses the REAL customer points balance but MOCK
+   rewards and a MOCK redemption QR (no DB writes).
+   To remove: delete this whole block, the DEMO_MODE hook
+   line in renderCustomerDashboard, the .tiers-progress /
+   #s-tiers / #s-tier-redeem HTML, the DEMO CSS block, and
+   the id="real-rewards-cta" hide below is undone automatically.
+═══════════════════════════════════════════════════════ */
+var DEMO_MODE   = true;
+var DEMO_TIERS  = [10, 20, 30, 50, 100];
+var DEMO_TIER_REWARDS = {
+  10:  [ { shop: 'Hamiltons',         title: 'Free coffee',                desc: 'Any regular coffee',        value: 4 },
+         { shop: 'Village Bakehouse', title: 'Free pastry',                desc: 'Choose any pastry',         value: 5 } ],
+  20:  [ { shop: 'Village Grocer',    title: '$5 off your shop',           desc: 'Minimum $20 spend',         value: 5 },
+         { shop: 'Dumpling 38',       title: 'Free spring rolls',          desc: 'Serve of four',             value: 8 } ],
+  30:  [],
+  50:  [ { shop: 'Gardener & Son',    title: '30min garden consultation',  desc: 'On-site or virtual',        value: 60 },
+         { shop: 'Dumpling 38',       title: 'Free lunch for two',         desc: 'Two mains plus tea',        value: 40 } ],
+  100: [ { shop: 'Gardener & Son',    title: 'Full garden design session', desc: 'Complete design consult',   value: 200 } ]
+};
+var demoActiveTier = null;
+var demoSelected   = null;
+
+function renderTierProgressDemo() {
+  var el = document.getElementById('tiers-progress');
+  if (!el) return;
+  el.style.display = 'block';
+
+  // Demo entry point is the progress bars, so hide the real (empty) CTA.
+  var realCta = document.getElementById('real-rewards-cta');
+  if (realCta) realCta.style.display = 'none';
+
+  var bal = (currentCustomer && currentCustomer.points) || 0;
+  el.innerHTML = '<div class="tp-title">Your tiers</div>' + DEMO_TIERS.map(function(lvl) {
+    var pct      = Math.min(100, Math.round(bal / lvl * 100));
+    var unlocked = bal >= lvl;
+    var hasR     = (DEMO_TIER_REWARDS[lvl] || []).length > 0;
+    var tap      = (unlocked && hasR) ? 'onclick="openDemoTier(' + lvl + ')"' : '';
+    var status   = unlocked ? (hasR ? 'Unlocked · view' : 'Unlocked') : ((lvl - bal) + ' to go');
+    return '<div class="tp-row ' + (unlocked ? 'unlocked' : '') + '" ' + tap + '>' +
+      '<div class="tp-head"><span class="tp-lvl">' + lvl + ' pts</span>' +
+      '<span class="tp-status">' + status + '</span></div>' +
+      '<div class="tp-bar"><div class="tp-fill" style="width:' + pct + '%"></div></div></div>';
+  }).join('');
+}
+
+function openDemoTier(lvl) {
+  demoActiveTier = lvl;
+  var bal = (currentCustomer && currentCustomer.points) || 0;
+  document.getElementById('dt-title').textContent = lvl + ' point rewards';
+  document.getElementById('dt-sub').textContent =
+    'You have ' + bal.toLocaleString() + ' points. Choose one — redeeming resets your points to zero.';
+
+  var rewards = DEMO_TIER_REWARDS[lvl] || [];
+  var list = document.getElementById('dt-list');
+  if (!rewards.length) {
+    list.innerHTML = '<p class="tier-empty">No rewards at this tier yet.</p>';
+  } else {
+    list.innerHTML = rewards.map(function(r, i) {
+      return '<div class="reward-card">' +
+        '<div class="rc-shop">' + esc(r.shop) + '</div>' +
+        '<div class="rc-title">' + esc(r.title) + '</div>' +
+        '<div class="rc-desc">' + esc(r.desc) + '</div>' +
+        '<div class="rc-val">Worth ~$' + r.value + '</div>' +
+        '<button class="btn btn-accent rc-redeem" onclick="demoConfirm(' + lvl + ',' + i + ')">Redeem</button>' +
+      '</div>';
+    }).join('');
+  }
+  show('s-tiers');
+}
+
+function demoConfirm(lvl, i) {
+  var r = (DEMO_TIER_REWARDS[lvl] || [])[i];
+  if (!r) return;
+  demoSelected = { lvl: lvl, r: r };
+  document.getElementById('dr-shop').textContent  = r.shop;
+  document.getElementById('dr-title').textContent = r.title;
+  document.getElementById('dr-desc').textContent  = r.desc + ' · Worth ~$' + r.value;
+  document.getElementById('dr-confirm-view').style.display = 'block';
+  document.getElementById('dr-qr-view').style.display      = 'none';
+  show('s-tier-redeem');
+}
+
+function demoDoRedeem() {
+  if (!demoSelected) return;
+  var code = 'DEMO-' + demoSelected.lvl + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+  document.getElementById('dr-shop2').textContent = demoSelected.r.shop;
+  document.getElementById('dr-code').textContent  = code;
+  var qr = document.getElementById('dr-qr');
+  qr.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(qr, {
+      text: code, width: 190, height: 190,
+      colorDark: '#3d4535', colorLight: '#fff0dc',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+  document.getElementById('dr-confirm-view').style.display = 'none';
+  document.getElementById('dr-qr-view').style.display      = 'block';
+}
+/* ═══ DEMO_MODE END ═══ */
 
 </script>
 </body>
