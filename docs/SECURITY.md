@@ -149,6 +149,49 @@ CREATE POLICY traders_own_stats ON shop_stats
   );
 ```
 
+#### Current Pilot: Trader PIN via `pilot_config`
+
+**Status:** In use now (interim, until the Supabase Auth flow above ships).
+
+The trader PIN is **not** hardcoded in `app.html`. At startup `loadPilotConfig()`
+reads it from the Supabase `pilot_config` table (`key = 'trader_pilot_code'`) and
+compares it — uppercased — against what the trader types. This keeps the secret
+out of the public GitHub Pages source.
+
+**Read the current PIN** (Supabase → SQL Editor, or any anon client — the row is
+anon-readable by design):
+```sql
+SELECT value FROM pilot_config WHERE key = 'trader_pilot_code';
+```
+
+**Reset / rotate the PIN** (Supabase → SQL Editor only — anon cannot write).
+Idempotent; also creates the table + read policy if they don't exist yet:
+```sql
+CREATE TABLE IF NOT EXISTS pilot_config (
+  key   varchar(100) PRIMARY KEY,
+  value text NOT NULL
+);
+ALTER TABLE pilot_config ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS pilot_config_anon_read ON pilot_config;
+CREATE POLICY pilot_config_anon_read ON pilot_config FOR SELECT USING (true);
+
+-- Change 'MONT2026' to the new PIN
+INSERT INTO pilot_config (key, value) VALUES ('trader_pilot_code', 'MONT2026')
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+
+SELECT * FROM pilot_config WHERE key = 'trader_pilot_code';
+```
+
+**Gotchas:**
+- **Store the value UPPERCASE.** `traderLogin()` uppercases input before comparing,
+  so a lowercase stored value can never match.
+- The PIN is a **single shared pilot secret** — anyone with anon read access can see
+  it. Acceptable for a trusted trader pilot; it is replaced by per-user Supabase Auth
+  (the `merchant_users` model above) before wider launch.
+- Empty result from the read query = the row doesn't exist, so trader login shows
+  "System not ready"; run the reset block to create it.
+
 #### Customer Authentication
 
 **Current:** Email-only registration (no password)
