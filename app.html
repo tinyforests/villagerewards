@@ -381,6 +381,17 @@
     .val-result.ok  { border-color: rgba(168,194,133,0.4); background: rgba(168,194,133,0.06); }
     .val-result.err { border-color: rgba(201,123,90,0.4); background: rgba(201,123,90,0.06); color: var(--danger); }
 
+    /* ── Shop cards (stamp rewards) ── */
+    .section-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.35; margin-bottom: 14px; }
+    .stamp-card { border: 1px solid rgba(255,240,220,0.12); padding: 16px; margin-bottom: 10px; }
+    .stamp-card.ready { border-color: rgba(168,194,133,0.4); background: rgba(168,194,133,0.06); }
+    .sc-top { display: flex; justify-content: space-between; align-items: baseline; }
+    .sc-shop { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.5; }
+    .sc-count { font-size: 13px; opacity: 0.8; }
+    .sc-title { font-size: 16px; margin-top: 4px; }
+    .sc-bar { height: 6px; background: rgba(255,240,220,0.1); overflow: hidden; margin-top: 10px; }
+    .sc-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
+
     /* ═══ DEMO_MODE START — tier progress + demo browser (remove with demo block) ═══ */
     .tiers-progress { padding: 20px 24px 4px; border-bottom: 1px solid rgba(255,240,220,0.1); }
     .tp-title { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.35; margin-bottom: 14px; }
@@ -542,7 +553,11 @@
   <div class="body">
     <h2 class="display-sm">Village<br />rewards</h2>
     <p class="hint" id="rewards-balance" style="margin-top:12px;"></p>
-    <div id="tiers-list" style="margin-top:24px;"></div>
+    <div id="stamp-cards" style="margin-top:24px;"></div>
+    <div id="tiers-section" style="margin-top:8px;">
+      <div class="section-label">Village tiers</div>
+      <div id="tiers-list"></div>
+    </div>
   </div>
 </div>
 
@@ -945,19 +960,17 @@ async function renderCustomerDashboard(c) {
   }
 
   list.innerHTML = res.data.map(function(tx) {
-    var isEarn    = tx.type === 'purchase' || tx.type === 'bonus';
     var isCheckin = tx.type === 'checkin';
     var isRedeem  = tx.type === 'redeem';
-    var ptsClass  = isRedeem ? 'redeem' : isCheckin ? 'checkin' : 'earn';
-    var ptsPrefix = isRedeem ? '−' : '+';
-    var metaText  = (tx.shop_name || '') + ' · ' + formatDate(tx.created_at);
-    if (tx.type === 'purchase' && tx.amount) metaText = '$' + parseFloat(tx.amount).toFixed(2) + ' · ' + (tx.shop_name || '') + ' · ' + formatDate(tx.created_at);
-    if (tx.type === 'checkin') metaText = 'Check-in · ' + (tx.shop_name || '') + ' · ' + formatDate(tx.created_at);
+    var isReward  = tx.type === 'reward';   // stamp-card free item (0 points)
+    var ptsClass  = isRedeem ? 'redeem' : (isCheckin || isReward) ? 'checkin' : 'earn';
+    var icon      = isReward ? '🎁 ' : isCheckin ? '⬡ ' : '';
+    var ptsCell   = isReward ? 'Free' : (isRedeem ? '−' : '+') + Math.abs(tx.points);
 
     return '<div class="tx-item">' +
-      '<div><div class="tx-shop">' + (isCheckin ? '⬡ ' : '') + (tx.shop_name || 'Village') + '</div>' +
+      '<div><div class="tx-shop">' + icon + (tx.shop_name || 'Village') + '</div>' +
       '<div class="tx-meta">' + formatDate(tx.created_at) + (tx.amount ? ' · $' + parseFloat(tx.amount).toFixed(2) : '') + '</div></div>' +
-      '<div class="tx-pts ' + ptsClass + '">' + ptsPrefix + Math.abs(tx.points) + '</div>' +
+      '<div class="tx-pts ' + ptsClass + '">' + ptsCell + '</div>' +
     '</div>';
   }).join('');
 }
@@ -1509,7 +1522,9 @@ async function renderBadges(cid) {
 /* ═══════════════════════════════════════════════════════
    TIERED REWARDS MARKETPLACE (V2)
 ═══════════════════════════════════════════════════════ */
-var rewardsCache      = {};    // reward_id -> { title, shop }
+var rewardsCache      = {};    // tier reward_id -> { title, shop, tier }
+var stampCache        = {};    // stamp reward_id -> { title, shop }
+var tiersWithRewards  = [];    // tier levels that have >=1 active reward (for the nudge)
 var activeRedemption  = null;  // { code, title, shop, expires }
 var redemptionPoll    = null;
 var redemptionCountdown = null;
@@ -1526,7 +1541,9 @@ async function openRewards() {
 
   var bal = currentCustomer.points || 0;
   document.getElementById('rewards-balance').textContent =
-    'You have ' + bal.toLocaleString() + ' points. Redeeming a reward resets your points to zero.';
+    'You have ' + bal.toLocaleString() + ' points. Redeeming a tier reward resets your points to zero.';
+
+  renderStampCards();  // shop cards load in parallel with the tiers below
 
   var list = document.getElementById('tiers-list');
   list.innerHTML = '<p class="tier-empty">Loading rewards…</p>';
@@ -1544,9 +1561,11 @@ async function openRewards() {
     if (!tiers.length) { list.innerHTML = '<p class="tier-empty">No reward tiers set up yet.</p>'; return; }
 
     rewardsCache = {};
+    tiersWithRewards = [];
     list.innerHTML = tiers.map(function(t) {
       var unlocked = bal >= t.points_required;
       var tierRewards = rewards.filter(function(r) { return r.tier_id === t.id; });
+      if (tierRewards.length) tiersWithRewards.push(t.tier_level);
       var head = '<div class="tier-head"><span class="tl">' + t.tier_level + ' pts</span>' +
         '<span class="ts">' + (unlocked ? 'Unlocked' : ((t.points_required - bal) + ' more') ) + '</span></div>';
 
@@ -1556,7 +1575,7 @@ async function openRewards() {
       } else {
         body = tierRewards.map(function(r) {
           var shopName = shopMap[r.merchant_id] || 'Village shop';
-          rewardsCache[r.id] = { title: r.reward_title, shop: shopName };
+          rewardsCache[r.id] = { title: r.reward_title, shop: shopName, tier: t.tier_level };
           var btn = unlocked
             ? '<button class="btn btn-accent rc-redeem" onclick="confirmRedeem(\'' + r.id + '\')">Redeem</button>'
             : '';
@@ -1579,11 +1598,64 @@ async function openRewards() {
 function confirmRedeem(rewardId) {
   var r = rewardsCache[rewardId];
   if (!r) return;
-  if (!confirm('Redeem "' + r.title + '" at ' + r.shop + '?\n\nThis resets your points to zero.')) return;
-  doRedeem(rewardId);
+  var bal = (currentCustomer && currentCustomer.points) || 0;
+  var msg = 'Redeem "' + r.title + '" at ' + r.shop + '?\n\nThis resets your ' + bal + ' points to zero.';
+
+  // Redeem-near-your-tier nudge: is a strictly higher tier that also has
+  // rewards affordable right now? If so, warn they're leaving value behind.
+  var betterTier = 0;
+  tiersWithRewards.forEach(function(lvl) {
+    if (lvl > r.tier && lvl <= bal && lvl > betterTier) betterTier = lvl;
+  });
+  if (betterTier) {
+    msg += '\n\n⚠ You have enough for a tier-' + betterTier + ' reward, which is worth more. ' +
+           'Redeeming this ' + r.tier + '-pt reward still costs you all ' + bal + ' points.';
+  }
+
+  if (!confirm(msg)) return;
+  doRedeem(rewardId, r.shop);
 }
 
-async function doRedeem(rewardId) {
+/* ── Customer: shop cards (stamp rewards) ── */
+async function renderStampCards() {
+  var el = document.getElementById('stamp-cards');
+  if (!el) return;
+  el.innerHTML = '';
+  try {
+    var res = await sb.rpc('get_stamp_cards', { p_customer_id: currentCustomer.id });
+    if (res.error) throw res.error;
+    var cards = res.data || [];
+    if (!cards.length) return;  // no shop cards — leave the section empty
+
+    stampCache = {};
+    el.innerHTML = '<div class="section-label">Shop cards</div>' + cards.map(function(c) {
+      stampCache[c.reward_id] = { title: c.reward_title, shop: c.shop_name };
+      var cur = Math.min(c.current_stamps, c.stamp_goal);
+      var pct = Math.round(cur / c.stamp_goal * 100);
+      var btn = c.ready
+        ? '<button class="btn btn-accent rc-redeem" onclick="confirmStampRedeem(\'' + c.reward_id + '\')">Redeem free reward</button>'
+        : '';
+      return '<div class="stamp-card ' + (c.ready ? 'ready' : '') + '">' +
+        '<div class="sc-top"><span class="sc-shop">' + esc(c.shop_name) + '</span>' +
+        '<span class="sc-count">' + cur + ' / ' + c.stamp_goal + '</span></div>' +
+        '<div class="sc-title">' + esc(c.reward_title) + '</div>' +
+        (c.reward_description ? '<div class="rc-desc">' + esc(c.reward_description) + '</div>' : '') +
+        '<div class="sc-bar"><div class="sc-fill" style="width:' + pct + '%"></div></div>' +
+        btn + '</div>';
+    }).join('');
+  } catch(e) {
+    console.error('stamp cards error:', e);  // fail quietly; tiers still render
+  }
+}
+
+function confirmStampRedeem(rewardId) {
+  var c = stampCache[rewardId];
+  if (!c) return;
+  if (!confirm('Redeem "' + c.title + '" at ' + c.shop + '?\n\nThis completes your card. Your village points are not affected.')) return;
+  doRedeem(rewardId, c.shop);
+}
+
+async function doRedeem(rewardId, shopName) {
   setLoading(true);
   try {
     var res = await sb.rpc('redeem_reward', { p_customer_id: currentCustomer.id, p_reward_id: rewardId });
@@ -1592,7 +1664,7 @@ async function doRedeem(rewardId) {
     activeRedemption = {
       code:    d.redemption_code,
       title:   d.reward_title,
-      shop:    (rewardsCache[rewardId] || {}).shop || '',
+      shop:    shopName || (rewardsCache[rewardId] || {}).shop || (stampCache[rewardId] || {}).shop || '',
       expires: new Date(d.expires_at)
     };
     showRedemptionScreen();
@@ -1693,8 +1765,11 @@ async function traderValidate() {
     var d = res.data;
     out.style.display = 'block';
     out.className = 'val-result ok';
+    var detail = (d.reward_type === 'stamp')
+      ? 'Shop card complete (' + d.stamps + ' stamps).<br />Village points unaffected — hand over the reward.'
+      : 'Tier ' + d.tier + '.<br />Points reset from ' + d.points_reset_from + ' to 0.';
     out.innerHTML = '<strong>' + esc(d.customer_name) + '</strong> redeemed <strong>' + esc(d.reward_title) +
-      '</strong> (tier ' + d.tier + ').<br />Points reset from ' + d.points_reset_from + ' to 0.';
+      '</strong>.<br />' + detail;
     document.getElementById('v-code').value = '';
   } catch(e) {
     console.error('validate error:', e);
