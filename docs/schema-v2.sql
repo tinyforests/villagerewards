@@ -401,16 +401,30 @@ GRANT EXECUTE ON FUNCTION redeem_reward(text, uuid)       TO anon, authenticated
 GRANT EXECUTE ON FUNCTION validate_redemption(text, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION get_stamp_cards(text)           TO anon, authenticated;
 
--- NOTE on stamp history rows: validate_redemption writes a 0-point transaction
--- of type 'reward' so the free item appears in the customer's history without
--- changing their balance. If the transactions table has a CHECK constraint on
--- `type`, add 'reward' to the allowed set, e.g. (adjust the constraint name):
---   ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_type_check;
---   ALTER TABLE transactions ADD  CONSTRAINT transactions_type_check
---     CHECK (type IN ('purchase','checkin','redeem','bonus','reward'));
--- If there is NO such constraint (current schema has none documented), skip this.
+-- Allow the 'reward' transaction type.
+-- validate_redemption logs stamp-card claims as a 0-point 'reward' row so they
+-- show in history without changing the balance. This project's transactions
+-- table HAS a CHECK on `type` (transactions_type_check), so rebuild it to allow
+-- every type already present in the data PLUS 'reward'. Safe against existing
+-- rows; no manual list to edit. (If your table has no such constraint, this is
+-- a harmless no-op on the DROP and just adds the constraint.)
+DO $$
+DECLARE allowed text;
+BEGIN
+  SELECT string_agg(quote_literal(t), ', ') INTO allowed
+  FROM (
+    SELECT 'purchase' AS t UNION SELECT 'checkin' UNION SELECT 'redeem'
+    UNION SELECT 'bonus' UNION SELECT 'reward'
+    UNION SELECT type FROM transactions WHERE type IS NOT NULL
+  ) s;
+  EXECUTE 'ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_type_check';
+  EXECUTE 'ALTER TABLE transactions ADD CONSTRAINT transactions_type_check CHECK (type IN (' || allowed || '))';
+END $$;
 
 COMMIT;
+
+-- Verify the rebuilt constraint now includes 'reward':
+--   SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='transactions_type_check';
 
 -- ============================================================================
 -- 9. Per-shop login codes — set these to real values before trader testing.
