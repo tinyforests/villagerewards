@@ -796,6 +796,7 @@ var TRADER_PIN = null; // Fetched from Supabase pilot_config table at startup �
 var PTS_PER_DOLLAR   = 1;           // 1 point per $1
 var PTS_TO_DOLLAR    = 100;         // 100 pts = $1
 var CHECKIN_POINTS   = 8;           // Points per check-in
+var REWARDS_V2       = false;       // V2 rewards (tiers + shop cards + Validate). Keep FALSE until docs/schema-v2.sql is run in Supabase, then set true.
 
 /* ═══════════════════════════════════════════════════════
    SUPABASE CLIENT
@@ -1308,6 +1309,14 @@ if ('serviceWorker' in navigator) {
 ═══════════════════════════════════════════════════════ */
 loadShops();
 loadPilotConfig();
+
+/* Gate the V2 rewards UI until schema-v2.sql is live. Hides the customer
+   rewards CTA and the trader Validate tab so V1 dogfooding stays clean.
+   Flip REWARDS_V2 to true (and run the schema) to switch it on. */
+if (!REWARDS_V2) {
+  var _v2cta = document.getElementById('real-rewards-cta');  if (_v2cta) _v2cta.style.display = 'none';
+  var _v2val = document.getElementById('tab-validate-btn');  if (_v2val) _v2val.style.display = 'none';
+}
 
 
 /* ═══════════════════════════════════════════════════════
