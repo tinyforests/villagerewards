@@ -1323,7 +1323,7 @@ if (!REWARDS_V2) {
    GEOLOCATION CHECK-IN
 ═══════════════════════════════════════════════════════ */
 var CHECKIN_RADIUS_M = 150;
-var DEV_MODE = false; // GPS enforcement active — set true locally to bypass 150m radius check
+var DEV_MODE = true; // GPS enforcement active — set true locally to bypass 150m radius check
 
 function haversineDistance(lat1, lon1, lat2, lon2) {
   var R = 6371000;
@@ -1799,7 +1799,7 @@ async function traderValidate() {
    #s-tiers / #s-tier-redeem HTML, the DEMO CSS block, and
    the id="real-rewards-cta" hide below is undone automatically.
 ═══════════════════════════════════════════════════════ */
-var DEMO_MODE   = false;
+var DEMO_MODE   = true;
 var DEMO_TIERS  = [10, 20, 30, 50, 100];
 var DEMO_TIER_REWARDS = {
   10:  [ { shop: 'Hamiltons',         title: 'Free coffee',                desc: 'Any regular coffee',        value: 4 },
