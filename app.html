@@ -695,6 +695,7 @@
     <!-- PURCHASE TAB -->
     <div class="tab-panel active" id="tab-purchase">
       <div class="field-label">Customer village code</div>
+      <button class="btn btn-outline scan-code-btn" onclick="openQrScanner('p')">Scan customer QR</button>
       <input class="field" id="p-code" type="text" placeholder="e.g. AB12CD" maxlength="6"
         oninput="this.value=this.value.toUpperCase();lookupCustomer('p')" />
       <div id="p-lookup" style="display:none;" class="lookup-box"></div>
@@ -727,6 +728,7 @@
       </div>
 
       <div class="field-label">Customer village code</div>
+      <button class="btn btn-outline scan-code-btn" onclick="openQrScanner('ci')">Scan customer QR</button>
       <input class="field" id="ci-code" type="text" placeholder="e.g. AB12CD" maxlength="6"
         oninput="this.value=this.value.toUpperCase();lookupCustomer('ci')" />
       <div id="ci-lookup" style="display:none;" class="lookup-box"></div>
@@ -739,6 +741,7 @@
     <!-- REDEEM TAB -->
     <div class="tab-panel" id="tab-redeem">
       <div class="field-label">Customer village code</div>
+      <button class="btn btn-outline scan-code-btn" onclick="openQrScanner('r')">Scan customer QR</button>
       <input class="field" id="r-code" type="text" placeholder="e.g. AB12CD" maxlength="6"
         oninput="this.value=this.value.toUpperCase();lookupCustomer('r')" />
       <div id="r-lookup" style="display:none;" class="lookup-box"></div>
@@ -771,6 +774,7 @@
       </div>
 
       <div class="field-label">Redemption code</div>
+      <button class="btn btn-outline scan-code-btn" onclick="openQrScanner('v')">Scan reward QR</button>
       <input class="field" id="v-code" type="text" placeholder="e.g. 3F9A2B7C1D0E"
         oninput="this.value=this.value.toUpperCase()" />
 
@@ -1956,5 +1960,14 @@ function demoDoRedeem() {
 /* ═══ DEMO_MODE END ═══ */
 
 </script>
+<dialog id="qr-scanner" aria-labelledby="qr-title">
+  <h2 id="qr-title">Scan their code</h2>
+  <p id="qr-status" role="status" aria-live="polite">Opening camera…</p>
+  <video id="qr-video" muted playsinline aria-label="QR camera preview"></video>
+  <p class="hint">Scanning fills the code. Points or rewards still need your confirmation.</p>
+  <button class="btn btn-outline" id="qr-close">Close camera · type instead</button>
+</dialog>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="assets/qr-scanner.js"></script>
 </body>
 </html>

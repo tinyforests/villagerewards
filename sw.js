@@ -3,7 +3,7 @@
    v1.0 · Mont Albert Pilot
    ───────────────────────────────────────────────────── */
 
-var CACHE_NAME = 'village-rewards-brand-v2';
+var CACHE_NAME = 'village-rewards-scan-v3';
 
 /* Assets to cache on install so the app loads offline */
 var PRECACHE = [
@@ -11,6 +11,7 @@ var PRECACHE = [
   '/app.html',
   '/assets/brand.css',
   '/assets/app-brand.css',
+  '/assets/qr-scanner.js',
   '/docs/brand-book.html',
   'https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800;900&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'
