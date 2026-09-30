@@ -6,26 +6,26 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Village Rewards" />
-  <meta name="theme-color" content="#3d4535" />
+  <meta name="theme-color" content="#ffffff" />
   <title>Village Rewards · Mont Albert</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     :root {
-      --green:      #3d4535;
+      --green:      #29332f;
       --green-dark: #2c3127;
       --green-mid:  #505c42;
-      --beige:      #fff0dc;
+      --beige:      #ffffff;
       --beige-dim:  rgba(255,240,220,0.12);
       --accent:     #a8c285;
       --danger:     #c97b5a;
-      --serif:      'Abril Fatface', serif;
-      --sans:       'IBM Plex Sans', system-ui, sans-serif;
+      --serif:      var(--vr-font);
+      --sans:       var(--vr-font);
       --safe-top:   env(safe-area-inset-top, 0px);
       --safe-bot:   env(safe-area-inset-bottom, 0px);
     }
@@ -94,7 +94,7 @@
     .field-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.45; margin-bottom: 6px; }
     .field-group { display: flex; flex-direction: column; gap: 12px; margin-top: 28px; }
     select.field {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23fff0dc' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2329332f' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
       background-repeat: no-repeat; background-position: right 16px center;
       padding-right: 40px; cursor: pointer;
     }
@@ -405,14 +405,16 @@
     .tp-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
     /* ═══ DEMO_MODE END ═══ */
   </style>
+  <link rel="stylesheet" href="assets/brand.css">
+  <link rel="stylesheet" href="assets/app-brand.css">
 </head>
-<body>
+<body class="vr-app">
 
 <!-- Loading overlay -->
 <div class="loading-overlay" id="loader"><div class="spinner"></div></div>
 
 <!-- Toast -->
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- ═══ WELCOME ═══════════════════════════════════════ -->
 <div class="screen active" id="s-welcome">
@@ -423,8 +425,8 @@
   <div class="body">
     <div class="top">
       <div class="village">Mont Albert Village</div>
-      <h1 class="display">Shop local.<br />Earn<br />together.</h1>
-      <p class="tagline">Earn points every time you shop — or simply visit — the village. Use them anywhere on the strip.</p>
+      <h1 class="display">Shop local.<br />Score more.</h1>
+      <p class="tagline">Your everyday favourites. Your next little treat. Collect points at participating village shops.</p>
     </div>
     <div class="role-btns">
       <button class="btn btn-primary"  onclick="goCustomer()">I'm shopping</button>
@@ -432,6 +434,7 @@
       <p class="role-hint">Two ways in. One village.</p>
     </div>
   </div>
+  <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
 </div>
 
 <!-- ═══ REGISTER ══════════════════════════════════════ -->
@@ -465,15 +468,24 @@
       <p class="hint" style="text-align:center;">No spam. Just your points balance.</p>
     </div>
   </div>
+  <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
 </div>
 
 <!-- ═══ CUSTOMER DASHBOARD ════════════════════════════ -->
 <div class="screen" id="s-customer">
   <div class="bar">
     <span class="logo">Village Rewards</span>
-    <button class="back-btn" onclick="show('s-welcome')">Switch</button>
+    <button class="back-btn" id="customer-menu-toggle" aria-expanded="false" aria-controls="customer-menu" onclick="toggleCustomerMenu()">☰ Menu</button>
   </div>
 
+  <nav id="customer-menu" class="customer-menu" aria-label="Customer navigation" hidden>
+    <button onclick="customerSection('customer-qr')">My code</button>
+    <button onclick="customerSection('customer-history')">Recent activity</button>
+    <button onclick="customerSection('customer-badges')">My badges</button>
+    <button onclick="show('s-checkin')">Nearby check-in</button>
+    <a href="docs/brand-book.html">Brand book</a>
+    <button onclick="show('s-welcome')">Switch customer / trader</button>
+  </nav>
   <div class="points-hero">
     <div class="greeting" id="c-greeting">Welcome back</div>
     <div class="pts-num" id="c-points">0</div>
@@ -481,11 +493,16 @@
     <div class="pts-val" id="c-value">$0.00 to spend</div>
   </div>
 
+  <div class="customer-actions">
+    <button class="btn btn-primary" onclick="customerSection('customer-qr')">Show my code</button>
+    <button class="btn btn-outline" onclick="browseCustomerRewards()">Browse rewards</button>
+  </div>
+  <p class="demo-notice" id="demo-notice" hidden>Reward demo · example offers only. Demo codes cannot be redeemed in shops.</p>
   <!-- DEMO_MODE START: tier progress bars (remove with demo block) -->
   <div class="tiers-progress" id="tiers-progress" style="display:none;"></div>
   <!-- DEMO_MODE END -->
 
-  <div class="qr-section">
+  <div class="qr-section" id="customer-qr">
     <div class="qr-label">Your village code</div>
     <div id="qr-canvas"></div>
     <div class="customer-code" id="c-code">——</div>
@@ -493,7 +510,7 @@
   </div>
 
   <!-- Check-in CTA -->
-  <div class="checkin-cta" id="checkin-cta" onclick="show('s-checkin')" style="cursor:pointer;">
+  <div class="checkin-cta" role="button" tabindex="0" onkeydown="activateWithKeyboard(event)" id="checkin-cta" onclick="show('s-checkin')" style="cursor:pointer;">
     <div class="cta-text">
       <strong>Just visiting?</strong>
       Tap to check in at a nearby shop and earn points.
@@ -502,7 +519,7 @@
   </div>
 
   <!-- Rewards marketplace CTA (real, DB-backed) -->
-  <div class="rewards-cta" id="real-rewards-cta" onclick="openRewards()">
+  <div class="rewards-cta" role="button" tabindex="0" onkeydown="activateWithKeyboard(event)" id="real-rewards-cta" onclick="openRewards()">
     <div class="cta-text">
       <strong>Rewards marketplace</strong>
       Browse rewards you can unlock and redeem across the village.
@@ -510,18 +527,19 @@
     <div class="cta-arrow">◆ →</div>
   </div>
 
-  <div class="history-section">
+  <div class="history-section" id="customer-history">
     <div class="history-title">Recent activity</div>
     <div class="tx-list" id="tx-list">
       <p class="tx-empty">No activity yet. Start shopping!</p>
     </div>
   </div>
-  <div class="badges-section">
+  <div class="badges-section" id="customer-badges">
     <div class="badges-title">Your badges</div>
     <div class="badges-grid" id="badges-grid">
       <div style="grid-column:1/-1;text-align:center;opacity:0.25;font-size:12px;padding:12px;">Earn badges by exploring the village.</div>
     </div>
   </div>
+  <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
 </div>
 
 
@@ -542,6 +560,7 @@
     <div class="locate-status" id="locate-status"></div>
     <div class="shops-nearby" id="shops-nearby"></div>
   </div>
+  <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
 </div>
 
 <!-- ═══ REWARDS MARKETPLACE ═══════════════════════════ -->
@@ -559,6 +578,7 @@
       <div id="tiers-list"></div>
     </div>
   </div>
+  <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
 </div>
 
 <!-- ═══ REDEMPTION QR ══════════════════════════════════ -->
@@ -572,6 +592,7 @@
     <p class="redeem-hint">Show this to the merchant. They confirm the code to complete it. Your points reset to zero once confirmed.</p>
     <button class="btn btn-outline" style="margin-top:28px;max-width:300px;" onclick="cancelRedemption()">Cancel</button>
   </div>
+  <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
 </div>
 
 <!-- ═══ DEMO_MODE START — demo tier browser + mock redemption (remove with demo block) ═══ -->
@@ -586,6 +607,7 @@
     <p class="hint" id="dt-sub" style="margin-top:12px;"></p>
     <div id="dt-list" style="margin-top:24px;"></div>
   </div>
+  <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
 </div>
 
 <!-- ═══ DEMO: CONFIRM + MOCK QR ════════════════════════ -->
@@ -614,6 +636,7 @@
       <button class="btn btn-outline" style="margin-top:24px;max-width:320px;" onclick="show('s-customer')">Done</button>
     </div>
   </div>
+  <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
 </div>
 <!-- ═══ DEMO_MODE END ═══ -->
 
@@ -642,11 +665,12 @@
       </div>
       <div class="pin-hint">
         Your PIN was provided with your onboarding pack.<br />
-        Contact Tyson at Gardener &amp; Son if you need it.
+        Ask the Village Rewards pilot team if you need help.
       </div>
       <button class="btn btn-primary" onclick="traderLogin()" style="margin-top:8px;">Open trader view</button>
     </div>
   </div>
+  <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
 </div>
 
 <!-- ═══ TRADER DASHBOARD ══════════════════════════════ -->
@@ -762,6 +786,7 @@
       </button>
     </div>
   </div>
+  <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
 </div>
 
 <!-- ═══ SUCCESS ═══════════════════════════════════════ -->
@@ -777,6 +802,7 @@
       <button class="btn btn-outline" onclick="traderLogout()">Done for today</button>
     </div>
   </div>
+  <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
 </div>
 
 <!-- ═══ INSTALL BANNER ════════════════════════════════ -->
@@ -815,11 +841,45 @@ var nearbyShops    = [];  // populated by locateAndLoad
 /* ═══════════════════════════════════════════════════════
    SCREEN NAV
 ═══════════════════════════════════════════════════════ */
+function activateWithKeyboard(event) {
+  if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.currentTarget.click(); }
+}
+function toggleCustomerMenu() {
+  var menu = document.getElementById('customer-menu');
+  menu.hidden = !menu.hidden;
+  document.getElementById('customer-menu-toggle').setAttribute('aria-expanded', String(!menu.hidden));
+}
+function closeCustomerMenu() {
+  document.getElementById('customer-menu').hidden = true;
+  document.getElementById('customer-menu-toggle').setAttribute('aria-expanded', 'false');
+}
+function customerSection(id) {
+  closeCustomerMenu();
+  var section = document.getElementById(id);
+  section.scrollIntoView({block:'start'});
+  section.setAttribute('tabindex', '-1');
+  section.focus({preventScroll:true});
+}
+function browseCustomerRewards() {
+  if (!window.DEMO_MODE) { openRewards(); return; }
+  show('s-tiers');
+  document.getElementById('dt-title').textContent = 'Find your next treat';
+  document.getElementById('dt-sub').textContent = 'Demo rewards only. Explore the tiers below; codes cannot be used in shops.';
+  document.getElementById('dt-list').innerHTML = DEMO_TIERS.filter(function(t) { return DEMO_TIER_REWARDS[t].length; }).map(function(t) {
+    return '<button class="btn btn-outline" style="margin-bottom:12px" onclick="openDemoTier(' + t + ')">' + t + ' point rewards →</button>';
+  }).join('');
+}
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape' && !document.getElementById('customer-menu').hidden) {
+    closeCustomerMenu(); document.getElementById('customer-menu-toggle').focus();
+  }
+});
 function show(id) {
+  closeCustomerMenu();
   document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
   requestAnimationFrame(function() {
     var el = document.getElementById(id);
-    if (el) el.classList.add('active');
+    if (el) { el.classList.add('active'); el.scrollTop = 0; }
   });
   window.scrollTo(0, 0);
 }
@@ -934,6 +994,7 @@ async function renderCustomerDashboard(c) {
   document.getElementById('c-code').textContent = c.id;
 
   /* DEMO_MODE hook — tier progress bars (remove this line with the demo block) */
+  document.getElementById('demo-notice').hidden = !window.DEMO_MODE;
   if (window.DEMO_MODE) renderTierProgressDemo();
 
   // QR code
@@ -942,7 +1003,7 @@ async function renderCustomerDashboard(c) {
   if (typeof QRCode !== 'undefined') {
     new QRCode(canvas, {
       text: c.id, width: 180, height: 180,
-      colorDark: '#3d4535', colorLight: '#fff0dc',
+      colorDark: '#29332f', colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
     });
   }
@@ -1035,7 +1096,7 @@ function traderLogin() {
   if (shopId === 'other' && !shopName) { showToast('Please enter your shop name.', true); return; }
   if (!pin)                 { showToast('Please enter your pilot code.', true); return; }
   if (!TRADER_PIN)          { showToast('System not ready — please try again in a moment.', true); return; }
-  if (pin !== TRADER_PIN)   { showToast('Incorrect pilot code. Contact Tyson at G&S.', true); return; }
+  if (pin !== TRADER_PIN)   { showToast('Incorrect pilot code. Contact the Village Rewards pilot team.', true); return; }
 
   currentShop = { id: shopId === 'other' ? null : shopId, name: shopName };
   document.getElementById('t-shop-name-display').textContent = shopName;
@@ -1367,7 +1428,7 @@ async function locateAndLoad() {
       var shops = r.data || [];
 
       if (!shops.length) {
-        list.innerHTML = '<p class="no-shops-msg">No shops with location data yet.<br/>Ask Tyson at G&S to set up coordinates.</p>';
+        list.innerHTML = '<p class="no-shops-msg">No shops with location data yet.<br/>Ask the Village Rewards pilot team to set up coordinates.</p>';
         btn.disabled = false;
         btn.textContent = 'Try again';
         status.textContent = '';
@@ -1695,7 +1756,7 @@ function showRedemptionScreen() {
   if (typeof QRCode !== 'undefined') {
     new QRCode(qr, {
       text: rd.code, width: 190, height: 190,
-      colorDark: '#3d4535', colorLight: '#fff0dc',
+      colorDark: '#29332f', colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
     });
   }
@@ -1807,9 +1868,9 @@ var DEMO_TIER_REWARDS = {
   20:  [ { shop: 'Village Grocer',    title: '$5 off your shop',           desc: 'Minimum $20 spend',         value: 5 },
          { shop: 'Dumpling 38',       title: 'Free spring rolls',          desc: 'Serve of four',             value: 8 } ],
   30:  [],
-  50:  [ { shop: 'Gardener & Son',    title: '30min garden consultation',  desc: 'On-site or virtual',        value: 60 },
+  50:  [ { shop: 'Example florist',    title: 'A seasonal bouquet',  desc: 'Illustrative reward only',        value: 60 },
          { shop: 'Dumpling 38',       title: 'Free lunch for two',         desc: 'Two mains plus tea',        value: 40 } ],
-  100: [ { shop: 'Gardener & Son',    title: 'Full garden design session', desc: 'Complete design consult',   value: 200 } ]
+  100: [ { shop: 'Example village shop',    title: 'A local gift hamper', desc: 'Illustrative reward only',   value: 200 } ]
 };
 var demoActiveTier = null;
 var demoSelected   = null;
@@ -1828,7 +1889,7 @@ function renderTierProgressDemo() {
     var pct      = Math.min(100, Math.round(bal / lvl * 100));
     var unlocked = bal >= lvl;
     var hasR     = (DEMO_TIER_REWARDS[lvl] || []).length > 0;
-    var tap      = (unlocked && hasR) ? 'onclick="openDemoTier(' + lvl + ')"' : '';
+    var tap      = (unlocked && hasR) ? 'role="button" tabindex="0" onkeydown="activateWithKeyboard(event)" onclick="openDemoTier(' + lvl + ')"' : '';
     var status   = unlocked ? (hasR ? 'Unlocked · view' : 'Unlocked') : ((lvl - bal) + ' to go');
     return '<div class="tp-row ' + (unlocked ? 'unlocked' : '') + '" ' + tap + '>' +
       '<div class="tp-head"><span class="tp-lvl">' + lvl + ' pts</span>' +
@@ -1865,6 +1926,7 @@ function openDemoTier(lvl) {
 function demoConfirm(lvl, i) {
   var r = (DEMO_TIER_REWARDS[lvl] || [])[i];
   if (!r) return;
+  if ((currentCustomer.points || 0) < lvl) { showToast('You need ' + (lvl - (currentCustomer.points || 0)) + ' more points for this tier.'); return; }
   demoSelected = { lvl: lvl, r: r };
   document.getElementById('dr-shop').textContent  = r.shop;
   document.getElementById('dr-title').textContent = r.title;
@@ -1884,7 +1946,7 @@ function demoDoRedeem() {
   if (typeof QRCode !== 'undefined') {
     new QRCode(qr, {
       text: code, width: 190, height: 190,
-      colorDark: '#3d4535', colorLight: '#fff0dc',
+      colorDark: '#29332f', colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
     });
   }

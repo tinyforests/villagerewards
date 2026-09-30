@@ -1,5 +1,7 @@
 # Village Rewards - Security Documentation
 
+> September 2026 source review: current engineering facts are in [AGENTS.md](../AGENTS.md), and current appearance in [BRAND.md](BRAND.md). This older technical document includes historical descriptions and proposals; it does not verify deployed Supabase configuration. Admin magic-link and trader pilot-code flows exist in source. `DEMO_MODE` and `DEV_MODE` are currently true. Tier validation currently resets the full balance. The legacy prototype URL now redirects to `app.html`.
+
 **Last Updated:** May 2026  
 **Current Security Status:** Hardcoded auth removed, pending Supabase Auth implementation
 
@@ -68,7 +70,7 @@ const { data, error } = await supabase.auth.signInWithOtp({
 });
 ```
 
-**Alternative:** OAuth (Google/GitHub SSO for G&S team members)
+**Alternative:** OAuth (Google/GitHub SSO for Village Rewards team members)
 
 **RLS Policy:**
 ```sql
@@ -491,7 +493,7 @@ serve(async (req) => {
 3. Contact Supabase support
 4. Notify customers per GDPR requirements
 
-**Contact:** Tyson at Gardener & Son (primary security contact)
+**Contact:** Tyson at Village Rewards (primary security contact)
 
 ---
 

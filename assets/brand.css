@@ -1,0 +1,17 @@
+/* Village Rewards brand tokens. See docs/BRAND.md and docs/brand-book.html. */
+:root {
+  --vr-white:#ffffff; --vr-ink:#29332f; --vr-muted:#56635c;
+  --vr-butter:#fff0a8; --vr-pink:#fbdce7; --vr-mint:#d8f2e5;
+  --vr-peach:#ffdfc8; --vr-sky:#dceefa; --vr-border:#e1e8e3;
+  --vr-error:#a52a31; --vr-font:'Nunito Sans',Arial,sans-serif;
+  --vr-card-radius:24px; --vr-button-radius:16px;
+}
+*{box-sizing:border-box}
+body{font-family:var(--vr-font)}
+button,input,select,textarea{font:inherit}
+button,a,input,select,textarea{-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--vr-ink);outline-offset:4px}
+button:disabled{cursor:default}
+.vr-footer{display:flex;justify-content:center;flex-wrap:wrap;gap:12px 24px;padding:24px;text-align:center;font:600 14px/1.5 var(--vr-font);color:var(--vr-muted)}
+.vr-footer a{color:var(--vr-ink);text-underline-offset:4px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

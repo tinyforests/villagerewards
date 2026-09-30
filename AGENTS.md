@@ -1,367 +1,71 @@
-# AGENTS.md - Village Rewards Engineering Brief
-
-**Repository:** `github.com/tinyforests/villagerewards`  
-**Last Updated:** May 2026  
-**Status:** Functional MVP, auth disabled, tiered system in development
-
----
-
-## Purpose
-
-Village Rewards is a spend-based QR loyalty platform for independent village traders. Part of the Gardener & Son **Incentives layer** - proving collective loyalty mechanics can activate local economies while generating economic intelligence for councils.
-
----
-
-## Current State
-
-### What Works
-
-**Customer Flow:**
-- Registration via QR code
-- Point accumulation ($1 = 1 point)
-- Points dashboard with transaction history
-- QR code generation for earning points
-- Redemption flow (currently simplified model)
-
-**Trader Flow:**
-- Shop selection interface
-- Point issuance via customer QR scan
-- Transaction recording
-- **Currently disabled** - hardcoded PIN removed (see Security)
-
-**Admin Dashboard:**
-- Realtime activity feed
-- D3 force-directed network graph (cross-shop customer journeys)
-- Cross-pollination matrix
-- Heatmap by hour/day
-- Badge system (6 badge types)
-- Customer/transaction tables with sorting
-- **Currently disabled** - hardcoded password removed (see Security)
-
-### What's Disabled
-
-**Admin Authentication:**
-- Hardcoded password (`GSADMIN2026`) removed from client-side JS
-- Login now returns: "Admin login is currently disabled. Contact the site administrator."
-- **Why:** Client-side password comparison is not real authentication
-
-**Trader Authentication:**
-- Hardcoded PIN (`MONT`) removed from client-side JS
-- Login now returns: "Trader login is temporarily disabled. Contact Tyson at G&S."
-- **Why:** Same security issue as admin
-
-**GPS Enforcement:**
-- `DEV_MODE` was set to `true` (bypassed 150m radius check globally)
-- **Now fixed:** `DEV_MODE = false` - GPS enforcement active
-- Check-ins now require actual proximity to shop location
-
-### Security Fixes (Committed May 2026)
-
-**Commit:** `c89dca0` - "Security: Remove hardcoded credentials, enable GPS enforcement"
-
-**Changes:**
-1. Removed `ADMIN_PW` variable from `village-rewards-admin.html`
-2. Removed `TRADER_PIN` variable from `app.html`
-3. Set `DEV_MODE = false` in `app.html`
-4. Added explicit blocking messages to both login flows
-5. Added TODO comments for Supabase Auth implementation
-
-**Result:** Public GitHub repo no longer exposes authentication credentials. Admin and trader flows intentionally disabled until proper auth implemented.
-
----
-
-## Tech Stack
-
-### Frontend
-- **Framework:** None - pure static HTML/CSS/JS
-- **Deployment:** GitHub Pages (villagerewards.com.au)
-- **Build process:** Zero - edit HTML, commit, push, live in ~30 seconds
-- **PWA:** Service worker exists (`sw.js`), but no `manifest.json` (Android install broken)
-
-### Backend
-- **Database:** Supabase PostgreSQL
-- **Project:** `hwtwfhvaeczofqktychc.supabase.co`
-- **Client:** `@supabase/supabase-js@2` (loaded via CDN)
-- **Auth:** None currently (pending implementation)
-
-### Dependencies (CDN-loaded)
-- `@supabase/supabase-js@2` - database client
-- `qrcodejs@1.0.0` - QR code generation
-- `d3@7.8.5` - admin dashboard visualizations
-- Google Fonts: Abril Fatface + IBM Plex Sans
+# Village Rewards engineering brief
 
-### File Structure (Flat)
-```
-villagerewards/
-├── index.html                 # Marketing landing page (48KB)
-├── app.html                   # Live PWA - customer + trader app (60KB)
-├── village-rewards-admin.html # Admin dashboard (60KB)
-├── village-rewards-pwa.html   # DEAD CODE - localStorage prototype
-├── ma-presentation.html       # Mont Albert trader pitch deck (32KB)
-├── sw.js                      # Service worker (3KB)
-├── CNAME                      # villagerewards.com.au
-├── SUPER_MIND.md             # G&S universal context
-├── AI_CONTEXT.md             # G&S AI instructions
-├── CLAUDE.md                 # This repo's mirror
-├── AGENTS.md                 # This file
-└── docs/                     # Technical documentation
-```
+Repository: `github.com/tinyforests/villagerewards` · Updated 30 September 2026
 
----
+## Product
 
-## Data Model
+Village Rewards is an independent web loyalty platform for local village traders and customers. The current pilot is in Mont Albert, Melbourne. Customers collect points across participating shops and explore merchant rewards.
 
-**See `docs/SCHEMA.md` for complete schema documentation.**
+## Brand source of truth
 
-### Core Tables (Supabase)
+Read `docs/BRAND.md` and `docs/brand-book.html` before changing presentation or copy. Shared tokens live in `assets/brand.css`.
 
-**customers:**
-- `id` (6-char alphanumeric)
-- `name`, `email`, `points`, `postcode`, `birth_year`
-- `created_at`
+- Promise: **Shop local. Score more.**
+- Personality: sunny, playful and easy.
+- White canvas; butter yellow signature; pink and mint main accents; peach and sky blue supporting accents.
+- Charcoal text and primary buttons. Nunito Sans throughout, bold short headlines and readable body text.
+- Cards use 24px corners, buttons 16px corners and at least 48px tap targets.
+- Customer navigation uses a labelled hamburger menu. Keep Show my code and Browse rewards visible on Home. Do not introduce a customer bottom navigation bar.
+- Keep a Brand book link in public footers.
+- Use clear reward prices, conditions and availability. Identify demo data and offers as examples.
+- Honour reduced motion and keep contrast strong.
 
-**shops:**
-- `id`, `name`, `active` (boolean)
-- `lat`, `lng` (for GPS check-in validation)
+## Repository and deployment
 
-**transactions:**
-- `customer_id`, `shop_id`, `shop_name`
-- `type` (purchase/checkin/redeem/bonus)
-- `amount`, `points`
-- `created_at`
+Static HTML/CSS/JavaScript with no build step, deployed through GitHub Pages at `villagerewards.com.au`. Backend: Supabase, project `hwtwfhvaeczofqktychc.supabase.co`. Public anon keys in frontend source are expected; authorisation must be enforced in the backend.
 
-### Database Views
+- `index.html`: consumer homepage, trader information and brand-book footer.
+- `app.html`: customer and trader app, with existing demo and database-backed flows.
+- `village-rewards-admin.html`: analytics and admin magic-link UI.
+- `ma-presentation.html`: trader presentation.
+- `village-rewards-pwa.html`: legacy URL redirects to `app.html`.
+- `assets/brand.css`: shared identity tokens and accessibility defaults.
+- `assets/app-brand.css`, `admin-brand.css`, `presentation-brand.css`: page-specific presentation.
+- `sw.js`: service worker; increment cache version when changing cached app assets.
+- `docs/brand-book.html`: visual brand reference; `docs/BRAND.md`: implementation rules.
+- `docs/schema-v2.sql`: checked-in tier, stamp and redemption migration, not proof of deployed state.
+- `docs/redesign-concept.html`: isolated fictional design study, not the live app.
 
-**village_stats** - top-level aggregate (customers, points, spend, checkins)  
-**customer_stats** - per-customer rollup (unique shops, total spend)  
-**shop_stats** - per-shop aggregates (transactions, unique customers)  
-**cross_pollination** - cross-shop journey pairs + counts  
-**checkins_detail** - full checkin records with shop info  
-**shop_checkin_summary** - per-shop checkin aggregates
+## Current source state, not deployment verification
 
-### Points Logic (Current Prototype)
+- Customer registration and returning access use email lookup and a customer ID in localStorage. This is not verified customer authentication.
+- Trader pilot login compares a shared code fetched from `pilot_config`. Moving it out of the source does not make a publicly readable code secure.
+- Admin email magic-link auth is implemented, including an `admin_users` allowlist lookup. Supabase configuration and database authorisation must be verified separately.
+- `DEMO_MODE = true`: mock tier offers and mock redemption QR codes are exposed in the customer experience. The app labels this demo and keeps real earning separate.
+- `DEV_MODE = true`: the client proximity eligibility check is bypassed. Do not describe GPS enforcement as active. Backend enforcement is unverified.
+- Real reward/stamp RPC calls exist. The SQL includes customer locking for tier validation, but ownership, stamp concurrency and monthly caps need review.
+- A service worker exists. Manifest and icon assets are still absent; do not claim installation is fully verified.
 
-- **Earning:** $1 spent = 1 point
-- **Valuation:** 100 points = $1 value
-- **Check-ins:** 8 points per GPS-verified visit
-- **Check-in cooldown:** 4 hours per shop
-- **Redemption:** Currently simplified (will be replaced by tiered system)
+## Business rules
 
----
+Current source: $1 spent earns 1 point, rounded to the nearest whole point. Check-ins award 8 points with a client-side four-hour eligibility check per shop. Legacy redemption expresses 100 points as $1.
 
-## Code Quality Issues
+The tier implementation resets the entire village balance when a merchant confirms redemption. Stamp rewards affect their own card. The design study proposes retaining excess points; that is not an approved or deployed business-rule change. Do not change financial or earning logic as part of a visual redesign.
 
-### Critical (Addressed)
-✅ Hardcoded admin password - **REMOVED**  
-✅ Hardcoded trader PIN - **REMOVED**  
-✅ DEV_MODE bypassing GPS checks - **FIXED**
+## Engineering priorities
 
-### High Priority (Not Yet Addressed)
-❌ **No database schema in repo** - entire schema lives only in Supabase  
-❌ **No RLS policies documented** - security depends on invisible Supabase config  
-❌ **Dead file:** `village-rewards-pwa.html` should be removed or archived  
-❌ **No PWA manifest** - Android install broken (sw.js references missing icons)  
-❌ **Design tokens duplicated** - CSS custom properties re-declared in 4 files
+1. Verify deployed schema, policies, functions and auth configuration against checked-in source.
+2. Bind customer and trader operations to verified identity; scope reads to authorised users.
+3. Enforce earning rules, cooldowns, monthly caps and redemption consistency on the server.
+4. Separate demo from production behaviour before broader rollout.
+5. Complete PWA manifest/icons and test mobile browser and standalone modes.
 
-### Medium Priority
-- Non-atomic redemption logic (concurrent redemptions could double-spend)
-- Generic git commit messages (no information about what changed)
-- No tests, no CI/CD
-- Customer-facing error message: "Contact Tyson at G&S"
+Run syntax and local-link checks after page edits. For interaction changes, check keyboard navigation and mobile layout. Stub the backend during UI tests to avoid production writes. Do not claim production security or successful deployment based on local source checks.
 
----
+## Public contact
 
-## Security Model
+`hello@villagerewards.com.au` is planned but not connected yet. Show it as coming soon without a mail link until Tyson confirms the mailbox is active.
 
-### Current Security Posture
+## Reading order
 
-**Supabase Anon Key:**
-- Exposed in client-side JS (intentional - it's a public key)
-- Security depends entirely on **Row-Level Security (RLS) policies** in Supabase
-- **Problem:** RLS policies are not documented in this repo
-
-**Authentication:**
-- Admin: Currently disabled (hardcoded password removed)
-- Trader: Currently disabled (hardcoded PIN removed)
-- Customer: Email-based registration (no password)
-
-**See `docs/SECURITY.md` for full security audit and implementation plan.**
-
-### Required Next Steps
-
-1. **Document RLS policies** - extract from Supabase, document in `docs/SCHEMA.md`
-2. **Implement Supabase Auth:**
-   - Admin: Email magic link or SSO
-   - Trader: Email + password accounts with shop assignment
-3. **Test RLS policies** - verify customers can't access other customers' data
-4. **Implement server-side validation** - move business logic out of client JS
-
----
-
-## Deployment
-
-### Current Flow
-1. Edit HTML files locally
-2. Commit to `main` branch
-3. GitHub automatically deploys to Pages
-4. Live at `villagerewards.com.au` in ~30 seconds
-
-### No Build Process
-- No `package.json`, no bundler, no transpilation
-- Supabase credentials embedded directly in JS (anon key only)
-- No environment variables
-
-### Custom Domain
-- CNAME file points to `villagerewards.com.au`
-- DNS managed externally
-
----
-
-## Next Development Phase: Tiered Redemption System
-
-**See `docs/TIERED-SYSTEM.md` for full specification.**
-
-### Overview
-
-Replace the current simplified redemption model with a **tiered reward marketplace**:
-
-- Fixed tiers: 10, 20, 30, 50, 100 points
-- Merchants donate specific rewards at specific tiers
-- Customers choose which reward to redeem
-- Points reset to 0 after redemption
-- Merchants only pay when their specific reward is redeemed
-
-### New Tables Required
-
-**tiers** (static configuration):
-- tier_level (10, 20, 30, 50, 100)
-- points_required
-- suggested_value_min/max
-
-**rewards:**
-- merchant_id
-- tier_id
-- reward_title, reward_description
-- estimated_value
-- monthly_redemption_cap
-- is_active
-
-**redemptions:**
-- customer_id
-- merchant_id (where redeemed)
-- reward_id (specific reward)
-- tier_id
-- points_spent
-- redemption_code (QR validation)
-- status (pending/validated/cancelled)
-
-### Development Sequence
-
-1. **Schema migration** - create new tables in Supabase
-2. **Merchant dashboard** - reward creation/management UI
-3. **Customer tier browser** - show available rewards per tier
-4. **QR flows** - earning QR (add points) vs redemption QR (validate reward)
-5. **Redemption validation** - merchant confirms customer redemption
-6. **Points reset logic** - after successful redemption
-7. **Analytics update** - merchant + council dashboards
-
----
-
-## G&S System Integration
-
-### Position in the Spine
-
-**Culture → Discovery → Registry → Incentives**
-
-Village Rewards is the **Incentives layer** - proving that verified ecological work (Registry) can translate into economic value through collective activation mechanics.
-
-### Design Standard
-
-**Palette:**
-- Gardener Green: `#3d4535`
-- Nostalgic Beige: `#fff0dc`
-- Accent Green: `#a8c285`
-
-**Typography:**
-- Abril Fatface (headings, ceremonial moments)
-- IBM Plex Sans (body, interface)
-- IBM Plex Mono (data, timestamps)
-
-**Principles:**
-- Border-radius 0 everywhere (registry, not consumer product)
-- Signal Green functional, not decorative
-- Calm, grounded, systems-aware voice
-
-**Reference:** The Village Rewards landing page is the approved design reference for all G&S web products.
-
----
-
-## Testing Checklist (Before Re-enabling Auth)
-
-### Security
-- [ ] RLS policies documented and tested
-- [ ] Supabase Auth implemented (admin + trader)
-- [ ] Customer data isolation verified
-- [ ] Server-side validation for critical operations
-
-### Functionality
-- [ ] Customer registration flow
-- [ ] Point accumulation
-- [ ] QR code generation (earning)
-- [ ] Trader point issuance
-- [ ] Redemption flow
-- [ ] Admin dashboard access
-
-### PWA
-- [ ] Create `manifest.json`
-- [ ] Add icon assets to `/icons/`
-- [ ] Test Android "Add to Home Screen"
-- [ ] Verify service worker caching
-
-### Data Integrity
-- [ ] Concurrent redemption handling
-- [ ] Point balance consistency
-- [ ] Transaction atomicity
-- [ ] GPS check-in cooldown enforcement
-
----
-
-## Open Questions
-
-### Technical
-- Should we migrate to a proper build process (Vite/Next.js)?
-- Should we keep the flat HTML architecture or modularize?
-- How do we handle schema migrations going forward?
-- Should we add TypeScript for type safety?
-
-### Product
-- Multi-village expansion timeline?
-- Cross-village point accumulation strategy?
-- Council dashboard priority features?
-- Merchant onboarding automation?
-
-### G&S Integration
-- How does Village Rewards data feed back to the Registry?
-- Can registered gardens receive Village Rewards benefits?
-- Should stewards get loyalty perks?
-- How does this connect to Yield economic layer?
-
----
-
-## Contact & Handoff
-
-**Built by:** Gardener & Son  
-**Location:** Mont Albert & Auburn Road, Hawthorn, Melbourne  
-**Primary contact:** Tyson (co-founder)
-
-**For new developers:**
-1. Read this file (AGENTS.md) first
-2. Read `SUPER_MIND.md` for G&S context
-3. Read `docs/SCHEMA.md` for database structure
-4. Read `docs/SECURITY.md` for security requirements
-5. Read `docs/TIERED-SYSTEM.md` for next build phase
-
-**For AI assistants:**
-1. Read `AI_CONTEXT.md` for voice and principles
-2. Read `SUPER_MIND.md` for full operating context
-3. Consult this file for repo-specific engineering detail
+`AI_CONTEXT.md` → `docs/BRAND.md` → this brief → `docs/SCHEMA.md` / `docs/SECURITY.md` / `docs/TIERED-SYSTEM.md` as required. `SUPER_MIND.md` is a compatibility pointer to the current independent product context.

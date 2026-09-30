@@ -3,13 +3,16 @@
    v1.0 · Mont Albert Pilot
    ───────────────────────────────────────────────────── */
 
-var CACHE_NAME = 'village-rewards-v1';
+var CACHE_NAME = 'village-rewards-brand-v2';
 
 /* Assets to cache on install so the app loads offline */
 var PRECACHE = [
   '/',
   '/app.html',
-  'https://fonts.googleapis.com/css2?family=Abril+Fatface&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap',
+  '/assets/brand.css',
+  '/assets/app-brand.css',
+  '/docs/brand-book.html',
+  'https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800;900&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'
 ];
 
@@ -30,7 +33,7 @@ self.addEventListener('activate', function(e) {
     caches.keys().then(function(keys) {
       return Promise.all(
         keys
-          .filter(function(key) { return key !== CACHE_NAME; })
+          .filter(function(key) { return key.startsWith('village-rewards-') && key !== CACHE_NAME; })
           .map(function(key) { return caches.delete(key); })
       );
     }).then(function() {

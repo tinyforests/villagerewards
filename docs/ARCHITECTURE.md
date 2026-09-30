@@ -1,5 +1,7 @@
 # Village Rewards - Architecture Documentation
 
+> September 2026 source review: current engineering facts are in [AGENTS.md](../AGENTS.md), and current appearance in [BRAND.md](BRAND.md). This older technical document includes historical descriptions and proposals; it does not verify deployed Supabase configuration. Admin magic-link and trader pilot-code flows exist in source. `DEMO_MODE` and `DEV_MODE` are currently true. Tier validation currently resets the full balance. The legacy prototype URL now redirects to `app.html`.
+
 **Deployment:** GitHub Pages → villagerewards.com.au  
 **Backend:** Supabase PostgreSQL  
 **Build:** None (static HTML/CSS/JS)
@@ -99,7 +101,7 @@ villagerewards/
 <script src="https://d3js.org/d3.v7.min.js"></script>
 
 <!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800;900&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 ```
 
@@ -109,7 +111,7 @@ villagerewards/
 - Public marketing site
 - Explains Village Rewards concept
 - Links to customer registration (app.html)
-- G&S brand identity
+- Village Rewards brand identity
 - No Supabase connection
 
 **app.html** (Main PWA):
@@ -302,8 +304,8 @@ self.addEventListener('fetch', (event) => {
   "short_name": "Village",
   "start_url": "/app.html",
   "display": "standalone",
-  "background_color": "#fff0dc",
-  "theme_color": "#3d4535",
+  "background_color": "#ffffff",
+  "theme_color": "#29332f",
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -323,45 +325,11 @@ self.addEventListener('fetch', (event) => {
 
 ## Design System Architecture
 
-### CSS Custom Properties
+The current brand is documented in [BRAND.md](BRAND.md) and [the visual brand book](brand-book.html). `assets/brand.css` owns palette and typography tokens. The homepage uses those tokens directly; app, admin and presentation styles adapt the existing page structure through dedicated stylesheets.
 
-**Canonical Colors (G&S Brand):**
-```css
-:root {
-  --green: #3d4535;      /* Gardener Green */
-  --beige: #fff0dc;      /* Nostalgic Beige */
-  --accent: #a8c285;     /* Signal Green */
-  --dark: #1a1a1a;
-  --mid: #666666;
-  --light: #f5f5f5;
-}
-```
+Use Nunito Sans, white backgrounds, charcoal text, butter highlights and pink/mint cards. Cards have 24px corners and controls 16px corners. The customer uses a labelled hamburger menu and visible primary actions. All public entry points link to the brand book.
 
-**Dark Mode (Canopy/Understory):**
-```css
-html.dark {
-  --bg: var(--green);
-  --text: var(--beige);
-  /* ... inverted palette */
-}
-```
-
-**Typography:**
-```css
-:root {
-  --heading: 'Abril Fatface', serif;
-  --body: 'IBM Plex Sans', sans-serif;
-  --mono: 'IBM Plex Mono', monospace;
-}
-```
-
-**Problem:** Design tokens duplicated across 4 HTML files. Any brand change requires editing:
-- index.html
-- app.html
-- village-rewards-admin.html
-- ma-presentation.html
-
-**Solution:** Extract to shared `styles.css` or use CSS imports.
+Some older inline CSS remains as structural fallback. Page-specific brand styles load after it. Update shared tokens and the relevant adapter, rather than adding another independent palette. The service worker precaches app styles and uses a versioned cache name.
 
 ---
 

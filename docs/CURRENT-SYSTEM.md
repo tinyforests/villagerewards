@@ -1,7 +1,9 @@
 # Village Rewards - Current System Documentation
 
-**Status:** Prototype MVP (Functional, Auth Disabled)  
-**Version:** Pre-tiered system  
+> September 2026 source review: current engineering facts are in [AGENTS.md](../AGENTS.md), and current appearance in [BRAND.md](BRAND.md). This older technical document includes historical descriptions and proposals; it does not verify deployed Supabase configuration. Admin magic-link and trader pilot-code flows exist in source. `DEMO_MODE` and `DEV_MODE` are currently true. Tier validation currently resets the full balance. The legacy prototype URL now redirects to `app.html`.
+
+**Status:** Prototype MVP (Functional, Auth Disabled)
+**Version:** Pre-tiered system
 **Last Updated:** May 2026
 
 ---
@@ -360,26 +362,26 @@ In tiered system, will generate separate redemption QR with:
 ## What Works Well (Keep in Tiered System)
 
 ### Point Accumulation
-✅ $1 = 1 point is clear and fair  
-✅ GPS check-in validation works (when enabled)  
-✅ 4-hour cooldown prevents spam  
-✅ Database trigger for point updates is elegant  
+✅ $1 = 1 point is clear and fair
+✅ GPS check-in validation works (when enabled)
+✅ 4-hour cooldown prevents spam
+✅ Database trigger for point updates is elegant
 
 ### Admin Dashboard
-✅ D3 network graph is impressive and useful  
-✅ Realtime feed creates sense of activity  
-✅ Cross-pollination matrix shows village connectivity  
-✅ Badge system is engaging  
+✅ D3 network graph is impressive and useful
+✅ Realtime feed creates sense of activity
+✅ Cross-pollination matrix shows village connectivity
+✅ Badge system is engaging
 
 ### Design
-✅ G&S brand identity is consistent  
-✅ Abril Fatface + IBM Plex Sans typography works  
-✅ Beige/green palette feels warm and local  
+✅ Village Rewards brand identity is consistent
+✅ Nunito Sans typography works
+✅ Beige/green palette feels warm and local
 
 ### Architecture
-✅ Zero-build deployment is fast for prototyping  
-✅ Supabase backend is flexible  
-✅ Service worker provides offline support  
+✅ Zero-build deployment is fast for prototyping
+✅ Supabase backend is flexible
+✅ Service worker provides offline support
 
 ---
 
@@ -504,10 +506,10 @@ SELECT * FROM customers WHERE id = 'A7F3K9';
 
 ## Contact & Support
 
-**Built by:** Gardener & Son  
-**Primary contact:** Tyson (co-founder)  
+**Built by:** Village Rewards
+**Primary contact:** Tyson (co-founder)
 **Repository:** github.com/tinyforests/villagerewards
 
-**For current system bugs:** Check `docs/ARCHITECTURE.md` and `docs/SECURITY.md`  
-**For future system questions:** Check `docs/TIERED-SYSTEM.md`  
+**For current system bugs:** Check `docs/ARCHITECTURE.md` and `docs/SECURITY.md`
+**For future system questions:** Check `docs/TIERED-SYSTEM.md`
 **For database questions:** Check `docs/SCHEMA.md`
