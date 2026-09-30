@@ -608,7 +608,7 @@
 <!-- ═══ DEMO: TIER REWARD BROWSER ══════════════════════ -->
 <div class="screen" id="s-tiers">
   <div class="bar">
-    <button class="back-btn" onclick="show('s-customer')">← Back</button>
+    <button class="back-btn" onclick="backFromDemoRewards()">← Back</button>
     <span class="sub">Rewards</span>
   </div>
   <div class="body">
@@ -874,7 +874,12 @@ function customerSection(id) {
   section.setAttribute('tabindex', '-1');
   section.focus({preventScroll:true});
 }
+function backFromDemoRewards() {
+  if (demoActiveTier !== null) { browseCustomerRewards(); }
+  else { show('s-customer'); }
+}
 function browseCustomerRewards() {
+  demoActiveTier = null;
   if (!window.DEMO_MODE) { openRewards(); return; }
   show('s-tiers');
   document.getElementById('dt-title').textContent = 'Find your next treat';
