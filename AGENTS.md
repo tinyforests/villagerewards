@@ -31,6 +31,7 @@ Static HTML/CSS/JavaScript with no build step, deployed through GitHub Pages at 
 - `village-rewards-pwa.html`: legacy URL redirects to `app.html`.
 - `assets/brand.css`: shared identity tokens and accessibility defaults.
 - `assets/app-brand.css`, `admin-brand.css`, `presentation-brand.css`: page-specific presentation.
+- `assets/customer-activity.js`: transaction-based profile copy; badges live inside the score card; visible profiles refresh every 15 seconds.
 - `assets/qr-scanner.js`: camera QR reader using pinned jsQR; fills existing trader fields, never auto-confirms transactions.
 - `sw.js`: service worker; increment cache version when changing cached app assets.
 - `docs/brand-book.html`: visual brand reference; `docs/BRAND.md`: implementation rules.

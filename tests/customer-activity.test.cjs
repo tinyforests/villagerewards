@@ -1,0 +1,15 @@
+const assert = require('node:assert/strict');
+const format = require('../assets/customer-activity.js');
+const now = Date.parse('2026-10-01T10:00:00Z');
+const tx = {created_at:'2026-10-01T09:59:00Z',shop_name:'Example café',points:8,type:'checkin'};
+assert.equal(format(tx,now).title,'You just checked in at Example café!');
+assert.match(format(tx,now).message,/Great to see you here/);
+assert.equal(format({...tx,type:'redeem',points:-10,reward_title:'a coffee'},now).message,'Enjoy the cuppa!');
+assert.match(format({...tx,type:'redeem',points:-10,reward_title:'a coffee'},now).title,/10 points for a coffee/);
+assert.equal(format({...tx,type:'redeem',points:-47},now).message,'Enjoy your little treat!');
+assert.doesNotMatch(format({...tx,created_at:'2026-09-30T09:59:00Z'},now).title,/just/);
+assert.equal(format({...tx,type:'reward',points:0},now).title,'You just claimed your shop reward at Example café.');
+assert.match(format({...tx,type:'purchase',points:15},now).title,/earned 15 points/);
+assert.match(format(null,now).title,/next little win/);
+assert.equal(format({...tx,type:'adjustment',points:-4},now).title,'Your points have been updated.');
+console.log('PASS: check-in, purchase, redemption, coffee copy, stamp reward, old activity, empty profile and adjustments.');

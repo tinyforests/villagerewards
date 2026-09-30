@@ -20,3 +20,10 @@ html,body{background:var(--vr-white);color:var(--vr-ink);font-weight:400}
 .scan-code-btn{margin:8px 0 12px;background:var(--vr-sky)}
 #qr-scanner{margin:auto;width:min(440px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;border:0;border-radius:24px;padding:24px;color:var(--vr-ink);font-family:var(--vr-font)}
 #qr-scanner::backdrop{background:#29332faa}#qr-scanner h2{font-weight:900;margin-bottom:12px}#qr-status{font-size:15px;line-height:1.5;margin-bottom:14px}#qr-video{display:block;width:100%;aspect-ratio:1;object-fit:contain;background:var(--vr-ink);border-radius:16px;margin-bottom:16px}#qr-scanner .hint{margin-bottom:18px}
+
+/* Score and badges belong together; the latest activity sits immediately below. */
+.points-hero .badges-section{padding:20px 0 0;margin-top:20px;border-top:1px solid #aacbbb}
+.points-hero .badges-grid{gap:8px}.points-hero .badge-item{background:#ffffff80;border:1px solid #adc5b8;opacity:1;padding:12px 6px}.points-hero .badge-item.earned{background:var(--vr-butter);border-color:transparent}.points-hero .badge-item.locked .bi-icon{color:var(--vr-muted)}
+.points-hero .bi-name{font-weight:700;font-size:12px}.points-hero .bi-icon{font-size:22px}.points-hero .badges-title{font-size:14px;color:var(--vr-ink)}
+.activity-notice{margin:16px 24px 0;padding:18px;display:flex;align-items:flex-start;gap:12px;background:var(--vr-butter);border-radius:20px}.activity-spark{font-size:26px;line-height:1}.activity-notice h2{font-size:17px;font-weight:900;line-height:1.35;overflow-wrap:anywhere}.activity-notice p{font-size:14px;line-height:1.5;margin-top:5px}.activity-time{font-size:12px;color:var(--vr-muted);margin-bottom:5px}.activity-time:empty{display:none}
+@media(max-width:360px){.points-hero{margin-left:18px;margin-right:18px;padding:20px 16px}.points-hero .bi-name{font-size:11px}.activity-notice{margin-left:18px;margin-right:18px}}

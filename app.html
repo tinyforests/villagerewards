@@ -491,8 +491,23 @@
     <div class="pts-num" id="c-points">0</div>
     <div class="pts-lbl">Village Points</div>
     <div class="pts-val" id="c-value">$0.00 to spend</div>
+  <div class="badges-section" id="customer-badges">
+    <div class="badges-title">Your badges</div>
+    <div class="badges-grid" id="badges-grid">
+      <div style="grid-column:1/-1;text-align:center;opacity:0.25;font-size:12px;padding:12px;">Earn badges by exploring the village.</div>
+    </div>
+  </div>
   </div>
 
+  <section class="activity-notice" aria-label="Your latest activity">
+    <span class="activity-spark" aria-hidden="true">✦</span>
+    <div><div class="activity-time" id="activity-time"></div>
+      <div role="status" aria-live="polite" aria-atomic="true" id="activity-message">
+        <h2 id="activity-title">Your next little win starts here.</h2>
+        <p id="activity-copy">Visit a participating local and show your code to start earning.</p>
+      </div>
+    </div>
+  </section>
   <div class="customer-actions">
     <button class="btn btn-primary" onclick="customerSection('customer-qr')">Show my code</button>
     <button class="btn btn-outline" onclick="browseCustomerRewards()">Browse rewards</button>
@@ -531,12 +546,6 @@
     <div class="history-title">Recent activity</div>
     <div class="tx-list" id="tx-list">
       <p class="tx-empty">No activity yet. Start shopping!</p>
-    </div>
-  </div>
-  <div class="badges-section" id="customer-badges">
-    <div class="badges-title">Your badges</div>
-    <div class="badges-grid" id="badges-grid">
-      <div style="grid-column:1/-1;text-align:center;opacity:0.25;font-size:12px;padding:12px;">Earn badges by exploring the village.</div>
     </div>
   </div>
   <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
@@ -816,6 +825,7 @@
   <button class="ib-x"   onclick="dismissInstall()">✕</button>
 </div>
 
+<script src="assets/customer-activity.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════
    CONFIG
@@ -932,7 +942,7 @@ async function goCustomer() {
       if (res.data) {
         currentCustomer = res.data;
         await renderCustomerDashboard(res.data);
-        renderBadges(savedId);
+
         show('s-customer');
         return;
       }
@@ -964,7 +974,7 @@ async function register() {
       localStorage.setItem('vr_my_id', full.data.id);
       currentCustomer = full.data;
       await renderCustomerDashboard(full.data);
-      renderBadges(full.data.id);
+
       show('s-customer');
       showToast('Welcome back, ' + full.data.name.split(' ')[0] + '!');
       return;
@@ -980,7 +990,7 @@ async function register() {
     localStorage.setItem('vr_my_id', id);
     currentCustomer = res.data;
     await renderCustomerDashboard(res.data);
-    renderBadges(id);
+
     show('s-customer');
     showToast('Welcome to Village Rewards, ' + name.split(' ')[0] + '!');
   } catch(e) {
@@ -990,7 +1000,40 @@ async function register() {
   }
 }
 
+var dashboardRenderVersion = 0;
+var confirmedRewardActivity = null;
+var customerRefreshPending = false;
+function showCustomerActivity(tx) {
+  var copy = formatCustomerActivity(tx);
+  var title = document.getElementById('activity-title');
+  var message = document.getElementById('activity-copy');
+  if (title.textContent !== copy.title) title.textContent = copy.title;
+  if (message.textContent !== copy.message) message.textContent = copy.message;
+  document.getElementById('activity-time').textContent = copy.time;
+}
+async function refreshCustomerProfile() {
+  if (customerRefreshPending || document.hidden || !currentCustomer || !document.getElementById('s-customer').classList.contains('active')) return;
+  var cid = currentCustomer.id;
+  customerRefreshPending = true;
+  try {
+    var result = await sb.from('customers').select('*').eq('id', cid).single();
+    if (!result.error && result.data && currentCustomer && currentCustomer.id === cid) {
+      currentCustomer = result.data;
+      await renderCustomerDashboard(result.data);
+    }
+  } catch (error) { /* Keep the last confirmed activity on temporary network errors. */ }
+  finally { customerRefreshPending = false; }
+}
+setInterval(refreshCustomerProfile, 15000);
+document.addEventListener('visibilitychange', function() { if (!document.hidden) refreshCustomerProfile(); });
 async function renderCustomerDashboard(c) {
+  var version = ++dashboardRenderVersion;
+  var activity = document.getElementById('activity-message');
+  if (activity.dataset.customer !== c.id) {
+    activity.dataset.customer = c.id;
+    showCustomerActivity(null);
+  }
+  renderBadges(c.id);
   var firstName = c.name.split(' ')[0];
   document.getElementById('c-greeting').textContent = 'Hello, ' + firstName;
   document.getElementById('c-points').textContent = c.points.toLocaleString();
@@ -1003,8 +1046,9 @@ async function renderCustomerDashboard(c) {
 
   // QR code
   var canvas = document.getElementById('qr-canvas');
-  canvas.innerHTML = '';
-  if (typeof QRCode !== 'undefined') {
+  if (canvas.dataset.customer !== c.id && typeof QRCode !== 'undefined') {
+    canvas.innerHTML = '';
+    canvas.dataset.customer = c.id;
     new QRCode(canvas, {
       text: c.id, width: 180, height: 180,
       colorDark: '#29332f', colorLight: '#ffffff',
@@ -1019,7 +1063,15 @@ async function renderCustomerDashboard(c) {
     .order('created_at', { ascending: false })
     .limit(10);
 
+  if (version !== dashboardRenderVersion) return;
   var list = document.getElementById('tx-list');
+  if (res.error) {
+    list.textContent = 'Your recent activity could not load. We’ll try again shortly.';
+    return;
+  }
+  var latest = res.data && res.data[0];
+  if (confirmedRewardActivity && confirmedRewardActivity.customer_id === c.id && (!latest || Date.parse(confirmedRewardActivity.created_at) >= Date.parse(latest.created_at))) latest = confirmedRewardActivity;
+  showCustomerActivity(latest);
   if (!res.data || res.data.length === 0) {
     list.innerHTML = '<p class="tx-empty">No activity yet. Start shopping!</p>';
     return;
@@ -1034,7 +1086,7 @@ async function renderCustomerDashboard(c) {
     var ptsCell   = isReward ? 'Free' : (isRedeem ? '−' : '+') + Math.abs(tx.points);
 
     return '<div class="tx-item">' +
-      '<div><div class="tx-shop">' + icon + (tx.shop_name || 'Village') + '</div>' +
+      '<div><div class="tx-shop">' + icon + esc(tx.shop_name || 'Village') + '</div>' +
       '<div class="tx-meta">' + formatDate(tx.created_at) + (tx.amount ? ' · $' + parseFloat(tx.amount).toFixed(2) : '') + '</div></div>' +
       '<div class="tx-pts ' + ptsClass + '">' + ptsCell + '</div>' +
     '</div>';
@@ -1537,7 +1589,7 @@ async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng) 
     if (cust.data) {
       currentCustomer = cust.data;
       renderCustomerDashboard(cust.data);
-      renderBadges(myId);
+
     }
 
     // Show success then return to dashboard
@@ -1564,11 +1616,15 @@ var CUSTOMER_BADGES = [
   { id:'regular',  name:'Regular',       icon:'◈', check:function(s){return s.total_checkins>=5;}},
   { id:'spender',  name:'Supporter',     icon:'◉', check:function(s){return parseFloat(s.total_spend||0)>=100;}}
 ];
+var badgeRenderVersion = 0;
 async function renderBadges(cid) {
+  var version = ++badgeRenderVersion;
   var g = document.getElementById('badges-grid');
   if (!g) return;
 
-  // Always render all badges locked first — instant display
+  // Keep badges stable during activity refreshes.
+  if (g.dataset.customer !== cid) {
+  g.dataset.customer = cid;
   g.innerHTML = CUSTOMER_BADGES.map(function(b) {
     return '<div class="badge-item locked">' +
       '<span class="bi-icon">'+b.icon+'</span>' +
@@ -1576,9 +1632,11 @@ async function renderBadges(cid) {
     '</div>';
   }).join('');
 
+  }
   // Then query customer_stats and update earned state
   try {
     var r = await sb.from('customer_stats').select('*').eq('id', cid).maybeSingle();
+    if (version !== badgeRenderVersion || r.error) return;
     var st = r.data || {};
     g.innerHTML = CUSTOMER_BADGES.map(function(b) {
       var earned = b.check(st);
@@ -1798,17 +1856,25 @@ function stopRedemptionTimers() {
 async function pollRedemption() {
   if (!activeRedemption) return;
   try {
-    var res = await sb.from('redemptions').select('status')
+    var res = await sb.from('redemptions').select('status,validated_at,points_at_redemption,reward_type')
       .eq('redemption_code', activeRedemption.code).maybeSingle();
     if (res.data && res.data.status === 'validated') {
       stopRedemptionTimers();
       var title = activeRedemption.title;
+      confirmedRewardActivity = {
+        customer_id: currentCustomer.id,
+        type: res.data.reward_type === 'stamp' ? 'reward' : 'redeem',
+        points: -(res.data.points_at_redemption || 0),
+        reward_title: title,
+        shop_name: activeRedemption.shop,
+        created_at: res.data.validated_at
+      };
       activeRedemption = null;
       var c = await sb.from('customers').select('*').eq('id', currentCustomer.id).single();
       if (c.data) {
         currentCustomer = c.data;
         renderCustomerDashboard(c.data);
-        renderBadges(c.data.id);
+
       }
       showToast('Redeemed: ' + title + '. Enjoy!');
       show('s-customer');

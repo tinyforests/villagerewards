@@ -43,3 +43,9 @@ Brief animation may acknowledge earned points; honour reduced motion. Do not use
 `assets/brand.css` owns tokens; page styles adapt the existing HTML. `docs/redesign-concept.html` is a fictional design study and can contain proposed business rules. Do not copy those rules into production without a separate product decision and backend implementation.
 
 The public contact address is `hello@villagerewards.com.au`, currently coming soon. Do not add an active email link until the mailbox is connected.
+
+## Customer profile activity
+
+Keep customer badges inside the mint points card. A butter-yellow latest-activity notice sits immediately below it. Use the actual shop name, points and known reward title. Say “you just” only for activity within five minutes, and show a timestamp for older records. Coffee/tea rewards can say “Enjoy the cuppa!”; unknown rewards use a generic message. Never invent an item from a points amount.
+
+The profile refreshes balances, activity and badges every 15 seconds while visible and when returning to the browser tab. A confirmed reward title is available in the current redemption session; ordinary history may contain only the shop and points. Empty profiles receive an invitation to start earning. These are in-app messages, not push notifications.
