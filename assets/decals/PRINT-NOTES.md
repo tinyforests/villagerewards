@@ -1,6 +1,6 @@
 # Village Rewards — shop window decals
 
-Artwork v1 · 1 October 2026
+Artwork v2 · 1 October 2026
 
 ## Designs
 
@@ -28,4 +28,6 @@ Suggested material: removable window vinyl with an opaque white backing, subject
 
 Colours are supplied as RGB brand references. Printer to convert using their equipment/material profile and provide a physical colour proof: pastel saturation and opacity depend on material, ink and backing. Confirm size, cut, adhesion, removability and UV durability on a sample before the full run. No material or lifespan guarantee is implied by the artwork.
 
-These decals identify participating shops; confirm shop participation before installation. They include the public website address, with no QR or NFC tracking embedded.
+These decals identify participating shops; confirm shop participation before installation. Each includes the public website address and a QR linking to https://villagerewards.com.au/app.html?join=1. This opens registration for new visitors and the profile for recognised returning customers. No shop attribution, third-party QR redirect or NFC is embedded.
+
+The black-on-white QR panel measures 40 × 40 mm at the supplied 200 mm size, including a four-module white quiet zone. Preserve every module and the full white quiet zone. Do not add a logo over the QR or recolour it. Scan a full-size physical proof with iPhone and Android cameras through the intended glass, in typical lighting and at a comfortable distance before ordering. Screen decoding has been checked; physical print/glass performance still needs that proof.

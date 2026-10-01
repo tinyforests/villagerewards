@@ -3,7 +3,7 @@
    v1.0 · Mont Albert Pilot
    ───────────────────────────────────────────────────── */
 
-var CACHE_NAME = 'village-rewards-window-decals-v7';
+var CACHE_NAME = 'village-rewards-window-qr-v8';
 
 /* Assets to cache on install so the app loads offline */
 var PRECACHE = [

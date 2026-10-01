@@ -404,6 +404,11 @@
     .tp-bar { height: 6px; background: rgba(255,240,220,0.1); overflow: hidden; }
     .tp-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
     /* ═══ DEMO_MODE END ═══ */
+
+// Window decals open the customer flow; returning members keep their profile.
+if (new URLSearchParams(window.location.search).get('join') === '1') {
+  goCustomer();
+}
   </style>
   <link rel="stylesheet" href="assets/brand.css">
   <link rel="stylesheet" href="assets/app-brand.css">
@@ -2029,6 +2034,11 @@ function demoDoRedeem() {
   document.getElementById('dr-qr-view').style.display      = 'block';
 }
 /* ═══ DEMO_MODE END ═══ */
+
+// Window decals open the customer flow; returning members keep their profile.
+if (new URLSearchParams(window.location.search).get('join') === '1') {
+  goCustomer();
+}
 
 </script>
 <dialog id="qr-scanner" aria-labelledby="qr-title">
