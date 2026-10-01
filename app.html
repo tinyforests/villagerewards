@@ -700,11 +700,15 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     </div>
 
     <div class="tabs">
-      <button class="tab-btn active" id="tab-purchase-btn" onclick="switchTab('purchase')">Purchase</button>
-      <button class="tab-btn" id="tab-checkin-btn"  onclick="switchTab('checkin')">Check-in</button>
-      <button class="tab-btn" id="tab-redeem-btn"   onclick="switchTab('redeem')">Redeem</button>
-      <button class="tab-btn" id="tab-validate-btn" onclick="switchTab('validate')">Validate</button>
+      <button class="tab-btn active" id="tab-purchase-btn" onclick="switchTab('purchase')">Award points</button>
+      <button class="tab-btn" id="tab-redeem-btn"   onclick="switchTab('redeem')">Redeem points</button>
+      <button class="tab-btn" id="tab-validate-btn" onclick="switchTab('validate')">Redeem a reward</button>
     </div>
+
+    <details class="trader-more" id="trader-more">
+      <summary>More options</summary>
+      <button class="tab-btn" id="tab-checkin-btn" onclick="switchTab('checkin')">Record a visit</button>
+    </details>
 
     <!-- PURCHASE TAB -->
     <div class="tab-panel active" id="tab-purchase">
@@ -733,8 +737,10 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
       </button>
     </div>
 
-    <!-- CHECKIN TAB -->
+    <!-- STAFF-ASSISTED VISIT -->
     <div class="tab-panel" id="tab-checkin">
+      <h2 class="display-sm">Record a visit</h2>
+      <p class="hint" style="margin:12px 0 18px">Help a customer check in by scanning their code. No purchase needed.</p>
       <div class="checkin-info">
         <strong>+8 points per check-in.</strong>
         Customers earn points just for visiting — no purchase required.
@@ -748,7 +754,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
       <div id="ci-lookup" style="display:none;" class="lookup-box"></div>
 
       <button class="btn btn-checkin" id="ci-btn" onclick="awardCheckin()" disabled style="margin-top:18px;">
-        Award Check-in Points (+8)
+        Record visit · award 8 points
       </button>
     </div>
 
@@ -1177,6 +1183,7 @@ function traderLogout() {
 
 function switchTab(tab) {
   activeTab = tab;
+  document.getElementById('trader-more').open = false;
   ['purchase','checkin','redeem','validate'].forEach(function(t) {
     document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === tab);
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);

@@ -53,3 +53,7 @@ The profile refreshes balances, activity and badges every 15 seconds while visib
 ## Shop window decals
 
 The [brand book decal section](brand-book.html#window-decals) includes four 200 mm designs in butter, pink, mint and sky. Use the lowercase wordmark, sparkle, one short line and website address. Window decals also include a black-on-white 40 mm QR panel, “Scan to join”, “No download needed” and a brief earn-and-reward explanation. The QR opens `app.html?join=1`, routing visitors into the customer flow. Downloadable outlined SVG masters are in `assets/decals/`; [printer notes](../assets/decals/PRINT-NOTES.md) describe sizing, window application and proof requirements. Printers must add their own bleed and cut contour and confirm colour on the chosen material before production.
+
+## Trader navigation and shop cards
+
+Keep visit recording under More options → Record a visit. Main actions use plain labels: Award points, Redeem points, and Redeem a reward when that flow is enabled. Optional trader loyalty offers (for example, buy 10 coffees, get one free) are planned alongside village points; see [trader loyalty direction](TRADER-LOYALTY.md). Distinguish shop stamps from village points in all copy.
