@@ -49,3 +49,7 @@ The public contact address is `hello@villagerewards.com.au`, currently coming so
 Keep customer badges inside the mint points card. A butter-yellow latest-activity notice sits immediately below it. Use the actual shop name, points and known reward title. Say “you just” only for activity within five minutes, and show a timestamp for older records. Coffee/tea rewards can say “Enjoy the cuppa!”; unknown rewards use a generic message. Never invent an item from a points amount.
 
 The profile refreshes balances, activity and badges every 15 seconds while visible and when returning to the browser tab. A confirmed reward title is available in the current redemption session; ordinary history may contain only the shop and points. Empty profiles receive an invitation to start earning. These are in-app messages, not push notifications.
+
+## Shop window decals
+
+The [brand book decal section](brand-book.html#window-decals) includes four 200 mm designs in butter, pink, mint and sky. Use the lowercase wordmark, sparkle, one short line and website address. Downloadable outlined SVG masters are in `assets/decals/`; [printer notes](../assets/decals/PRINT-NOTES.md) describe sizing, window application and proof requirements. Printers must add their own bleed and cut contour and confirm colour on the chosen material before production.
