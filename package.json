@@ -1,0 +1,13 @@
+{
+  "name": "village-rewards",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/stamp-ledger.test.cjs && node tests/customer-activity.test.cjs",
+    "test:browser": "node tests/stamp-browser.cjs",
+    "check": "node --check assets/stamp-app.js && node --check assets/stamp-scanner.js"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.3.14",
+    "playwright": "^1.62.1"
+  }
+}

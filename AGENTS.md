@@ -71,3 +71,9 @@ Run syntax and local-link checks after page edits. For interaction changes, chec
 ## Reading order
 
 `AI_CONTEXT.md` → `docs/BRAND.md` → this brief → `docs/SCHEMA.md` / `docs/SECURITY.md` / `docs/TIERED-SYSTEM.md` as required. `SUPER_MIND.md` is a compatibility pointer to the current independent product context.
+
+## Stamp pilot candidate — 26 October 2026
+
+`stamp-pilot.html`, `assets/stamp-app.js` and the additive migration under `supabase/migrations/` implement an isolated authenticated stamp candidate. Read `docs/STAMP-PILOT-SETUP.md` for new-project staging setup and release gates. Configuration is intentionally empty. `app.html` and its legacy points remain unchanged until staging verification and an approved conversion/cutover. `npm test` exercises the stamp SQL in local PostgreSQL; `npm run test:browser` tests browser flows against that database, with external requests blocked. Neither certifies production configuration or multi-session concurrency.
+
+Latest commercial direction: `docs/COMMERCIAL-MODEL.md`. Basic participation is free; no automatic post-pilot billing. User-approved product direction is one stamp per qualifying purchase and cost-only redemption retaining surplus. Shop cards and prize campaigns remain separate, unenabled features in this candidate.
