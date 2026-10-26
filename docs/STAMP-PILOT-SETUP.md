@@ -13,7 +13,7 @@ The candidate includes verified email sign-in, one stamp per staff-confirmed pur
 1. Create a new Supabase project owned by the Village Rewards organisation. Choose the appropriate region and record the owner, access arrangements and operating costs. Use a distinct project from production.
 2. In its SQL editor, run `supabase/staging-bootstrap.sql`, then `supabase/migrations/202610260001_stamp_pilot.sql`. The migration is a once-only migration, not a rerunnable reset script. Record the applied version.
 3. Configure the project's email sign-in provider, site URL and exact allowed staging callback URL ending in `/stamp-pilot.html`. Verify actual email delivery and rate limits in this environment. Never use a wildcard production redirect for convenience.
-4. Put only that project's public URL and public anon key into `assets/stamp-config.js`. Never use a service-role key in browser configuration. The file intentionally ships empty and the app refuses sign-in until configured.
+4. Put only that project's public URL and public anon key into `assets/stamp-config.js`. Never use a service-role key in browser configuration. The branch now contains the isolated staging project’s public connection details; the app refuses sign-in if configuration is removed.
 5. Serve this branch at a separate staging origin with HTTPS. Do not point the production `app.html` at it yet. Do not test using real customer data.
 6. Add confirmed staging shops using the SQL editor. Have staff sign in with verified email and grant only their shop memberships using the SQL below.
 7. Run the automated tests and the physical-device checklist. Archive test evidence, deployed SQL and Auth settings before approving rollout.
@@ -66,3 +66,17 @@ Separate shop loyalty cards, a six-shop prize draw, automatic point conversion, 
 ## Production release
 
 Do not merge a route change or deploy the migration to the existing project until the legacy schema/policies have been audited. The additive tables secure the new path; they do not fix any permissive legacy endpoints. Approve a legacy-balance conversion separately, back up and reconcile it, revoke obsolete writes, then switch the main app and update the service-worker cache. A new project rollout also requires an explicit data migration and origin/Auth cutover plan. Never wipe legitimate live activity to roll back.
+
+## Deployment evidence — 26 October 2026
+
+- Preview: https://tinyforests.github.io/villagerewards-staging/
+- Preview repository: https://github.com/tinyforests/villagerewards-staging (public publication approved by Tyson).
+- Supabase: `village-rewards-staging`, ref `dbxzlznscwstjklphstv`, Sydney. Bootstrap and migration `202610260001_stamp_pilot` applied successfully.
+- Site URL is the preview root. Exact callback allowlist includes `stamp-pilot.html`, `index.html` and `app.html` under that root. Email confirmation remains enabled; anonymous sign-in remains disabled.
+- GitHub Pages build succeeded; root returned HTTP 200 and sign-in screen rendered in Chrome.
+- Live anonymous API checks returned HTTP 401 / PostgreSQL 42501 for both `vr_dashboard` and direct `vr_members` reads. This is limited evidence, not a complete deployed security audit.
+- Local ledger tests (7), customer activity checks and JavaScript syntax checks passed.
+- Custom SMTP is not configured. Supabase’s default sender is restricted to project team addresses and currently two emails per hour: https://supabase.com/docs/guides/auth/auth-smtp . Real sign-in delivery, authenticated acceptance, staff assignment, device and concurrent-request testing remain outstanding.
+- No production cutover, legacy conversion, customer import or real reward stock has been performed. The preview marketplace starts empty.
+
+The staging repository is a static copy, not an automatic deployment of the source branch. When updating it, copy the candidate and its dependencies only; keep `index.html` and `app.html` identical to `stamp-pilot.html`. Do not copy the production CNAME, service worker or legacy app.

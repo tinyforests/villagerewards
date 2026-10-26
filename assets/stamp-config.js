@@ -1,3 +1,2 @@
-// Fill with the isolated staging project's public URL and anon key after migration.
-// Never place a service-role key here. Production rollout is a separate release gate.
-window.VR_STAMP_CONFIG = { url: '', anonKey: '' };
+// Public connection information for the isolated staging project. Never use a service-role key.
+window.VR_STAMP_CONFIG = { url: 'https://dbxzlznscwstjklphstv.supabase.co', anonKey: 'sb_publishable_Q9UzsiSQonSlkbRZO3q-og_lmjzOyU6' };
