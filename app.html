@@ -922,6 +922,7 @@ async function goCustomer() {
         await renderCustomerDashboard(res.data);
 
         show('s-customer');
+        await resumeShopCheckin();
         return;
       }
     } catch(e) {}
@@ -955,6 +956,7 @@ async function register() {
 
       show('s-customer');
       showToast('Welcome back, ' + full.data.name.split(' ')[0] + '!');
+      await resumeShopCheckin();
       return;
     }
 
@@ -971,6 +973,7 @@ async function register() {
 
     show('s-customer');
     showToast('Welcome to Village Rewards, ' + name.split(' ')[0] + '!');
+    await resumeShopCheckin();
   } catch(e) {
     console.error('Register error:', e); showToast(e.message || JSON.stringify(e) || 'Something went wrong.', true);
   } finally {
@@ -1543,7 +1546,7 @@ function doCheckinByIndex(idx, customerLat, customerLng) {
   doCheckin(s.id, s.name, s.dist, customerLat, customerLng);
 }
 
-async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng) {
+async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng, fromQr) {
   var myId = localStorage.getItem('vr_my_id');
   if (!myId) { showToast('Please register first.', true); return; }
 
@@ -1575,11 +1578,13 @@ async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng) 
     setTimeout(function() { show('s-customer'); }, 1200);
 
     // Refresh nearby list to show updated state
-    setTimeout(function() { locateAndLoad(); }, 1300);
+    if (!fromQr) setTimeout(function() { locateAndLoad(); }, 1300);
+    return true;
 
   } catch(e) {
     console.error('Check-in error:', e);
     showToast(e.message || 'Check-in failed. Try again.', true);
+    return false;
   } finally {
     setLoading(false);
   }
@@ -2005,8 +2010,66 @@ async function traderValidate() {
   }
 }
 
-// Window decals open the customer flow; returning members keep their profile.
-if (new URLSearchParams(window.location.search).get('join') === '1') {
+// Shop QR intent stays in the URL through registration and is consumed on success.
+var pendingCheckinShop = new URLSearchParams(location.search).get('checkin');
+var shopCheckinPending = false;
+function clearShopCheckin() {
+  pendingCheckinShop = null;
+  var url = new URL(location.href);
+  url.searchParams.delete('checkin');
+  url.searchParams.delete('join');
+  history.replaceState(null, '', url);
+}
+async function resumeShopCheckin() {
+  if (!pendingCheckinShop || !currentCustomer || shopCheckinPending) return;
+  shopCheckinPending = true;
+  setLoading(true);
+  try {
+    var result = await sb.from('shops').select('id,name,lat,lng,active')
+      .eq('id', pendingCheckinShop).maybeSingle();
+    // Malformed IDs can be rejected by a UUID column before returning a row.
+    if (result.error && result.error.code !== '22P02') throw result.error;
+    var shop = result.data;
+    if (!shop || !shop.active) {
+      clearShopCheckin();
+      show('s-checkin');
+      showToast('Shop not available. Choose a nearby shop.');
+      return;
+    }
+    var cutoff = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+    var recent = await sb.from('transactions').select('id').eq('customer_id', currentCustomer.id)
+      .eq('shop_id', shop.id).eq('type', 'checkin').gte('created_at', cutoff).limit(1);
+    if (recent.error) throw recent.error;
+    if (recent.data && recent.data.length) {
+      clearShopCheckin();
+      showToast('You’ve already checked in here in the last four hours.');
+      return;
+    }
+    var lat = null, lng = null, distance = null;
+    if (!DEV_MODE) {
+      if (shop.lat == null || shop.lng == null || !Number.isFinite(Number(shop.lat)) || !Number.isFinite(Number(shop.lng)))
+        throw new Error('This shop has no location set. Ask the trader for help.');
+      if (!navigator.geolocation) throw new Error('Location is not supported on this device.');
+      var pos = await new Promise(function(resolve, reject) {
+        navigator.geolocation.getCurrentPosition(resolve, function() {
+          reject(new Error('Location could not be verified. Allow location access and scan the shop QR again.'));
+        }, {enableHighAccuracy:true, timeout:10000, maximumAge:30000});
+      });
+      lat = pos.coords.latitude; lng = pos.coords.longitude;
+      distance = haversineDistance(lat, lng, Number(shop.lat), Number(shop.lng));
+      if (!Number.isFinite(distance) || distance > CHECKIN_RADIUS_M)
+        throw new Error('Move within ' + CHECKIN_RADIUS_M + 'm of ' + shop.name + ' and scan again.');
+    }
+    if (await doCheckin(shop.id, shop.name, distance, lat, lng, true)) clearShopCheckin();
+  } catch (error) {
+    showToast(error.message || 'Could not check in. Please scan the shop QR again.', true);
+  } finally {
+    shopCheckinPending = false;
+    setLoading(false);
+  }
+}
+// Window decals and shop QR codes open the same customer registration flow.
+if (pendingCheckinShop || new URLSearchParams(location.search).get('join') === '1') {
   goCustomer();
 }
 

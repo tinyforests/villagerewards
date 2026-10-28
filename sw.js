@@ -3,7 +3,7 @@
    v1.0 · Mont Albert Pilot
    ───────────────────────────────────────────────────── */
 
-var CACHE_NAME = 'village-rewards-passport-tiles-v14';
+var CACHE_NAME = 'village-rewards-shop-qr-v15';
 
 /* Assets to cache on install so the app loads offline */
 var PRECACHE = [
