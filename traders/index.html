@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Village Rewards for Traders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800;6..12,900&display=swap">
+<style>
+/* Layout: fixed 1600x900 stage scaled to the screen; one idea per slide, pastel grounds rotate, charcoal ink, white rounded cards. */
+:root{
+  --ink:#29332F; --paper:#FFFFFF;
+  --butter:#FFF0A8; --pink:#FBDCE7; --mint:#D8F2E5; --sky:#DCEEFA;
+  --sage:#A8C285;
+  --soft:#58625D; --line:rgba(41,51,47,.16); --stage:#1E2522;
+  --font:'Nunito Sans', ui-rounded, 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{margin:0;background:var(--stage);color:var(--ink);font-family:var(--font);overflow:hidden;-webkit-font-smoothing:antialiased}
+.viewport{position:fixed;inset:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
+.deck{width:1600px;height:900px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.5);transform-origin:center center;border-radius:28px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.slide{position:absolute;inset:0;padding:88px 120px 120px;display:flex;flex-direction:column;gap:40px;background:var(--bg,var(--butter));opacity:0;visibility:hidden;transition:opacity .35s ease, visibility .35s}
+.slide.on{opacity:1;visibility:visible}
+.b{--bg:var(--butter)} .p{--bg:var(--pink)} .m{--bg:var(--mint)} .s{--bg:var(--sky)} .k{--bg:var(--ink);color:var(--paper)}
+
+.foot{position:absolute;left:120px;right:120px;bottom:44px;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:20px}
+.foot .n{font-variant-numeric:tabular-nums;opacity:.7}
+.mark{display:inline-flex;align-items:flex-start;gap:4px;font-weight:900;letter-spacing:-.02em}
+.mark svg{width:.55em;height:.55em;margin-top:-.05em;fill:currentColor}
+
+.eyebrow{font-weight:800;font-size:20px;text-transform:uppercase;letter-spacing:.14em;opacity:.75}
+h1,h2,h3,p{margin:0}
+h1{font-weight:900;font-size:168px;line-height:.92;letter-spacing:-.045em;text-wrap:balance}
+h2{font-weight:900;font-size:88px;line-height:.98;letter-spacing:-.035em;text-wrap:balance;max-width:1300px}
+h3{font-weight:900;font-size:36px;line-height:1.05;letter-spacing:-.02em}
+.lede{font-size:34px;line-height:1.35;font-weight:600;max-width:1100px}
+.body{font-size:26px;line-height:1.4;color:var(--soft)}
+
+.grid{display:grid;gap:28px;flex:1;min-height:0}
+.g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--paper);border-radius:28px;padding:40px;display:flex;flex-direction:column;gap:16px;color:var(--ink);min-width:0}
+.card .body{color:var(--soft)}
+.tag{align-self:flex-start;background:var(--ink);color:var(--paper);border-radius:999px;padding:8px 18px;font-weight:800;font-size:18px;letter-spacing:.04em}
+.num{width:64px;height:64px;border-radius:999px;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-weight:900;font-size:30px;flex:none}
+.ico{width:64px;height:64px;border-radius:20px;background:var(--bg,var(--butter));display:grid;place-items:center;flex:none}
+.ico svg{width:34px;height:34px;fill:none;stroke:var(--ink);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ex{align-self:flex-start;font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:.12em;background:var(--butter);border-radius:999px;padding:6px 12px;color:var(--ink)}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+
+.cover{justify-content:space-between}
+.cover .mark{font-size:44px}
+.cover .live{display:inline-flex;align-items:center;gap:12px;background:var(--paper);border-radius:999px;padding:12px 24px;font-weight:800;font-size:22px}
+.cover .live i{width:14px;height:14px;border-radius:999px;background:#3E9B5B}
+.spark-lg{width:120px;height:120px;fill:var(--ink);vertical-align:top;margin-left:10px}
+
+.split{display:grid;grid-template-columns:1.05fr .95fr;gap:64px;flex:1;align-items:center;min-height:0}
+.split > *{min-width:0}
+.col{display:flex;flex-direction:column;gap:40px}
+.list{display:flex;flex-direction:column;gap:24px}
+.li{display:flex;gap:22px;align-items:flex-start;font-size:28px;line-height:1.35;font-weight:600}
+.li .dot{width:16px;height:16px;border-radius:999px;background:var(--ink);margin-top:13px;flex:none}
+
+/* three layers */
+.layers{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;flex:1}
+.layer{background:var(--paper);border-radius:28px;padding:30px 34px;display:flex;flex-direction:column;gap:12px}
+.layer .goal{margin-top:auto;padding-top:16px;border-top:2px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.layer .goal b{font-size:16px;text-transform:uppercase;letter-spacing:.12em;color:var(--soft)}
+.layer .goal span{font-weight:800;font-size:22px}
+
+/* live now */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.stat{background:var(--paper);border-radius:28px;padding:32px 34px;display:flex;flex-direction:column;gap:10px}
+.stat .v{font-weight:900;font-size:72px;white-space:nowrap;line-height:.95;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.stat .l{font-weight:700;font-size:22px;color:var(--soft);line-height:1.3}
+
+/* stamp card */
+.stampcard{background:var(--paper);border-radius:32px;padding:44px;display:flex;flex-direction:column;gap:28px;box-shadow:0 18px 0 rgba(41,51,47,.08)}
+.stamps{display:grid;grid-template-columns:repeat(5,1fr);gap:18px}
+.st{aspect-ratio:1;max-width:100%;border-radius:999px;border:3px dashed var(--line);display:grid;place-items:center}
+.st.on{border:none;background:var(--ink)}
+.st.on svg{width:44%;height:44%;fill:var(--butter)}
+.st.free{border:3px solid var(--ink);font-weight:900;font-size:22px}
+
+/* ideas */
+.ideas{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;flex:1}
+.idea{background:var(--paper);border-radius:28px;padding:32px 36px;display:flex;flex-direction:column;gap:12px;justify-content:space-between}
+.idea .who{font-weight:800;font-size:20px;text-transform:uppercase;letter-spacing:.1em;color:var(--soft)}
+.idea .what{font-weight:900;font-size:38px;line-height:1.05;letter-spacing:-.02em}
+.idea .dots{display:flex;gap:8px;flex-wrap:wrap}
+.idea .dots i{width:22px;height:22px;border-radius:999px;background:var(--ink)}
+.idea .dots i.g{background:transparent;border:3px solid var(--ink)}
+
+/* tiers */
+.ladder{background:var(--paper);border-radius:32px;padding:40px;display:flex;flex-direction:column;gap:18px}
+.rung{display:grid;grid-template-columns:120px 1fr auto;align-items:center;gap:22px;padding:18px 22px;border-radius:20px;background:var(--bg,#F4F6F3)}
+.rung .n{font-weight:900;font-size:44px;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+.rung .n small{display:block;font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin-top:4px}
+.rung .r{font-weight:800;font-size:24px;line-height:1.2}
+.rung .r small{display:block;font-weight:600;font-size:18px;color:var(--soft);margin-top:4px}
+.rung .s{font-weight:800;font-size:16px;border-radius:999px;padding:6px 14px;background:var(--paper)}
+.rung.open{--bg:var(--sage)}
+.rung.open .s{background:var(--ink);color:var(--paper)}
+
+/* passport */
+.pass{background:var(--paper);border-radius:32px;padding:38px 40px;display:flex;flex-direction:column;gap:20px}
+.pass .camp{font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:.1em;color:var(--soft)}
+.pass .big{font-weight:900;font-size:36px;line-height:1.1;letter-spacing:-.02em}
+.bar{height:18px;border-radius:999px;background:rgba(41,51,47,.1);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ink);border-radius:999px}
+.place{display:flex;align-items:center;gap:14px;font-weight:800;font-size:22px}
+.place b{background:var(--butter);border-radius:999px;padding:6px 16px;font-weight:900}
+.tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.tl{height:54px;border-radius:12px;background:#EEF1EC;opacity:.45;display:grid;place-items:center;font-weight:800;font-size:13px;color:var(--ink)}
+.tl.v{background:var(--sage);opacity:1}
+.pass .cta{font-weight:700;font-size:20px;color:var(--soft)}
+
+/* earn */
+.earn{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;flex:1}
+.earn .card{gap:18px}
+.plus{font-weight:900;font-size:96px;line-height:.9;letter-spacing:-.04em}
+.plus small{font-size:30px;letter-spacing:-.01em;margin-left:8px}
+.fine{margin-top:auto;font-weight:700;font-size:20px;color:var(--ink);background:var(--bg,var(--mint));border-radius:16px;padding:14px 18px;line-height:1.35}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;flex:1}
+.steps .card{gap:22px}
+.quote{font-size:24px;font-weight:700;font-style:italic;color:var(--ink)}
+.pill{background:var(--paper);border-radius:999px;padding:10px 24px;font-weight:900;font-size:28px}
+
+/* phone */
+.phonewrap{display:grid;place-items:center}
+.phone{box-sizing:border-box;width:330px;height:620px;border-radius:52px;background:var(--ink);padding:14px;box-shadow:0 24px 0 rgba(41,51,47,.12)}
+.screen{box-sizing:border-box;width:100%;height:100%;border-radius:40px;background:#FAFAF7;padding:30px 20px 20px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.screen .mark{font-size:21px}
+.screen .lbl{font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--soft)}
+.mini{border-radius:18px;padding:13px 15px;display:flex;flex-direction:column;gap:8px}
+.mini .t{display:flex;justify-content:space-between;font-weight:900;font-size:16px}
+.mini .sub{font-weight:600;font-size:13px;color:var(--soft)}
+.mini .ds{display:flex;gap:6px}
+.mini .ds i{width:14px;height:14px;border-radius:999px;background:var(--ink)}
+.mini .ds i.g{background:transparent;border:2px solid rgba(41,51,47,.35)}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:#EDEFEA;border-radius:999px;padding:4px;font-weight:800;font-size:13px;text-align:center}
+.seg span{padding:7px 0;border-radius:999px}
+.seg span.on{background:var(--paper)}
+.act{font-weight:700;font-size:13px;background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:10px 12px}
+.qr{margin-top:auto;background:var(--ink);color:var(--paper);border-radius:16px;padding:13px;text-align:center;font-weight:900;font-size:16px}
+.mbar{height:9px;border-radius:999px;background:rgba(41,51,47,.12);overflow:hidden}
+.mbar i{display:block;height:100%;background:var(--ink)}
+
+/* browser */
+.browser{background:var(--paper);border-radius:24px;overflow:hidden;box-shadow:0 18px 0 rgba(41,51,47,.08);display:flex;flex-direction:column}
+.chrome{display:flex;align-items:center;gap:14px;padding:14px 18px;background:#EEF0EC}
+.chrome .dots{display:flex;gap:7px}
+.chrome .dots i{width:12px;height:12px;border-radius:999px;background:rgba(41,51,47,.25)}
+.chrome .url{flex:1;background:var(--paper);border-radius:999px;padding:7px 16px;font-weight:700;font-size:15px;color:var(--soft)}
+.banner{background:var(--ink);color:var(--paper);font-weight:800;font-size:15px;padding:10px 22px;display:flex;justify-content:center;gap:8px}
+.banner em{font-style:normal;color:var(--sage)}
+.site{padding:22px 26px 26px;display:flex;flex-direction:column;gap:18px}
+.site .nav{display:flex;justify-content:space-between;align-items:center}
+.site .nav b{font-weight:900;font-size:20px}
+.site .nav span{background:var(--ink);color:var(--paper);border-radius:999px;padding:8px 16px;font-weight:800;font-size:14px}
+.site .hero{font-weight:900;font-size:40px;line-height:1;letter-spacing:-.02em}
+.site .rw{background:var(--mint);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.site .rw .h{font-weight:900;font-size:18px}
+.feed{display:flex;flex-direction:column;gap:8px}
+.feed div{background:var(--paper);border-radius:12px;padding:9px 12px;font-weight:700;font-size:14px;display:flex;justify-content:space-between}
+.feed div span{color:var(--soft);font-weight:600}
+
+/* kit */
+.kit{display:grid;grid-template-columns:repeat(5,1fr);gap:22px;flex:1}
+.kit .card{padding:30px;gap:14px;align-items:flex-start}
+.kit .shape{width:100%;height:150px;border-radius:20px;background:var(--bg,var(--butter));display:grid;place-items:center}
+.kit .shape span{background:var(--paper);border-radius:12px;padding:10px 14px;font-weight:900;font-size:18px}
+.kit .shape .circle{width:110px;height:110px;border-radius:999px;display:grid;place-items:center;padding:0;text-align:center;font-size:20px}
+.kit h3{font-size:28px}
+.kit .body{font-size:21px}
+
+/* insights */
+.dash{background:var(--paper);border-radius:32px;padding:36px 38px;display:flex;flex-direction:column;gap:22px}
+.dtiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.dt{background:var(--bg,var(--mint));border-radius:18px;padding:18px 20px;display:flex;flex-direction:column;gap:6px}
+.dt .v{font-weight:900;font-size:48px;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.dt .l{font-weight:800;font-size:16px;color:var(--soft)}
+.share{display:flex;flex-direction:column;gap:10px}
+.share .h{font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:.1em;color:var(--soft)}
+.sr{display:grid;grid-template-columns:150px 1fr 60px;align-items:center;gap:14px;font-weight:800;font-size:18px}
+.sr .tr{height:14px;border-radius:999px;background:rgba(41,51,47,.1);overflow:hidden}
+.sr .tr i{display:block;height:100%;background:var(--ink);border-radius:999px}
+.sr b{text-align:right;font-variant-numeric:tabular-nums}
+
+/* cost */
+.price{display:grid;grid-template-columns:1fr 1.4fr;gap:28px;flex:1}
+.price .main{background:var(--ink);color:var(--paper);border-radius:32px;padding:44px;display:flex;flex-direction:column;gap:18px;justify-content:center}
+.price .main .v{font-weight:900;font-size:150px;line-height:.85;letter-spacing:-.05em}
+.price .main .v small{font-size:40px;letter-spacing:-.01em;margin-left:6px}
+.price .main p{font-size:26px;line-height:1.4;font-weight:600;color:rgba(255,255,255,.8)}
+.price .rest{display:grid;grid-template-rows:repeat(3,1fr);gap:18px}
+.price .rest .card{flex-direction:row;align-items:center;gap:26px;padding:28px 34px}
+.price .rest .card .who{min-width:200px;font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:.1em;color:var(--soft)}
+.price .rest .card h3{font-size:30px}
+.price .rest .card .body{font-size:21px}
+
+.close{justify-content:center;align-items:flex-start}
+.close h1{color:var(--paper)}
+.close .lede{color:rgba(255,255,255,.8)}
+.close .mark{font-size:40px;color:var(--butter)}
+.close .urls{display:flex;flex-direction:column;gap:8px}
+.close .url{font-weight:900;font-size:38px;color:var(--butter)}
+
+.ctrl{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));display:flex;gap:8px;z-index:5;opacity:.35;transition:opacity .2s}
+.ctrl:hover,.ctrl:focus-within{opacity:1}
+.ctrl button{font:800 14px var(--font);background:var(--paper);color:var(--ink);border:0;border-radius:999px;padding:10px 16px;cursor:pointer}
+.ctrl button:focus-visible{outline:3px solid var(--butter);outline-offset:2px}
+.hint{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));color:rgba(255,255,255,.45);font:700 13px var(--font);z-index:5;transition:opacity .6s}
+.progress{position:absolute;left:0;bottom:0;height:8px;background:var(--ink);opacity:.85;transition:width .35s ease;z-index:3}
+@media (prefers-reduced-motion: reduce){.slide,.progress,.hint{transition:none}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="sp" viewBox="0 0 24 24"><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z"/></symbol>
+</svg>
+
+<div class="viewport">
+<div class="deck" id="deck" role="region" aria-roledescription="slide deck" aria-label="Village Rewards for traders">
+
+  <!-- 1 cover -->
+  <section class="slide b cover" aria-label="Cover">
+    <div class="row" style="align-items:center"><span class="mark">village rewards<svg><use href="#sp"/></svg></span><span class="live"><i></i>Live now in Mont Albert</span></div>
+    <div class="col" style="gap:36px">
+      <h1>Your regulars,<br>rewarded.<svg class="spark-lg"><use href="#sp"/></svg></h1>
+      <p class="lede">One loyalty app for the whole village. Your own stamp card, village rewards across every shop, and a passport that sends shoppers next door.</p>
+    </div>
+    <span class="eyebrow">For traders</span>
+  </section>
+
+  <!-- 2 three ways -->
+  <section class="slide s" aria-label="Three ways to reward">
+    <span class="eyebrow">How it works</span>
+    <h2>One stamp. Three ways to reward it.</h2>
+    <div class="layers">
+      <div class="layer"><span class="ico" style="--bg:var(--butter)"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 12h8M12 8v8"/></svg></span><h3>Your stamp card</h3><p class="body">Your own card, your own reward. "Buy 9 coffees, the 10th is free."</p><div class="goal"><b>Brings back</b><span>Your regulars, more often</span></div></div>
+      <div class="layer"><span class="ico" style="--bg:var(--mint)"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V6M16 20v-8M22 20H2"/></svg></span><h3>Village rewards</h3><p class="body">Stamps from every shop add up. At 10, 20, 30 and 50 stamps customers unlock rewards offered by traders.</p><div class="goal"><b>Brings in</b><span>Shoppers from across the village</span></div></div>
+      <div class="layer"><span class="ico" style="--bg:var(--sky)"><svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg></span><h3>Village passport</h3><p class="body">A monthly race. Whoever visits the most different traders wins the prize.</p><div class="goal"><b>Brings in</b><span>People who've never tried you</span></div></div>
+    </div>
+  </section>
+
+  <!-- 3 live now -->
+  <section class="slide m" aria-label="Live in Mont Albert">
+    <span class="eyebrow">Live now · Mont Albert Village</span>
+    <h2>Already running on Hamilton Street.</h2>
+    <div class="stats">
+      <div class="stat"><span class="v">17</span><span class="l">Mont Albert traders in this month's passport</span></div>
+      <div class="stat"><span class="v">1</span><span class="l">Stamp for every qualifying purchase or check-in</span></div>
+      <div class="stat"><span class="v">30 Nov</span><span class="l">The November passport closes</span></div>
+      <div class="stat"><span class="v">iPhone</span><span class="l">For the shopper who visits the most traders</span></div>
+    </div>
+    <p class="lede" style="font-size:28px;max-width:1300px">Customers join free at villagerewards.com.au. The Mont Albert Village website sends visitors straight to it.</p>
+  </section>
+
+  <!-- 4 why join -->
+  <section class="slide p" aria-label="What it does for your shop">
+    <span class="eyebrow">What it does for your shop</span>
+    <h2>More visits from the people already shopping here.</h2>
+    <div class="grid g4">
+      <div class="card"><h3>Brings regulars back</h3><p class="body">A card that's nearly full is a reason to come to you, not the shop down the road.</p></div>
+      <div class="card"><h3>Sends new customers</h3><p class="body">Passport racers and village reward hunters go looking for shops they haven't tried.</p></div>
+      <div class="card"><h3>Retires the paper card</h3><p class="body">No printing, no lost cards, no stamps from a borrowed pen.</p></div>
+      <div class="card"><h3>Puts you on the village site</h3><p class="body">Your shop and your reward show on the village website, next to everyone else's.</p></div>
+    </div>
+  </section>
+
+  <!-- 5 your card -->
+  <section class="slide b" aria-label="Your card, your rules">
+    <span class="eyebrow">1 · Your stamp card</span>
+    <div class="split">
+      <div class="col">
+        <h2 style="font-size:84px">Your card. Your rules.</h2>
+        <div class="list">
+          <div class="li"><span class="dot"></span><span>You choose how many stamps and what they earn.</span></div>
+          <div class="li"><span class="dot"></span><span>Your card's reward is paid out only in your shop.</span></div>
+          <div class="li"><span class="dot"></span><span>Customers see how close they are every time they open the app.</span></div>
+        </div>
+      </div>
+      <div class="stampcard" aria-label="Example stamp card, 6 of 9 stamps">
+        <div class="row"><h3>Your shop</h3><span class="mark" style="font-size:22px">village rewards<svg><use href="#sp"/></svg></span></div>
+        <div class="stamps">
+          <div class="st on"><svg><use href="#sp"/></svg></div><div class="st on"><svg><use href="#sp"/></svg></div><div class="st on"><svg><use href="#sp"/></svg></div><div class="st on"><svg><use href="#sp"/></svg></div><div class="st on"><svg><use href="#sp"/></svg></div>
+          <div class="st on"><svg><use href="#sp"/></svg></div><div class="st"></div><div class="st"></div><div class="st"></div><div class="st free">FREE</div>
+        </div>
+        <p class="body" style="font-weight:700;color:var(--ink)">6 of 9 stamps · Free coffee</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 ideas -->
+  <section class="slide m" aria-label="Ideas for your card">
+    <span class="eyebrow">Ideas for your card</span>
+    <h2>Pick what suits your margins.</h2>
+    <div class="ideas">
+      <div class="idea"><span class="who">Café</span><span class="what">9 coffees, 10th free</span><span class="dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="g"></i></span></div>
+      <div class="idea"><span class="who">Bakery</span><span class="what">8 loaves, 1 on us</span><span class="dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="g"></i></span></div>
+      <div class="idea"><span class="who">Florist</span><span class="what">6 bunches, $10 off</span><span class="dots"><i></i><i></i><i></i><i></i><i></i><i></i><i class="g"></i></span></div>
+      <div class="idea"><span class="who">Hair &amp; beauty</span><span class="what">5 visits, free treatment</span><span class="dots"><i></i><i></i><i></i><i></i><i></i><i class="g"></i></span></div>
+      <div class="idea"><span class="who">Bookshop</span><span class="what">5 books, a free tote</span><span class="dots"><i></i><i></i><i></i><i></i><i></i><i class="g"></i></span></div>
+      <div class="idea"><span class="who">Grocer</span><span class="what">10 shops, $15 off</span><span class="dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="g"></i></span></div>
+    </div>
+  </section>
+
+  <!-- 7 village rewards -->
+  <section class="slide s" aria-label="Village rewards">
+    <span class="eyebrow">2 · Village rewards</span>
+    <div class="split">
+      <div class="col">
+        <h2 style="font-size:80px">Every stamp in the village counts.</h2>
+        <div class="list">
+          <div class="li"><span class="dot"></span><span>Stamps from every shop add up to village milestones.</span></div>
+          <div class="li"><span class="dot"></span><span>Traders can choose to offer a reward on the village shelf.</span></div>
+          <div class="li"><span class="dot"></span><span>Customers redeem it in your shop. That's a new customer at your counter.</span></div>
+        </div>
+      </div>
+      <div class="ladder" aria-label="Example village reward milestones">
+        <div class="row"><h3>Village shelf</h3><span class="ex">Example rewards</span></div>
+        <div class="rung open"><span class="n">10<small>stamps</small></span><span class="r">A free coffee<small>Offered by a café</small></span><span class="s">Unlocked</span></div>
+        <div class="rung"><span class="n">20<small>stamps</small></span><span class="r">A pastry box<small>Offered by a bakery</small></span><span class="s">14 / 20</span></div>
+        <div class="rung"><span class="n">30<small>stamps</small></span><span class="r">A bunch of flowers<small>Offered by a florist</small></span><span class="s">14 / 30</span></div>
+        <div class="rung"><span class="n">50<small>stamps</small></span><span class="r">$25 to spend<small>Offered by a grocer</small></span><span class="s">14 / 50</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 passport -->
+  <section class="slide b" aria-label="Village passport">
+    <span class="eyebrow">3 · Village passport</span>
+    <div class="split">
+      <div class="col">
+        <h2 style="font-size:80px">Visit the most traders. Win the iPhone.</h2>
+        <div class="list">
+          <div class="li"><span class="dot"></span><span>Each different trader visited with a $10+ purchase fills in a tile.</span></div>
+          <div class="li"><span class="dot"></span><span>Shoppers see their place on the leaderboard and chase it.</span></div>
+          <div class="li"><span class="dot"></span><span>A new passport every month, at no cost to traders.</span></div>
+        </div>
+      </div>
+      <div class="pass" aria-label="Example passport, 6 of 17 traders visited, 2nd place">
+        <div class="row"><span class="camp">Mont Albert November Passport</span><span class="ex">Example</span></div>
+        <span class="big">You've visited 6 of 17 traders this month</span>
+        <div class="bar"><i style="width:35.3%"></i></div>
+        <div class="place">You're currently in <b>2nd place</b></div>
+        <div class="tiles" aria-hidden="true">
+          <div class="tl v">Café</div><div class="tl v">Bakery</div><div class="tl">Books</div><div class="tl v">Florist</div><div class="tl">Deli</div><div class="tl">Gifts</div>
+          <div class="tl v">Grocer</div><div class="tl">Hair</div><div class="tl">Butcher</div><div class="tl v">Wine</div><div class="tl">Shoes</div><div class="tl">Nails</div>
+          <div class="tl">Chemist</div><div class="tl v">Garden</div><div class="tl">Toys</div><div class="tl">Thai</div><div class="tl">Pizza</div><div class="tl" style="visibility:hidden"></div>
+        </div>
+        <span class="cta">Visit more traders to move up the leaderboard. Ends 30 Nov.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 how stamps are earned -->
+  <section class="slide p" aria-label="How customers earn">
+    <span class="eyebrow">How customers earn</span>
+    <h2>Simple for them. Fair for you.</h2>
+    <div class="earn">
+      <div class="card"><span class="plus">+1<small>stamp</small></span><h3>Every purchase</h3><p class="body">One stamp per qualifying purchase, whatever the amount. Small shops and big spends earn the same.</p><span class="fine" style="--bg:var(--butter)">Counts toward your card and village rewards</span></div>
+      <div class="card"><span class="plus">+1<small>stamp</small></span><h3>A check-in</h3><p class="body">Shoppers scan your shop's own QR code and check in from the app, no purchase needed.</p><span class="fine" style="--bg:var(--mint)">Your QR code takes them straight to your shop</span></div>
+      <div class="card"><span class="plus">+1<small>tile</small></span><h3>Passport visit</h3><p class="body">The first $10+ purchase at each different trader fills in a passport tile.</p><span class="fine" style="--bg:var(--sky)">No buying six $1 items to game it</span></div>
+    </div>
+  </section>
+
+  <!-- 10 counter -->
+  <section class="slide m" aria-label="At the counter">
+    <span class="eyebrow">At the counter</span>
+    <div class="row" style="align-items:flex-end"><h2>One scan does it all.</h2><span class="pill">About 10 seconds</span></div>
+    <div class="steps">
+      <div class="card"><span class="num">1</span><h3>Ask</h3><p class="quote">"Are you on Village Rewards?"</p></div>
+      <div class="card"><span class="num">2</span><h3>Scan</h3><p class="body">The customer shows their code. You scan it in the trader view of the app.</p></div>
+      <div class="card"><span class="num">3</span><h3>Enter the sale</h3><p class="body">Type the amount and tap to award the stamp.</p></div>
+      <div class="card"><span class="num">4</span><h3>Done</h3><p class="body">Your card, their village total and their passport all update at once.</p></div>
+    </div>
+  </section>
+
+  <!-- 11 customer view -->
+  <section class="slide s" aria-label="What your customers see">
+    <span class="eyebrow">What your customers see</span>
+    <div class="split" style="grid-template-columns:1.2fr .8fr">
+      <div class="col">
+        <h2 style="font-size:84px">Everything in one pocket.</h2>
+        <div class="list">
+          <div class="li"><span class="dot"></span><span>Every shop's stamp card, with progress on each.</span></div>
+          <div class="li"><span class="dot"></span><span>Their passport and place on the leaderboard, plus badges they've earned.</span></div>
+          <div class="li"><span class="dot"></span><span>A note every time they earn: "You earned 1 stamp at your shop."</span></div>
+          <div class="li"><span class="dot"></span><span>Free. Opens from a QR code, no app store needed.</span></div>
+        </div>
+      </div>
+      <div class="phonewrap">
+        <div class="phone" aria-label="Example of the customer app">
+          <div class="screen">
+            <span class="mark">village rewards<svg><use href="#sp"/></svg></span>
+            <div class="act">You earned 1 stamp at the bakery</div>
+            <span class="lbl">Your stamp cards</span>
+            <div class="mini" style="background:var(--butter)"><div class="t"><span>Café</span><span>6 / 9</span></div><div class="ds"><i></i><i></i><i></i><i></i><i></i><i></i><i class="g"></i><i class="g"></i><i class="g"></i></div><span class="sub">Free coffee</span></div>
+            <div class="mini" style="background:var(--pink)"><div class="t"><span>Bakery</span><span>3 / 8</span></div><div class="ds"><i></i><i></i><i></i><i class="g"></i><i class="g"></i><i class="g"></i><i class="g"></i><i class="g"></i></div></div>
+            <div class="seg"><span>Badges</span><span class="on">Passport</span></div>
+            <div class="mini" style="background:var(--sky)"><div class="t"><span>6 of 17 traders</span><span>2nd</span></div><div class="mbar"><i style="width:35.3%"></i></div></div>
+            <div class="qr">Show my code</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 website -->
+  <section class="slide b" aria-label="On the village website">
+    <span class="eyebrow">On the village website</span>
+    <div class="split" style="grid-template-columns:.9fr 1.1fr">
+      <div class="col">
+        <h2 style="font-size:80px">The village site does the selling.</h2>
+        <div class="list">
+          <div class="li"><span class="dot"></span><span>Every visitor to the Mont Albert Village site meets Village Rewards first.</span></div>
+          <div class="li"><span class="dot"></span><span>One tap on "Join Village Rewards" and they're signed up.</span></div>
+          <div class="li"><span class="dot"></span><span>Live activity and rewards from across the village show the strip is busy.</span></div>
+        </div>
+      </div>
+      <div class="browser" aria-label="Sketch of the Mont Albert Village website with Village Rewards">
+        <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="url">villagerewards.com.au/montalbert</span></div>
+        <div class="banner">A little village. A rewarding new chapter. <em>Meet Village Rewards ↗</em></div>
+        <div class="site">
+          <div class="nav"><b>Mont Albert Village</b><span>Join Village Rewards</span></div>
+          <div class="hero">Make local more rewarding.</div>
+          <div class="rw">
+            <span class="h">Happening in the village</span>
+            <div class="feed">
+              <div>A stamp was earned at a café<span>2 min ago</span></div>
+              <div>Someone checked in at the bakery<span>9 min ago</span></div>
+              <div>A free coffee was claimed<span>21 min ago</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 kit -->
+  <section class="slide m" aria-label="Your counter kit">
+    <span class="eyebrow">What you get</span>
+    <h2>Your counter kit.</h2>
+    <div class="kit">
+      <div class="card"><div class="shape" style="--bg:var(--butter)"><span>Scan here</span></div><h3>Counter stand</h3><p class="body">Your shop's QR code. Signs people up and checks them in.</p></div>
+      <div class="card"><div class="shape" style="--bg:var(--pink)"><span class="circle">Tap</span></div><h3>Tap sticker</h3><p class="body">Customers tap their phone to open the app.</p></div>
+      <div class="card"><div class="shape" style="--bg:var(--sky)"><span class="circle">✦</span></div><h3>Window decal</h3><p class="body">Shows passers-by you're part of it.</p></div>
+      <div class="card"><div class="shape" style="--bg:var(--mint)"><span>A3 poster</span></div><h3>Posters</h3><p class="body">How it works, for the wall.</p></div>
+      <div class="card"><div class="shape" style="--bg:var(--butter)"><span>Staff card</span></div><h3>Staff card</h3><p class="body">The counter routine, for anyone on shift.</p></div>
+    </div>
+  </section>
+
+  <!-- 14 insights -->
+  <section class="slide p" aria-label="What the village learns">
+    <span class="eyebrow">What the village learns</span>
+    <div class="split">
+      <div class="col">
+        <h2 style="font-size:80px">See how shoppers move.</h2>
+        <div class="list">
+          <div class="li"><span class="dot"></span><span>Which shops share customers, and where they go next.</span></div>
+          <div class="li"><span class="dot"></span><span>Busy days and hours, from purchases and check-ins.</span></div>
+          <div class="li"><span class="dot"></span><span>The passport leaderboard, live.</span></div>
+          <div class="li"><span class="dot"></span><span>Anonymous by default. No customer details go to other shops.</span></div>
+        </div>
+      </div>
+      <div class="dash" aria-label="Example village dashboard with sample figures">
+        <div class="row"><h3>This month</h3><span class="ex">Example</span></div>
+        <div class="dtiles">
+          <div class="dt" style="--bg:var(--butter)"><span class="v">412</span><span class="l">Stamps earned</span></div>
+          <div class="dt" style="--bg:var(--sky)"><span class="v">96</span><span class="l">Active shoppers</span></div>
+          <div class="dt" style="--bg:var(--mint)"><span class="v">3.4</span><span class="l">Shops per shopper</span></div>
+        </div>
+        <div class="share">
+          <span class="h">Café customers also shop at</span>
+          <div class="sr"><span>Bakery</span><span class="tr"><i style="width:62%"></i></span><b>62%</b></div>
+          <div class="sr"><span>Grocer</span><span class="tr"><i style="width:41%"></i></span><b>41%</b></div>
+          <div class="sr"><span>Florist</span><span class="tr"><i style="width:23%"></i></span><b>23%</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 cost -->
+  <section class="slide s" aria-label="What it costs">
+    <span class="eyebrow">What it costs</span>
+    <h2>Free to join. No cut of your sales.</h2>
+    <div class="price">
+      <div class="main"><span class="v">$0<small>to join</small></span><p>Your listing, awarding stamps and joining village campaigns are free. No transaction fees, no percentage of sales.</p></div>
+      <div class="rest">
+        <div class="card"><span class="who">You fund</span><div style="display:flex;flex-direction:column;gap:6px"><h3>Your stamp card reward</h3><p class="body">Paid out only in your shop, on terms you set.</p></div></div>
+        <div class="card"><span class="who">Optional</span><div style="display:flex;flex-direction:column;gap:6px"><h3>A village shelf reward</h3><p class="body">Offer one if you want the extra foot traffic.</p></div></div>
+        <div class="card"><span class="who">Not you</span><div style="display:flex;flex-direction:column;gap:6px"><h3>The passport prize</h3><p class="body">Traders don't pay for the passport prize.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16 sign up -->
+  <section class="slide b" aria-label="Getting started">
+    <span class="eyebrow">Getting started</span>
+    <h2>Live this week.</h2>
+    <div class="grid g3">
+      <div class="card"><span class="num">1</span><h3>Choose your card</h3><p class="body">How many stamps and what reward. Add a village shelf reward if you like. A two-minute chat.</p></div>
+      <div class="card"><span class="num">2</span><h3>We set you up</h3><p class="body">Your shop goes into the app, the passport and the village website. Your counter kit gets printed.</p></div>
+      <div class="card"><span class="num">3</span><h3>Start stamping</h3><p class="body">Your staff learn the four-step routine in five minutes. Customers start collecting straight away.</p></div>
+    </div>
+  </section>
+
+  <!-- 17 close -->
+  <section class="slide k close" aria-label="Close">
+    <div class="col">
+      <span class="mark">village rewards<svg><use href="#sp"/></svg></span>
+      <h1>Join the village.</h1>
+      <p class="lede">What would your card be?</p>
+      <div class="urls"><span class="url">villagerewards.com.au</span><span class="url" style="font-size:28px;color:rgba(255,255,255,.7)">villagerewards.com.au/montalbert</span></div>
+    </div>
+  </section>
+
+  <div class="progress" id="progress"></div>
+</div>
+</div>
+
+<div class="hint" id="hint">← → to move · F for full screen</div>
+<div class="ctrl">
+  <button type="button" id="prev" aria-label="Previous slide">← Prev</button>
+  <button type="button" id="next" aria-label="Next slide">Next →</button>
+  <button type="button" id="fs" aria-label="Full screen">Full screen</button>
+</div>
+
+<script>
+(function(){
+  var deck=document.getElementById('deck');
+  var slides=[].slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length, i=0;
+  var prog=document.getElementById('progress');
+  slides.forEach(function(s,k){
+    if(s.classList.contains('cover')||s.classList.contains('close')) return;
+    var f=document.createElement('div'); f.className='foot';
+    f.innerHTML='<span class="mark">village rewards<svg><use href="#sp"/></svg></span><span class="n">'+(k+1)+' / '+N+'</span>';
+    s.appendChild(f);
+  });
+  function fit(){
+    var s=Math.min((window.innerWidth-32)/1600,(window.innerHeight-32)/900);
+    deck.style.transform='translate(-50%,-50%) scale('+s+')';
+  }
+  function show(n,push){
+    i=Math.max(0,Math.min(N-1,n));
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); s.setAttribute('aria-hidden',k===i?'false':'true'); });
+    prog.style.width=((i+1)/N*100)+'%';
+    prog.style.background=slides[i].classList.contains('k')?'var(--butter)':'var(--ink)';
+    if(push!==false){ try{ history.replaceState(null,'','#slide-'+(i+1)); }catch(e){} }
+  }
+  function fromHash(){ var m=/^#slide-(\d+)$/.exec(location.hash||''); show(m?parseInt(m[1],10)-1:0,false); }
+  function toggleFs(){
+    try{
+      if(!document.fullscreenElement){ var p=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); if(p&&p.catch)p.catch(function(){}); }
+      else if(document.exitFullscreen){ var q=document.exitFullscreen(); if(q&&q.catch)q.catch(function(){}); }
+    }catch(e){}
+  }
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='BUTTON'&&(e.key===' '||e.key==='Enter')) return;
+    var k=e.key;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '||k==='ArrowDown'){ e.preventDefault(); show(i+1); }
+    else if(k==='ArrowLeft'||k==='PageUp'||k==='ArrowUp'||k==='Backspace'){ e.preventDefault(); show(i-1); }
+    else if(k==='Home'){ show(0); } else if(k==='End'){ show(N-1); }
+    else if(k==='f'||k==='F'){ toggleFs(); }
+  });
+  deck.addEventListener('click',function(e){ var r=deck.getBoundingClientRect(); show(e.clientX<r.left+r.width*0.3?i-1:i+1); });
+  var tx=null;
+  deck.addEventListener('touchstart',function(e){ tx=e.touches[0].clientX; },{passive:true});
+  deck.addEventListener('touchend',function(e){ if(tx===null)return; var dx=e.changedTouches[0].clientX-tx; tx=null; if(Math.abs(dx)>40) show(dx<0?i+1:i-1); });
+  document.getElementById('prev').addEventListener('click',function(){ show(i-1); });
+  document.getElementById('next').addEventListener('click',function(){ show(i+1); });
+  document.getElementById('fs').addEventListener('click',toggleFs);
+  window.addEventListener('resize',fit);
+  window.addEventListener('hashchange',fromHash);
+  setTimeout(function(){ var h=document.getElementById('hint'); if(h) h.style.opacity='0'; },6000);
+  fit(); fromHash();
+})();
+</script>
+</body>
+</html>
