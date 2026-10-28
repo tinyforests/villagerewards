@@ -9,8 +9,13 @@ assert.match(format({...tx,type:'redeem',points:-10,reward_title:'a coffee'},now
 assert.equal(format({...tx,type:'redeem',points:-47},now).message,'Enjoy your little treat!');
 assert.doesNotMatch(format({...tx,created_at:'2026-09-30T09:59:00Z'},now).title,/just/);
 assert.equal(format({...tx,type:'reward',points:0},now).title,'You just claimed your shop reward at Example café.');
-assert.match(format({...tx,type:'purchase',points:15},now).title,/earned 15 stamps/);
+assert.match(format({...tx,type:'purchase',points:15},now).title,/earned 1 stamp\b/);
 assert.match(format({...tx,type:'purchase',points:1},now).title,/earned 1 stamp\b/);
 assert.match(format(null,now).title,/next little win/);
 assert.equal(format({...tx,type:'adjustment',points:-4},now).title,'Your stamps have been updated.');
 console.log('PASS: check-in, purchase, redemption, coffee copy, stamp reward, old activity, empty profile and adjustments.');
+
+for (const points of [300,250,8,0,null]) {
+  assert.match(format({...tx,type:'purchase',points},now).title,/earned 1 stamp\b/);
+  assert.match(format({...tx,type:'checkin',points},now).message,/\+1 stamp\./);
+}

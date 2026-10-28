@@ -404,9 +404,9 @@
     .pp-meter { width: 100%; height: 10px; accent-color: var(--accent); margin-bottom: 14px; }
     .pp-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
     .pp-tile { padding: 12px 6px; text-align: center; border-radius: 10px; font-size: 10px; letter-spacing: 0.03em; line-height: 1.3; border: 1px solid rgba(255,240,220,0.1); }
-    .pp-tile.visited { background: var(--accent); color: var(--green-dark); border-color: var(--accent); font-weight: 600; }
+    .pp-tile.visited { background: #426a55; color: #fff; border-color: #426a55; font-weight: 600; opacity: 1; }
     .pp-tile.dim { opacity: 0.3; }
-    .pp-cta { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.55; }
+    .pp-cta { font-size: 13px; letter-spacing: normal; text-transform: none; opacity: 0.55; }
     .pp-cta.done { color: var(--accent); opacity: 0.9; }
 
 // Window decals open the customer flow; returning members keep their profile.
@@ -1035,7 +1035,8 @@ async function renderCustomerDashboard(c) {
     var isReward  = tx.type === 'reward';   // stamp-card free item (0 points)
     var ptsClass  = isRedeem ? 'redeem' : (isCheckin || isReward) ? 'checkin' : 'earn';
     var icon      = isReward ? '🎁 ' : isCheckin ? '⬡ ' : '';
-    var ptsCell   = isReward ? 'Free' : (isRedeem ? '−' : '+') + Math.abs(tx.points);
+    var ptsCell   = (tx.type === 'purchase' || isCheckin) ? '+1 stamp'
+      : isReward ? 'Free' : (isRedeem ? '−' : '+') + Math.abs(tx.points);
 
     return '<div class="tx-item">' +
       '<div><div class="tx-shop">' + icon + esc(tx.shop_name || 'Village') + '</div>' +
@@ -1655,7 +1656,7 @@ async function renderPassport(cid) {
     }).join('');
     var cta = total > 0 && count >= total
       ? '<div class="pp-cta done">You’ve visited every trader! 🏆</div>'
-      : '<div class="pp-cta">Visit more traders to move up the leaderboard</div>';
+      : '<div class="pp-cta">Visit more traders to move up the leaderboard.</div>';
 
     el.innerHTML =
       '<div class="pp-head">Village Passport — ' + esc(camp.name) + '</div>' +

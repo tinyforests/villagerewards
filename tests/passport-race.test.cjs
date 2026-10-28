@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const app = fs.readFileSync('app.html', 'utf8');
 const admin = fs.readFileSync('village-rewards-admin.html', 'utf8');
 const render = app.slice(app.indexOf('async function renderPassport('), app.indexOf('/* ═════════', app.indexOf('async function renderPassport(')));
-async function widget({ visits = 1, total = 4, participants = 2, ahead = 1, rankError = false } = {}) {
+async function widget({ visits = 1, total = 4, participants = 2, ahead = 1, rankError = false, stamps = [] } = {}) {
   const el = { style: {}, innerHTML: '' };
   const calls = [];
   const sb = { from(table) {
@@ -17,7 +17,7 @@ async function widget({ visits = 1, total = 4, participants = 2, ahead = 1, rank
       let result;
       if (table === 'passport_campaigns') result = { data: { id: 'campaign', name: 'Race', period: 'monthly', required_shops: 1, end_date: '2026-10-31' } };
       else if (table === 'shops') result = { data: Array.from({length: total}, (_, i) => ({id: String(i), name: 'Trader '+i})) };
-      else if (table === 'passport_stamps') result = { data: [] };
+      else if (table === 'passport_stamps') result = { data: stamps };
       else if (q.filters.some(f => f[0] === 'eq' && f[1] === 'customer_id')) result = { data: visits ? { unique_traders_visited: visits } : null };
       else {
         const isAhead = calls.filter(c => c.table === 'passport_progress' && c.filters.some(f => f[0] === 'gt')).length > 1;
@@ -71,4 +71,13 @@ test('admin sorts descending and highlights joint leaders without marking zero a
   assert.ok(body.innerHTML.indexOf('Low') < body.innerHTML.indexOf('Leader A'));
   ctx.passportRows=[{name:'Empty',traders:0}]; ctx.renderPassportTable();
   assert.doesNotMatch(body.innerHTML,/Current leader/);
+});
+
+test('passport tiles fill from campaign stamps and CTA stays sentence case', async () => {
+  const {html} = await widget({stamps:[{shop_id:'1'}]});
+  assert.match(html, /class="pp-tile visited">Trader 1/);
+  assert.match(html, /class="pp-tile dim">Trader 0/);
+  assert.match(html, /Visit more traders to move up the leaderboard\.<\/div>/);
+  assert.match(app, /\.pp-tile\.visited \{[^}]*opacity: 1/);
+  assert.match(app, /\.pp-cta \{[^}]*text-transform: none/);
 });

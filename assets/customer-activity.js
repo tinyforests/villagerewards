@@ -7,7 +7,7 @@
     var recent = Number.isFinite(timestamp) && age >= -60000 && age < 5 * 60000;
     var just = recent ? 'You just ' : 'You ';
     var shop = tx.shop_name ? ' at ' + tx.shop_name : '';
-    var points = Math.abs(Number(tx.points) || 0);
+    var points = tx.type === 'purchase' || tx.type === 'checkin' ? 1 : Math.abs(Number(tx.points) || 0);
     var unit = points === 1 ? 'stamp' : 'stamps';
     var title, message;
     if (tx.type === 'checkin') {
