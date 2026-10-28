@@ -1,0 +1,26 @@
+{
+  "backendUrl": "https://hwtwfhvaeczofqktychc.supabase.co",
+  "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3dHdmaHZhZWN6b2Zxa3R5Y2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MjA1NTcsImV4cCI6MjA5MzI5NjU1N30.F2UBLZBIhULAXiuI5ApHqQEsnS8YkYkEwU-6dfVrcmw",
+  "appUrl": "https://villagerewards.com.au/app.html",
+  "pollMs": 30000,
+  "recentHours": 24,
+  "shopBindings": {
+    "ma-ce3292bc": "a22ba15a-d5d0-4d83-9ddd-77c06f1496c2",
+    "ma-780b6539": "91fcde65-311b-4249-855c-04d261b4be58",
+    "ma-b1156609": "912a126b-a6ea-4ec3-a3d4-f8c5850baf39",
+    "ma-9f37e34f": "59495a59-a37e-4aea-8017-dfcf6a2b4a5b",
+    "ma-cc735619": "7d14dc34-7567-4ce9-b32c-964c11c87a94",
+    "ma-77525f8f": "f7458ed8-b2fd-4c35-b289-30199285e4cc",
+    "ma-52979330": "3dbcebe5-de23-42ac-8a11-3c3a2435075b",
+    "ma-51a5514a": "36638ab0-a719-4d6e-9183-489bdbd772d3",
+    "ma-5061ff5c": "f6145691-4e08-4d59-8150-ad19c2caca20",
+    "ma-451a1cab": "b6119bb0-ccd0-4184-8017-058c48081581",
+    "ma-dd55be76": "e406b2ae-c27e-4db2-be74-825aabc451ad",
+    "ma-1acbf386": "4a8706de-bd1d-4bfc-b080-b7b6f7394ef1",
+    "ma-10f54aaf": "838b078f-2c7e-410a-855a-7116f0e791b5",
+    "ma-adc70a18": "bb810737-443a-439d-b902-73fbb0c18ee1",
+    "ma-324c0676": "5de5b8a0-4d63-4644-bcf8-34ac7de78a28",
+    "ma-3157b410": "fa46209e-78ef-46f5-9e17-c7ae2195a480",
+    "ma-ac5a73d7": "6db1104f-3e35-4572-b848-72b1b383734e"
+  }
+}
