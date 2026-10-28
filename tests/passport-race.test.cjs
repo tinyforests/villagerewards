@@ -81,3 +81,13 @@ test('passport tiles fill from campaign stamps and CTA stays sentence case', asy
   assert.match(app, /\.pp-tile\.visited \{[^}]*opacity: 1/);
   assert.match(app, /\.pp-cta \{[^}]*text-transform: none/);
 });
+
+test('progress fills proportionally across all 17 passport shops', async () => {
+  const {html,calls} = await widget({visits:6,total:17,stamps:[{shop_id:'2'}]});
+  assert.match(html, /max="17" value="6"/);
+  const stampQuery = calls.find(c => c.table === 'passport_stamps');
+  assert.ok(stampQuery.filters.some(f => f[0] === 'eq' && f[1] === 'campaign_id' && f[2] === 'campaign'));
+  assert.ok(stampQuery.filters.some(f => f[0] === 'eq' && f[1] === 'customer_id' && f[2] === 'me'));
+  assert.match(app, /\.pp-tile\.dim \{ opacity: 0\.35/);
+  assert.match(app, /\.pp-tile\.visited \{[^}]*color: var\(--vr-ink/);
+});
