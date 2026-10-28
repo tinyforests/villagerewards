@@ -22,8 +22,8 @@
       status.textContent = 'This is a demo reward, not a live redemption. To earn stamps, scan the customer’s village code.';
       return false;
     }
-    if (!/^[A-F0-9]{32}$/.test(code)) {
-      status.textContent = 'Show a stamp-pilot customer or collection code. Legacy points codes are not supported here.';
+    if (!/^(?:[CR][A-Z2-9]{8}|[A-F0-9]{32})$/.test(code)) {
+      status.textContent = 'Show a Village Rewards customer or reward collection QR code.';
       return false;
     }
     var field = document.getElementById(target);
