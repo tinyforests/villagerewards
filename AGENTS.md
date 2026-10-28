@@ -4,7 +4,7 @@ Repository: `github.com/tinyforests/villagerewards` · Updated 30 September 2026
 
 ## Product
 
-Village Rewards is an independent web loyalty platform for local village traders and customers. The current pilot is in Mont Albert, Melbourne. Customers collect points across participating shops and explore merchant rewards.
+Village Rewards is an independent web loyalty platform for local village traders and customers. The current pilot is in Mont Albert, Melbourne. Customers collect stamps across participating shops and explore merchant rewards.
 
 ## Brand source of truth
 
@@ -50,7 +50,7 @@ Static HTML/CSS/JavaScript with no build step, deployed through GitHub Pages at 
 
 ## Business rules
 
-Current source: $1 spent earns 1 point, rounded to the nearest whole point. Check-ins award 8 points with a client-side four-hour eligibility check per shop. Legacy redemption expresses 100 points as $1.
+Current source: every qualifying purchase earns 1 stamp (`STAMPS_PER_PURCHASE = 1`), flat regardless of the spend amount. Check-ins award 1 stamp (`CHECKIN_STAMPS = 1`) with a client-side four-hour eligibility check per shop. Stamps are counted, not priced — there is no dollar-value conversion.
 
 The tier implementation resets the entire village balance when a merchant confirms redemption. Stamp rewards affect their own card. The design study proposes retaining excess points; that is not an approved or deployed business-rule change. Do not change financial or earning logic as part of a visual redesign.
 
