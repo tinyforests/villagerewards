@@ -499,15 +499,21 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     <div class="greeting" id="c-greeting">Welcome back</div>
     <div class="pts-num" id="c-points">0</div>
     <div class="pts-lbl">Village Stamps</div>
-  <div class="badges-section" id="customer-badges">
+  <div class="profile-tabs" role="tablist" aria-label="Your village progress">
+    <button id="profile-tab-badges" role="tab" aria-selected="true" aria-controls="customer-badges" onclick="selectProfileTab('badges')">Badges</button>
+    <button id="profile-tab-passport" role="tab" aria-selected="false" aria-controls="profile-passport" tabindex="-1" onclick="selectProfileTab('passport')">Passport</button>
+  </div>
+  <div class="badges-section" id="customer-badges" role="tabpanel" aria-labelledby="profile-tab-badges">
     <div class="badges-title">Your badges</div>
     <div class="badges-grid" id="badges-grid">
       <div style="grid-column:1/-1;text-align:center;opacity:0.25;font-size:12px;padding:12px;">Earn badges by exploring the village.</div>
     </div>
   </div>
+  <div id="profile-passport" role="tabpanel" aria-labelledby="profile-tab-passport" hidden>
+    <div id="passport-empty" class="passport-empty">No active passport campaign right now. Check back soon.</div>
+    <div class="passport-widget" id="passport-widget" style="display:none;"></div>
   </div>
-
-  <div class="passport-widget" id="passport-widget" style="display:none;"></div>
+  </div>
 
   <section class="activity-notice" aria-label="Your latest activity">
     <span class="activity-spark" aria-hidden="true">✦</span>
@@ -834,8 +840,26 @@ function closeCustomerMenu() {
   document.getElementById('customer-menu').hidden = true;
   document.getElementById('customer-menu-toggle').setAttribute('aria-expanded', 'false');
 }
+function selectProfileTab(name, focusTab) {
+  ['badges', 'passport'].forEach(function(tab) {
+    var selected = tab === name;
+    var button = document.getElementById('profile-tab-' + tab);
+    button.setAttribute('aria-selected', String(selected));
+    button.tabIndex = selected ? 0 : -1;
+    document.getElementById(tab === 'badges' ? 'customer-badges' : 'profile-passport').hidden = !selected;
+    if (selected && focusTab) button.focus();
+  });
+}
+document.querySelector('.profile-tabs').addEventListener('keydown', function(event) {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+  event.preventDefault();
+  var selected = document.getElementById('profile-tab-badges').getAttribute('aria-selected') === 'true';
+  var name = event.key === 'Home' ? 'badges' : event.key === 'End' ? 'passport' : selected ? 'passport' : 'badges';
+  selectProfileTab(name, true);
+});
 function customerSection(id) {
   closeCustomerMenu();
+  if (id === 'customer-badges') selectProfileTab('badges');
   var section = document.getElementById(id);
   section.scrollIntoView({block:'start'});
   section.setAttribute('tabindex', '-1');
@@ -1609,6 +1633,8 @@ async function renderBadges(cid) {
 async function renderPassport(cid) {
   var el = document.getElementById('passport-widget');
   if (!el) return;
+  var empty = document.getElementById('passport-empty');
+  if (empty) empty.hidden = false;
   try {
     var today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
     var cr = await sb.from('passport_campaigns')
@@ -1667,7 +1693,9 @@ async function renderPassport(cid) {
       (tiles ? '<div class="pp-tiles">' + tiles + '</div>' : '') +
       cta;
     el.style.display = 'block';
+    if (empty) empty.hidden = true;
   } catch(e) {
+    if (empty) empty.textContent = 'Passport is temporarily unavailable. Please try again shortly.';
     console.log('Passport: not available yet.', e);
     el.style.display = 'none';
   }

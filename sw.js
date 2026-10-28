@@ -3,7 +3,7 @@
    v1.0 · Mont Albert Pilot
    ───────────────────────────────────────────────────── */
 
-var CACHE_NAME = 'village-rewards-passport-race-v12';
+var CACHE_NAME = 'village-rewards-profile-tabs-v13';
 
 /* Assets to cache on install so the app loads offline */
 var PRECACHE = [

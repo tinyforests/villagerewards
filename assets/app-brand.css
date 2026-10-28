@@ -34,3 +34,14 @@ html,body{background:var(--vr-white);color:var(--vr-ink);font-weight:400}
 #s-checkin>.vr-footer a{display:inline-flex;align-items:center;min-height:44px}
 
 .trader-more{margin:0 0 22px;border:1px solid var(--vr-border);border-radius:16px;padding:0 14px}.trader-more summary{cursor:pointer;min-height:48px;align-content:center;font-weight:800}.trader-more button{width:100%;text-align:left;margin-bottom:10px}.trader-more summary:focus-visible{outline:3px solid var(--vr-ink);outline-offset:3px}
+
+/* Profile progress tabs keep the greeting and stamp total in view. */
+.profile-tabs{display:flex;gap:8px;border-top:1px solid #aacbbb;margin-top:20px;padding-top:16px;margin-bottom:18px}
+.profile-tabs [role=tab]{flex:1;min-height:48px;border:1px solid #aacbbb;border-radius:16px;background:transparent;color:var(--vr-ink);font-size:14px;font-weight:800;cursor:pointer}
+.profile-tabs [aria-selected=true]{background:var(--vr-butter);border-color:transparent}
+.points-hero .badges-section{padding:0;margin:0;border:0}
+.points-hero .passport-widget{padding:0;border:0}
+.points-hero .pp-sub{opacity:1;color:var(--vr-muted)}
+.points-hero .pp-tile.dim{background:#ffffff80}
+.points-hero .pp-cta{color:var(--vr-ink);opacity:1;line-height:1.5}
+.passport-empty{font-size:14px;color:var(--vr-muted);line-height:1.6}
