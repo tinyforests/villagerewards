@@ -405,6 +405,18 @@
     .tp-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
     /* ═══ DEMO_MODE END ═══ */
 
+    /* -- Village passport widget -- */
+    .passport-widget { padding: 20px 24px; border-bottom: 1px solid rgba(255,240,220,0.1); }
+    .pp-head { font-size: 13px; font-weight: 600; letter-spacing: 0.02em; margin-bottom: 4px; }
+    .pp-sub { font-size: 12px; opacity: 0.5; line-height: 1.5; margin-bottom: 12px; }
+    .pp-progress { font-family: var(--serif); font-size: 22px; color: var(--accent); margin-bottom: 14px; }
+    .pp-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
+    .pp-tile { padding: 12px 6px; text-align: center; border-radius: 10px; font-size: 10px; letter-spacing: 0.03em; line-height: 1.3; border: 1px solid rgba(255,240,220,0.1); }
+    .pp-tile.visited { background: var(--accent); color: var(--green-dark); border-color: var(--accent); font-weight: 600; }
+    .pp-tile.dim { opacity: 0.3; }
+    .pp-cta { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.55; }
+    .pp-cta.done { color: var(--accent); opacity: 0.9; }
+
 // Window decals open the customer flow; returning members keep their profile.
 if (new URLSearchParams(window.location.search).get('join') === '1') {
   goCustomer();
@@ -431,7 +443,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     <div class="top">
       <div class="village">Mont Albert Village</div>
       <h1 class="display">Shop local.<br />Score more.</h1>
-      <p class="tagline">Your everyday favourites. Your next little treat. Collect points at participating village shops.</p>
+      <p class="tagline">Your everyday favourites. Your next little treat. Collect stamps at participating village shops.</p>
     </div>
     <div class="role-btns">
       <button class="btn btn-primary"  onclick="goCustomer()">I'm shopping</button>
@@ -450,7 +462,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
   </div>
   <div class="body">
     <h2 class="display-sm">Join Village<br />Rewards</h2>
-    <p class="intro">One quick registration. Earn points at every participating shop — and every time you check in.</p>
+    <p class="intro">One quick registration. Earn stamps at every participating shop — and every time you check in.</p>
     <div class="field-group">
       <div>
         <div class="field-label">Your name</div>
@@ -470,7 +482,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
         <div class="hint" style="margin-top:6px;">Helps us understand our community. Never shared.</div>
       </div>
       <button class="btn btn-primary" onclick="register()" style="margin-top:8px;">Start earning</button>
-      <p class="hint" style="text-align:center;">No spam. Just your points balance.</p>
+      <p class="hint" style="text-align:center;">No spam. Just your stamp balance.</p>
     </div>
   </div>
   <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
@@ -494,8 +506,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
   <div class="points-hero">
     <div class="greeting" id="c-greeting">Welcome back</div>
     <div class="pts-num" id="c-points">0</div>
-    <div class="pts-lbl">Village Points</div>
-    <div class="pts-val" id="c-value">$0.00 to spend</div>
+    <div class="pts-lbl">Village Stamps</div>
   <div class="badges-section" id="customer-badges">
     <div class="badges-title">Your badges</div>
     <div class="badges-grid" id="badges-grid">
@@ -503,6 +514,8 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     </div>
   </div>
   </div>
+
+  <div class="passport-widget" id="passport-widget" style="display:none;"></div>
 
   <section class="activity-notice" aria-label="Your latest activity">
     <span class="activity-spark" aria-hidden="true">✦</span>
@@ -533,7 +546,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
   <div class="checkin-cta" role="button" tabindex="0" onkeydown="activateWithKeyboard(event)" id="checkin-cta" onclick="show('s-checkin')" style="cursor:pointer;">
     <div class="cta-text">
       <strong>Just visiting?</strong>
-      Tap to check in at a nearby shop and earn points.
+      Tap to check in at a nearby shop and earn a stamp.
     </div>
     <div class="cta-pts">+8 →</div>
   </div>
@@ -564,7 +577,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     <span class="sub">Check In</span>
   </div>
   <div class="body">
-    <h2 class="display-sm">Check in.<br />Earn points.</h2>
+    <h2 class="display-sm">Check in.<br />Earn stamps.</h2>
     <p class="hint" style="margin-top:12px;">We'll find participating shops near you. One check-in per shop every 4 hours.</p>
 
     <div id="dev-banner" style="display:none;background:rgba(201,123,90,0.15);border:1px solid rgba(201,123,90,0.35);padding:10px 14px;margin-top:16px;font-size:11px;color:var(--danger);letter-spacing:0.1em;text-transform:uppercase;">⚠ Dev mode — 150m check bypassed</div>
@@ -603,7 +616,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     <div class="redeem-title" id="rd-title"></div>
     <div class="redeem-qr" id="rd-qr"></div>
     <div class="redeem-count" id="rd-count"></div>
-    <p class="redeem-hint">Show this to the merchant. They confirm the code to complete it. Your points reset to zero once confirmed.</p>
+    <p class="redeem-hint">Show this to the merchant. They confirm the code to complete it. Your stamps reset to zero once confirmed.</p>
     <button class="btn btn-outline" style="margin-top:28px;max-width:300px;" onclick="cancelRedemption()">Cancel</button>
   </div>
   <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
@@ -636,7 +649,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
       <div class="redeem-shop" id="dr-shop"></div>
       <div class="redeem-title" id="dr-title"></div>
       <p class="hint" id="dr-desc" style="margin-top:14px;"></p>
-      <p class="redeem-hint" style="margin:18px auto 0;">Redeeming resets your points to zero. You start earning again straight away.</p>
+      <p class="redeem-hint" style="margin:18px auto 0;">Redeeming resets your stamps to zero. You start earning again straight away.</p>
       <button class="btn btn-accent"  style="margin-top:28px;max-width:320px;" onclick="demoDoRedeem()">Redeem now</button>
       <button class="btn btn-outline" style="margin-top:10px;max-width:320px;" onclick="show('s-tiers')">Cancel</button>
     </div>
@@ -700,8 +713,8 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     </div>
 
     <div class="tabs">
-      <button class="tab-btn active" id="tab-purchase-btn" onclick="switchTab('purchase')">Award points</button>
-      <button class="tab-btn" id="tab-redeem-btn"   onclick="switchTab('redeem')">Redeem points</button>
+      <button class="tab-btn active" id="tab-purchase-btn" onclick="switchTab('purchase')">Award stamps</button>
+      <button class="tab-btn" id="tab-redeem-btn"   onclick="switchTab('redeem')">Redeem stamps</button>
       <button class="tab-btn" id="tab-validate-btn" onclick="switchTab('validate')">Redeem a reward</button>
     </div>
 
@@ -726,14 +739,14 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
 
       <div id="p-preview" class="spend-preview" style="display:none;">
         <div>
-          <div class="preview-label">Points to award</div>
+          <div class="preview-label">Stamps to award</div>
           <div class="preview-sub" id="p-preview-sub"></div>
         </div>
         <div class="preview-pts" id="p-preview-pts">0</div>
       </div>
 
       <button class="btn btn-accent" id="p-btn" onclick="awardPurchasePoints()" disabled style="margin-top:18px;">
-        Award Points
+        Award stamp
       </button>
     </div>
 
@@ -742,8 +755,8 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
       <h2 class="display-sm">Record a visit</h2>
       <p class="hint" style="margin:12px 0 18px">Help a customer check in by scanning their code. No purchase needed.</p>
       <div class="checkin-info">
-        <strong>+8 points per check-in.</strong>
-        Customers earn points just for visiting — no purchase required.
+        <strong>+1 stamp per check-in.</strong>
+        Customers earn a stamp just for visiting — no purchase required.
         One check-in per customer per shop every 4 hours.
       </div>
 
@@ -754,7 +767,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
       <div id="ci-lookup" style="display:none;" class="lookup-box"></div>
 
       <button class="btn btn-checkin" id="ci-btn" onclick="awardCheckin()" disabled style="margin-top:18px;">
-        Record visit · award 8 points
+        Record visit · award 1 stamp
       </button>
     </div>
 
@@ -767,17 +780,17 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
       <div id="r-lookup" style="display:none;" class="lookup-box"></div>
 
       <div style="margin-top:18px;">
-        <div class="field-label">Points to redeem</div>
+        <div class="field-label">Stamps to redeem</div>
         <input class="field" id="r-amount" type="number" placeholder="0" min="0" step="1"
           oninput="updateRedeemPreview()" />
       </div>
 
       <div id="r-preview" class="spend-preview" style="display:none;">
         <div>
-          <div class="preview-label">Dollar value</div>
+          <div class="preview-label">Stamps</div>
           <div class="preview-sub" id="r-preview-sub"></div>
         </div>
-        <div class="preview-pts" id="r-preview-val" style="color:var(--danger)">$0.00</div>
+        <div class="preview-pts" id="r-preview-val" style="color:var(--danger)">0</div>
       </div>
 
       <button class="btn btn-danger" id="r-btn" onclick="redeemPoints()" disabled style="margin-top:18px;">
@@ -790,7 +803,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
       <div class="checkin-info">
         <strong>Confirm a reward redemption.</strong>
         Enter the customer's redemption code and your shop code.
-        This resets their points to zero — only do it as they collect the reward.
+        This resets their stamps to zero — only do it as they collect the reward.
       </div>
 
       <div class="field-label">Redemption code</div>
@@ -819,7 +832,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
   <div class="body">
     <div class="success-icon"  id="suc-icon">✦</div>
     <div class="success-pts"   id="suc-pts"  style="color:var(--accent)">0</div>
-    <div class="success-label" id="suc-label">Points Awarded</div>
+    <div class="success-label" id="suc-label">Stamp Awarded</div>
     <div class="success-detail" id="suc-detail"></div>
     <div class="success-btns">
       <button class="btn btn-accent"  onclick="show('s-trader')">Next customer</button>
@@ -844,9 +857,8 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
 var SUPABASE_URL = 'https://hwtwfhvaeczofqktychc.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3dHdmaHZhZWN6b2Zxa3R5Y2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MjA1NTcsImV4cCI6MjA5MzI5NjU1N30.F2UBLZBIhULAXiuI5ApHqQEsnS8YkYkEwU-6dfVrcmw';
 var TRADER_PIN = null; // Fetched from Supabase pilot_config table at startup — not hardcoded here
-var PTS_PER_DOLLAR   = 1;           // 1 point per $1
-var PTS_TO_DOLLAR    = 100;         // 100 pts = $1
-var CHECKIN_POINTS   = 8;           // Points per check-in
+var STAMPS_PER_PURCHASE = 1;        // Flat: every qualifying purchase = 1 stamp
+var CHECKIN_STAMPS      = 1;        // 1 stamp per check-in
 var REWARDS_V2       = false;       // V2 rewards (tiers + shop cards + Validate). Keep FALSE until docs/schema-v2.sql is run in Supabase, then set true.
 
 /* ═══════════════════════════════════════════════════════
@@ -896,7 +908,7 @@ function browseCustomerRewards() {
   document.getElementById('dt-title').textContent = 'Find your next treat';
   document.getElementById('dt-sub').textContent = 'Demo rewards only. Explore the tiers below; codes cannot be used in shops.';
   document.getElementById('dt-list').innerHTML = DEMO_TIERS.filter(function(t) { return DEMO_TIER_REWARDS[t].length; }).map(function(t) {
-    return '<button class="btn btn-outline" style="margin-bottom:12px" onclick="openDemoTier(' + t + ')">' + t + ' point rewards →</button>';
+    return '<button class="btn btn-outline" style="margin-bottom:12px" onclick="openDemoTier(' + t + ')">' + t + ' stamp rewards →</button>';
   }).join('');
 }
 document.addEventListener('keydown', function(event) {
@@ -936,10 +948,6 @@ function generateId() {
   var id = '';
   for (var i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
   return id;
-}
-
-function ptsToDollars(pts) {
-  return '$' + (pts / PTS_TO_DOLLAR).toFixed(2);
 }
 
 function formatDate(ts) {
@@ -1050,10 +1058,10 @@ async function renderCustomerDashboard(c) {
     showCustomerActivity(null);
   }
   renderBadges(c.id);
+  renderPassport(c.id);
   var firstName = c.name.split(' ')[0];
   document.getElementById('c-greeting').textContent = 'Hello, ' + firstName;
-  document.getElementById('c-points').textContent = c.points.toLocaleString();
-  document.getElementById('c-value').textContent = ptsToDollars(c.points) + ' to spend';
+  document.getElementById('c-points').textContent = (c.points || 0).toLocaleString();
   document.getElementById('c-code').textContent = c.id;
 
   /* DEMO_MODE hook — tier progress bars (remove this line with the demo block) */
@@ -1221,7 +1229,7 @@ async function lookupCustomer(prefix) {
   if (res.data) {
     lookupEl.innerHTML =
       '<div class="lookup-name">' + res.data.name + '</div>' +
-      '<div class="lookup-pts">' + res.data.points.toLocaleString() + ' pts · ' + ptsToDollars(res.data.points) + ' to spend</div>';
+      '<div class="lookup-pts">' + (res.data.points || 0).toLocaleString() + ' stamps</div>';
 
     if (prefix === 'p') { updatePurchasePreview(); }
     else if (prefix === 'ci') { await checkCheckinEligibility(res.data, code); }
@@ -1268,8 +1276,7 @@ function updatePurchasePreview() {
   var btn = document.getElementById('p-btn');
 
   if (amount > 0 && code.length === 6) {
-    var pts = Math.round(amount * PTS_PER_DOLLAR);
-    document.getElementById('p-preview-pts').textContent = pts;
+    document.getElementById('p-preview-pts').textContent = STAMPS_PER_PURCHASE;
     document.getElementById('p-preview-sub').textContent = '$' + amount.toFixed(2) + ' purchase';
     previewEl.style.display = 'flex';
     btn.disabled = false;
@@ -1284,7 +1291,7 @@ async function awardPurchasePoints() {
   var amount = parseFloat(document.getElementById('p-amount').value);
   if (!code || !amount) return;
 
-  var pts = Math.round(amount * PTS_PER_DOLLAR);
+  var stamps = STAMPS_PER_PURCHASE;
   setLoading(true);
   try {
     var res = await sb.from('transactions').insert({
@@ -1293,13 +1300,13 @@ async function awardPurchasePoints() {
       shop_name:  currentShop.name,
       type:       'purchase',
       amount:     amount,
-      points:     pts
+      points:     stamps
     });
     if (res.error) throw res.error;
 
     // Get updated customer name
     var cust = await sb.from('customers').select('name,points').eq('id', code).single();
-    showSuccess(pts, 'awarded', cust.data ? cust.data.name : 'Customer', amount, false);
+    showSuccess(stamps, 'awarded', cust.data ? cust.data.name : 'Customer', amount, false);
   } catch(e) {
     showToast('Transaction failed. Please try again.', true);
   } finally {
@@ -1321,12 +1328,12 @@ async function awardCheckin() {
       shop_name:  currentShop.name,
       type:       'checkin',
       amount:     null,
-      points:     CHECKIN_POINTS
+      points:     CHECKIN_STAMPS
     });
     if (res.error) throw res.error;
 
     var cust = await sb.from('customers').select('name').eq('id', code).single();
-    showSuccess(CHECKIN_POINTS, 'checkin', cust.data ? cust.data.name : 'Customer', null, true);
+    showSuccess(CHECKIN_STAMPS, 'checkin', cust.data ? cust.data.name : 'Customer', null, true);
   } catch(e) {
     showToast('Check-in failed. Please try again.', true);
   } finally {
@@ -1343,8 +1350,8 @@ function updateRedeemPreview() {
   var btn = document.getElementById('r-btn');
 
   if (pts > 0 && code.length === 6) {
-    document.getElementById('r-preview-val').textContent = ptsToDollars(pts);
-    document.getElementById('r-preview-sub').textContent = pts + ' points';
+    document.getElementById('r-preview-val').textContent = pts;
+    document.getElementById('r-preview-sub').textContent = pts + (pts === 1 ? ' stamp' : ' stamps');
     previewEl.style.display = 'flex';
     btn.disabled = false;
   } else {
@@ -1361,7 +1368,7 @@ async function redeemPoints() {
   // Check balance
   var cust = await sb.from('customers').select('name,points').eq('id', code).single();
   if (!cust.data || pts > cust.data.points) {
-    showToast('Insufficient points balance.', true);
+    showToast('Insufficient stamp balance.', true);
     return;
   }
 
@@ -1389,12 +1396,13 @@ async function redeemPoints() {
 function showSuccess(pts, type, name, amount, isCheckin) {
   var icons = { awarded: '✦', redeemed: '✓', checkin: '⬡' };
   var colors_map = { awarded: 'var(--accent)', redeemed: 'var(--danger)', checkin: 'rgba(168,194,133,0.7)' };
-  var labels = { awarded: 'Points Awarded', redeemed: 'Points Redeemed', checkin: 'Check-in Recorded' };
+  var labels = { awarded: 'Stamp Awarded', redeemed: 'Stamps Redeemed', checkin: 'Check-in Recorded' };
 
+  var stampWord = Math.abs(pts) === 1 ? 'stamp' : 'stamps';
   var details = {
-    awarded:  name + ' earned ' + pts + ' points on a $' + parseFloat(amount).toFixed(2) + ' purchase.',
-    redeemed: name + ' redeemed ' + pts + ' points (' + ptsToDollars(pts) + ' value).',
-    checkin:  name + ' checked in and earned ' + pts + ' Village Points.'
+    awarded:  name + ' earned ' + pts + ' ' + stampWord + ' on a $' + parseFloat(amount).toFixed(2) + ' purchase.',
+    redeemed: name + ' redeemed ' + pts + ' ' + stampWord + '.',
+    checkin:  name + ' checked in and earned ' + pts + ' ' + stampWord + '.'
   };
 
   document.getElementById('suc-icon').textContent = icons[type] || '✦';
@@ -1544,7 +1552,7 @@ async function locateAndLoad() {
         var inRange = DEV_MODE || s.dist <= CHECKIN_RADIUS_M;
         var alreadyIn = recentShops.includes(s.name);
         var cls = alreadyIn ? 'checked' : (!inRange ? 'too-far' : '');
-        var btnLabel = alreadyIn ? 'Checked in' : (!inRange ? 'Too far' : 'Check in +' + CHECKIN_POINTS);
+        var btnLabel = alreadyIn ? 'Checked in' : (!inRange ? 'Too far' : 'Check in +' + CHECKIN_STAMPS);
         var btnCls = (alreadyIn || !inRange) ? 'done' : '';
         var distCls = inRange ? 'close' : '';
         var idx = nearbyShops.indexOf(s);
@@ -1594,7 +1602,7 @@ async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng) 
       shop_name:    shopName,
       type:         'checkin',
       amount:       null,
-      points:       CHECKIN_POINTS,
+      points:       CHECKIN_STAMPS,
       customer_lat: customerLat,
       customer_lng: customerLng,
       distance_m:   distanceM
@@ -1610,7 +1618,7 @@ async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng) 
     }
 
     // Show success then return to dashboard
-    showToast('+' + CHECKIN_POINTS + ' points — checked in at ' + shopName + '!');
+    showToast('+' + CHECKIN_STAMPS + ' stamp — checked in at ' + shopName + '!');
     setTimeout(function() { show('s-customer'); }, 1200);
 
     // Refresh nearby list to show updated state
@@ -1631,7 +1639,7 @@ var CUSTOMER_BADGES = [
   { id:'legend',   name:'Legend',        icon:'◎', check:function(s){return s.total_transactions>=10;}},
   { id:'crosser',  name:'Cross-shopper', icon:'↔', check:function(s){return s.unique_shops>=5;}},
   { id:'regular',  name:'Regular',       icon:'◈', check:function(s){return s.total_checkins>=5;}},
-  { id:'spender',  name:'Supporter',     icon:'◉', check:function(s){return parseFloat(s.total_spend||0)>=100;}}
+  { id:'spender',  name:'Supporter',     icon:'◉', check:function(s){return (s.points||0)>=20;}}
 ];
 var badgeRenderVersion = 0;
 async function renderBadges(cid) {
@@ -1668,6 +1676,53 @@ async function renderBadges(cid) {
   }
 }
 
+/* ── Village passport widget (Layer 2) ── */
+async function renderPassport(cid) {
+  var el = document.getElementById('passport-widget');
+  if (!el) return;
+  try {
+    var today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
+    var cr = await sb.from('passport_campaigns')
+      .select('id,name,period,required_shops,reward_description')
+      .eq('is_active', true).lte('start_date', today).gte('end_date', today)
+      .order('start_date', { ascending: false }).limit(1).maybeSingle();
+    var camp = cr.data;
+    if (!camp) { el.style.display = 'none'; return; }
+
+    var shopsRes = await sb.from('shops').select('id,name').eq('passport_active', true).order('name');
+    var shops = shopsRes.data || [];
+
+    var progRes = await sb.from('passport_progress')
+      .select('unique_traders_visited,required_shops,qualifies,shops_remaining')
+      .eq('campaign_id', camp.id).eq('customer_id', cid).maybeSingle();
+    var prog = progRes.data || { unique_traders_visited: 0, qualifies: false, shops_remaining: camp.required_shops };
+
+    var stampRes = await sb.from('passport_stamps').select('shop_id')
+      .eq('campaign_id', camp.id).eq('customer_id', cid);
+    var visited = {};
+    (stampRes.data || []).forEach(function(s) { visited[s.shop_id] = true; });
+
+    var periodWord = camp.period === 'monthly' ? 'month' : camp.period === 'quarterly' ? 'quarter' : 'period';
+    var tiles = shops.map(function(s) {
+      return '<div class="pp-tile ' + (visited[s.id] ? 'visited' : 'dim') + '">' + esc(s.name) + '</div>';
+    }).join('');
+    var cta = prog.qualifies
+      ? '<div class="pp-cta done">You’re in the draw!</div>'
+      : '<div class="pp-cta">' + prog.shops_remaining + ' more to go</div>';
+
+    el.innerHTML =
+      '<div class="pp-head">Village Passport — ' + esc(camp.name) + '</div>' +
+      '<div class="pp-sub">Visit ' + camp.required_shops + ' different traders this ' + periodWord + ' to enter the draw</div>' +
+      '<div class="pp-progress">' + (prog.unique_traders_visited || 0) + ' of ' + camp.required_shops + ' traders visited</div>' +
+      (tiles ? '<div class="pp-tiles">' + tiles + '</div>' : '') +
+      cta;
+    el.style.display = 'block';
+  } catch(e) {
+    console.log('Passport: not available yet.', e);
+    el.style.display = 'none';
+  }
+}
+
 /* ═══════════════════════════════════════════════════════
    TIERED REWARDS MARKETPLACE (V2)
 ═══════════════════════════════════════════════════════ */
@@ -1690,7 +1745,7 @@ async function openRewards() {
 
   var bal = currentCustomer.points || 0;
   document.getElementById('rewards-balance').textContent =
-    'You have ' + bal.toLocaleString() + ' points. Redeeming a tier reward resets your points to zero.';
+    'You have ' + bal.toLocaleString() + ' stamps. Redeeming a tier reward resets your stamps to zero.';
 
   renderStampCards();  // shop cards load in parallel with the tiers below
 
@@ -1715,7 +1770,7 @@ async function openRewards() {
       var unlocked = bal >= t.points_required;
       var tierRewards = rewards.filter(function(r) { return r.tier_id === t.id; });
       if (tierRewards.length) tiersWithRewards.push(t.tier_level);
-      var head = '<div class="tier-head"><span class="tl">' + t.tier_level + ' pts</span>' +
+      var head = '<div class="tier-head"><span class="tl">' + t.tier_level + ' stamps</span>' +
         '<span class="ts">' + (unlocked ? 'Unlocked' : ((t.points_required - bal) + ' more') ) + '</span></div>';
 
       var body;
@@ -1748,7 +1803,7 @@ function confirmRedeem(rewardId) {
   var r = rewardsCache[rewardId];
   if (!r) return;
   var bal = (currentCustomer && currentCustomer.points) || 0;
-  var msg = 'Redeem "' + r.title + '" at ' + r.shop + '?\n\nThis resets your ' + bal + ' points to zero.';
+  var msg = 'Redeem "' + r.title + '" at ' + r.shop + '?\n\nThis resets your ' + bal + ' stamps to zero.';
 
   // Redeem-near-your-tier nudge: is a strictly higher tier that also has
   // rewards affordable right now? If so, warn they're leaving value behind.
@@ -1758,7 +1813,7 @@ function confirmRedeem(rewardId) {
   });
   if (betterTier) {
     msg += '\n\n⚠ You have enough for a tier-' + betterTier + ' reward, which is worth more. ' +
-           'Redeeming this ' + r.tier + '-pt reward still costs you all ' + bal + ' points.';
+           'Redeeming this ' + r.tier + '-stamp reward still costs you all ' + bal + ' stamps.';
   }
 
   if (!confirm(msg)) return;
@@ -1800,7 +1855,7 @@ async function renderStampCards() {
 function confirmStampRedeem(rewardId) {
   var c = stampCache[rewardId];
   if (!c) return;
-  if (!confirm('Redeem "' + c.title + '" at ' + c.shop + '?\n\nThis completes your card. Your village points are not affected.')) return;
+  if (!confirm('Redeem "' + c.title + '" at ' + c.shop + '?\n\nThis completes your card. Your village stamps are not affected.')) return;
   doRedeem(rewardId, c.shop);
 }
 
@@ -1923,8 +1978,8 @@ async function traderValidate() {
     out.style.display = 'block';
     out.className = 'val-result ok';
     var detail = (d.reward_type === 'stamp')
-      ? 'Shop card complete (' + d.stamps + ' stamps).<br />Village points unaffected — hand over the reward.'
-      : 'Tier ' + d.tier + '.<br />Points reset from ' + d.points_reset_from + ' to 0.';
+      ? 'Shop card complete (' + d.stamps + ' stamps).<br />Village stamps unaffected — hand over the reward.'
+      : 'Tier ' + d.tier + '.<br />Stamps reset from ' + d.points_reset_from + ' to 0.';
     out.innerHTML = '<strong>' + esc(d.customer_name) + '</strong> redeemed <strong>' + esc(d.reward_title) +
       '</strong>.<br />' + detail;
     document.getElementById('v-code').value = '';
@@ -1948,7 +2003,7 @@ async function traderValidate() {
    the id="real-rewards-cta" hide below is undone automatically.
 ═══════════════════════════════════════════════════════ */
 var DEMO_MODE   = true;
-var DEMO_TIERS  = [10, 20, 30, 50, 100];
+var DEMO_TIERS  = [10, 20, 30, 50];
 var DEMO_TIER_REWARDS = {
   10:  [ { shop: 'Hamiltons',         title: 'Free coffee',                desc: 'Any regular coffee',        value: 4 },
          { shop: 'Village Bakehouse', title: 'Free pastry',                desc: 'Choose any pastry',         value: 5 } ],
@@ -1956,8 +2011,7 @@ var DEMO_TIER_REWARDS = {
          { shop: 'Dumpling 38',       title: 'Free spring rolls',          desc: 'Serve of four',             value: 8 } ],
   30:  [],
   50:  [ { shop: 'Example florist',    title: 'A seasonal bouquet',  desc: 'Illustrative reward only',        value: 60 },
-         { shop: 'Dumpling 38',       title: 'Free lunch for two',         desc: 'Two mains plus tea',        value: 40 } ],
-  100: [ { shop: 'Example village shop',    title: 'A local gift hamper', desc: 'Illustrative reward only',   value: 200 } ]
+         { shop: 'Dumpling 38',       title: 'Free lunch for two',         desc: 'Two mains plus tea',        value: 40 } ]
 };
 var demoActiveTier = null;
 var demoSelected   = null;
@@ -1979,7 +2033,7 @@ function renderTierProgressDemo() {
     var tap      = (unlocked && hasR) ? 'role="button" tabindex="0" onkeydown="activateWithKeyboard(event)" onclick="openDemoTier(' + lvl + ')"' : '';
     var status   = unlocked ? (hasR ? 'Unlocked · view' : 'Unlocked') : ((lvl - bal) + ' to go');
     return '<div class="tp-row ' + (unlocked ? 'unlocked' : '') + '" ' + tap + '>' +
-      '<div class="tp-head"><span class="tp-lvl">' + lvl + ' pts</span>' +
+      '<div class="tp-head"><span class="tp-lvl">' + lvl + ' stamps</span>' +
       '<span class="tp-status">' + status + '</span></div>' +
       '<div class="tp-bar"><div class="tp-fill" style="width:' + pct + '%"></div></div></div>';
   }).join('');
@@ -1988,9 +2042,9 @@ function renderTierProgressDemo() {
 function openDemoTier(lvl) {
   demoActiveTier = lvl;
   var bal = (currentCustomer && currentCustomer.points) || 0;
-  document.getElementById('dt-title').textContent = lvl + ' point rewards';
+  document.getElementById('dt-title').textContent = lvl + ' stamp rewards';
   document.getElementById('dt-sub').textContent =
-    'You have ' + bal.toLocaleString() + ' points. Choose one — redeeming resets your points to zero.';
+    'You have ' + bal.toLocaleString() + ' stamps. Choose one — redeeming resets your stamps to zero.';
 
   var rewards = DEMO_TIER_REWARDS[lvl] || [];
   var list = document.getElementById('dt-list');
@@ -2013,7 +2067,7 @@ function openDemoTier(lvl) {
 function demoConfirm(lvl, i) {
   var r = (DEMO_TIER_REWARDS[lvl] || [])[i];
   if (!r) return;
-  if ((currentCustomer.points || 0) < lvl) { showToast('You need ' + (lvl - (currentCustomer.points || 0)) + ' more points for this tier.'); return; }
+  if ((currentCustomer.points || 0) < lvl) { showToast('You need ' + (lvl - (currentCustomer.points || 0)) + ' more stamps for this tier.'); return; }
   demoSelected = { lvl: lvl, r: r };
   document.getElementById('dr-shop').textContent  = r.shop;
   document.getElementById('dr-title').textContent = r.title;
@@ -2052,7 +2106,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
   <h2 id="qr-title">Scan their code</h2>
   <p id="qr-status" role="status" aria-live="polite">Opening camera…</p>
   <video id="qr-video" muted playsinline aria-label="QR camera preview"></video>
-  <p class="hint">Scanning fills the code. Points or rewards still need your confirmation.</p>
+  <p class="hint">Scanning fills the code. Stamps or rewards still need your confirmation.</p>
   <button class="btn btn-outline" id="qr-close">Close camera · type instead</button>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
