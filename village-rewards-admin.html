@@ -63,6 +63,12 @@
     .section-title{font-family:var(--serif);font-size:20px;}
     .section-sub{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;opacity:0.32;}
 
+    /* passport tab */
+    .pp-admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:18px;background:var(--green);color:var(--beige);padding:22px 20px;}
+    .pp-card-val{font-family:var(--serif);font-size:22px;color:var(--accent);margin-top:4px;}
+    .pp-card-sub{font-size:11px;opacity:0.4;margin-top:4px;}
+    .pp-sortable{cursor:pointer;user-select:none;}
+
     table{width:100%;border-collapse:collapse;}
     th{font-size:9px;letter-spacing:0.16em;text-transform:uppercase;opacity:0.32;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border-mid);}
     td{font-size:13px;padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
@@ -208,6 +214,7 @@
       <button class="nav-tab"        id="tab-heatmap"       onclick="switchPage('heatmap',this)">Heatmap</button>
       <button class="nav-tab"        id="tab-badges"        onclick="switchPage('badges',this)">Badges</button>
       <button class="nav-tab"        id="tab-checkins"      onclick="switchPage('checkins',this)">Check-ins</button>
+      <button class="nav-tab"        id="tab-passport"      onclick="switchPage('passport',this)">Passport</button>
       <button class="nav-tab"        id="tab-customers"     onclick="switchPage('customers',this)">Customers</button>
       <button class="nav-tab"        id="tab-transactions"  onclick="switchPage('transactions',this)">Transactions</button>
     </div>
@@ -220,7 +227,7 @@
   <main>
     <div class="stats-row">
       <div class="stat-card"><div class="stat-lbl">Customers</div><div class="stat-val" id="st-c">—</div><div class="stat-sub" id="st-c-sub"></div></div>
-      <div class="stat-card"><div class="stat-lbl">Points issued</div><div class="stat-val" id="st-p">—</div></div>
+      <div class="stat-card"><div class="stat-lbl">Stamps issued</div><div class="stat-val" id="st-p">—</div></div>
       <div class="stat-card"><div class="stat-lbl">Redeemed</div><div class="stat-val" id="st-r">—</div></div>
       <div class="stat-card"><div class="stat-lbl">Check-ins</div><div class="stat-val" id="st-ci">—</div></div>
       <div class="stat-card"><div class="stat-lbl">Total spend</div><div class="stat-val" id="st-s">—</div></div>
@@ -240,7 +247,7 @@
         <div class="section">
           <div class="section-hd"><div class="section-title">Shop performance</div></div>
           <table>
-            <thead><tr><th>Shop</th><th>Transactions</th><th>Customers</th><th>Points</th></tr></thead>
+            <thead><tr><th>Shop</th><th>Transactions</th><th>Customers</th><th>Stamps</th></tr></thead>
             <tbody id="shop-body"><tr><td colspan="4" class="empty"><div class="spinner"></div></td></tr></tbody>
           </table>
         </div>
@@ -386,7 +393,7 @@
               <th>Shop</th>
               <th>Distance</th>
               <th>Code</th>
-              <th>Points</th>
+              <th>Stamps</th>
             </tr>
           </thead>
           <tbody id="checkin-body">
@@ -415,12 +422,32 @@
       </div>
     </div>
 
+    <!-- PASSPORT -->
+    <div class="page" id="page-passport">
+      <div class="section">
+        <div class="section-hd"><div class="section-title">Village Passport — campaign</div></div>
+        <div id="passport-campaign-card"><div class="empty"><div class="spinner"></div></div></div>
+      </div>
+      <div class="section">
+        <div class="section-hd"><div class="section-title">Passport leaderboard</div></div>
+        <table>
+          <thead><tr>
+            <th>Customer</th>
+            <th class="pp-sortable" onclick="togglePassportSort()">Traders visited ▾</th>
+            <th>In draw</th>
+            <th>Last stamp</th>
+          </tr></thead>
+          <tbody id="passport-body"><tr><td colspan="4" class="empty"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- CUSTOMERS -->
     <div class="page" id="page-customers">
       <div class="section">
         <table>
-          <thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Points</th><th>Value</th><th>Visits</th><th>Shops</th><th>Spend</th><th>Joined</th></tr></thead>
-          <tbody id="cust-body"><tr><td colspan="9" class="empty"><div class="spinner"></div></td></tr></tbody>
+          <thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Stamps</th><th>Visits</th><th>Shops</th><th>Spend</th><th>Joined</th></tr></thead>
+          <tbody id="cust-body"><tr><td colspan="8" class="empty"><div class="spinner"></div></td></tr></tbody>
         </table>
       </div>
     </div>
@@ -429,7 +456,7 @@
     <div class="page" id="page-transactions">
       <div class="section">
         <table>
-          <thead><tr><th>Time</th><th>Customer</th><th>Shop</th><th>Type</th><th>Amount</th><th>Points</th></tr></thead>
+          <thead><tr><th>Time</th><th>Customer</th><th>Shop</th><th>Type</th><th>Amount</th><th>Stamps</th></tr></thead>
           <tbody id="tx-body"><tr><td colspan="6" class="empty"><div class="spinner"></div></td></tr></tbody>
         </table>
       </div>
@@ -450,7 +477,6 @@ var SUPABASE_URL  = 'https://hwtwfhvaeczofqktychc.supabase.co';
 var SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3dHdmaHZhZWN6b2Zxa3R5Y2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MjA1NTcsImV4cCI6MjA5MzI5NjU1N30.F2UBLZBIhULAXiuI5ApHqQEsnS8YkYkEwU-6dfVrcmw';
 // TODO: Replace client-side password auth with Supabase Auth (email magic link or SSO).
 // var ADMIN_PW = '...'; // REMOVED — do not hardcode credentials in client-side JS.
-var PTS_TO_DOLLAR = 100;
 
 var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -497,13 +523,13 @@ var BADGES = [
     ],
     check:function(s){return s.total_checkins>=5;}},
   { id:'spender',  name:'Village Supporter', icon:'◉',
-    desc:'$100 or more spent across the village.',
+    desc:'20 or more stamps collected across the village.',
     criteria: [
-      '$100 or more in total purchase spend tracked through the system',
+      '20 or more stamps in their current balance',
       'Accumulates across all participating shops over any time period',
-      'Check-ins and redemptions do not count — purchases only'
+      'Every qualifying purchase or check-in earns one stamp'
     ],
-    check:function(s){return parseFloat(s.total_spend||0)>=100;}}
+    check:function(s){return (s.points||0)>=20;}}
 ];
 
 var EARLY_CUTOFF = null;
@@ -633,11 +659,13 @@ function switchPage(id, btn){
   if(id==='badges')   renderBadges();
   if(id==='checkins') loadCheckins();
   if(id==='heatmap')   renderHeatmap();
+  if(id==='passport')  loadPassport();
 }
 
 /* ── Helpers ── */
 function fmt(ts){return new Date(ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
-function pts2d(p){return '$'+(Math.abs(p||0)/PTS_TO_DOLLAR).toFixed(2);}
+function fmtD(d){if(!d)return '—';var p=String(d).split('-');if(p.length!==3)return d;return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('en-AU',{day:'numeric',month:'short'});}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
 /* ── Data store ── */
 var allTx=[],allStats=[],allShopStats=[],crossData=[];
@@ -686,14 +714,13 @@ async function loadCustomerStats(){
     EARLY_CUTOFF=new Date(dates[0].getTime()+7*24*60*60*1000);
   }
   var body=document.getElementById('cust-body');
-  if(!allStats.length){body.innerHTML='<tr><td colspan="9" class="empty">No customers yet.</td></tr>';return;}
+  if(!allStats.length){body.innerHTML='<tr><td colspan="8" class="empty">No customers yet.</td></tr>';return;}
   body.innerHTML=allStats.map(function(c){
     var earnedBadges=BADGES.filter(function(b){return b.check(c);});
     return'<tr><td><strong>'+c.id+'</strong></td>'+
       '<td>'+c.name+'</td>'+
       '<td style="opacity:0.5;font-size:12px;">'+c.email+'</td>'+
       '<td><strong>'+(c.points||0).toLocaleString()+'</strong></td>'+
-      '<td style="opacity:0.5;">'+pts2d(c.points||0)+'</td>'+
       '<td>'+(c.total_transactions||0)+'</td>'+
       '<td>'+(c.unique_shops||0)+'</td>'+
       '<td>'+(c.total_spend?'$'+parseFloat(c.total_spend).toFixed(0):'—')+'</td>'+
@@ -710,6 +737,76 @@ async function loadCross(){
   var r=await sb.from('cross_pollination').select('*').order('journey_count',{ascending:false});
   crossData=r.data||[];
 }
+
+/* ── Passport (Layer 2) ── read-only: current campaign card + leaderboard ── */
+var passportRows=[], passportSortDir=-1;
+
+async function loadPassport(){
+  var card=document.getElementById('passport-campaign-card');
+  var body=document.getElementById('passport-body');
+  try {
+    var cr=await sb.from('passport_campaigns').select('*').order('start_date',{ascending:false}).limit(1).maybeSingle();
+    var c=cr.data;
+    if(!c){
+      card.innerHTML='<p class="empty">No passport campaigns yet. Create one in the Supabase SQL editor.</p>';
+      body.innerHTML='<tr><td colspan="4" class="empty">No campaign.</td></tr>';
+      passportRows=[];
+      return;
+    }
+
+    var pr=await sb.from('passport_progress')
+      .select('customer_id,unique_traders_visited,qualifies').eq('campaign_id',c.id);
+    var rows=pr.data||[];
+    var started=rows.length;
+    var completed=rows.filter(function(r){return r.qualifies;}).length;
+
+    var today=new Date().toLocaleDateString('en-CA');
+    var status=!c.is_active?'Inactive':(today<c.start_date?'Scheduled':(today>c.end_date?'Ended':'Active'));
+
+    card.innerHTML='<div class="pp-admin-grid">'+
+      '<div><div class="stat-lbl">Campaign</div><div class="pp-card-val">'+esc(c.name)+'</div>'+
+        '<div class="pp-card-sub">'+esc(c.village||'')+(c.period?' · '+esc(c.period):'')+'</div></div>'+
+      '<div><div class="stat-lbl">Status</div><div class="pp-card-val">'+status+'</div>'+
+        '<div class="pp-card-sub">'+fmtD(c.start_date)+' – '+fmtD(c.end_date)+'</div></div>'+
+      '<div><div class="stat-lbl">Goal</div><div class="pp-card-val">'+c.required_shops+' traders</div>'+
+        '<div class="pp-card-sub">'+esc(c.reward_description||'')+'</div></div>'+
+      '<div><div class="stat-lbl">Participants</div><div class="pp-card-val">'+started+' started</div>'+
+        '<div class="pp-card-sub">'+completed+' completed</div></div>'+
+    '</div>';
+
+    if(!rows.length){ body.innerHTML='<tr><td colspan="4" class="empty">No participants yet.</td></tr>'; passportRows=[]; return; }
+
+    var ids=rows.map(function(r){return r.customer_id;});
+    var nm=await sb.from('customers').select('id,name').in('id',ids);
+    var nameMap={}; (nm.data||[]).forEach(function(x){nameMap[x.id]=x.name;});
+    var sr=await sb.from('passport_stamps').select('customer_id,visit_date')
+      .eq('campaign_id',c.id).order('visit_date',{ascending:false});
+    var lastMap={}; (sr.data||[]).forEach(function(x){ if(!lastMap[x.customer_id]) lastMap[x.customer_id]=x.visit_date; });
+
+    passportRows=rows.map(function(r){
+      return { name:nameMap[r.customer_id]||r.customer_id, traders:r.unique_traders_visited,
+               qualifies:r.qualifies, last:lastMap[r.customer_id]||null };
+    });
+    renderPassportTable();
+  } catch(e){
+    console.log('Passport: not available yet.', e);
+    card.innerHTML='<p class="empty">Passport data not available. Has the Layer 2 migration been run?</p>';
+    body.innerHTML='<tr><td colspan="4" class="empty">—</td></tr>';
+  }
+}
+
+function renderPassportTable(){
+  var body=document.getElementById('passport-body');
+  var rows=passportRows.slice().sort(function(a,b){return (a.traders-b.traders)*passportSortDir;});
+  body.innerHTML=rows.map(function(r){
+    return '<tr><td>'+esc(r.name)+'</td>'+
+      '<td>'+r.traders+'</td>'+
+      '<td>'+(r.qualifies?'✓':'—')+'</td>'+
+      '<td style="opacity:0.6;">'+fmtD(r.last)+'</td></tr>';
+  }).join('');
+}
+
+function togglePassportSort(){ passportSortDir=-passportSortDir; renderPassportTable(); }
 
 /* ── Overview ── */
 function renderOverview(){

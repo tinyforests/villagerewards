@@ -4,7 +4,7 @@ Repository: `github.com/tinyforests/villagerewards` · Updated 30 September 2026
 
 ## Product
 
-Village Rewards is an independent web loyalty platform for local village traders and customers. The current pilot is in Mont Albert, Melbourne. Customers collect points across participating shops and explore merchant rewards.
+Village Rewards is an independent web loyalty platform for local village traders and customers. The current pilot is in Mont Albert, Melbourne. Customers collect stamps across participating shops and explore merchant rewards.
 
 ## Brand source of truth
 
@@ -50,7 +50,7 @@ Static HTML/CSS/JavaScript with no build step, deployed through GitHub Pages at 
 
 ## Business rules
 
-Current source: $1 spent earns 1 point, rounded to the nearest whole point. Check-ins award 8 points with a client-side four-hour eligibility check per shop. Legacy redemption expresses 100 points as $1.
+Current source: every qualifying purchase earns 1 stamp (`STAMPS_PER_PURCHASE = 1`), flat regardless of the spend amount. Check-ins award 1 stamp (`CHECKIN_STAMPS = 1`) with a client-side four-hour eligibility check per shop. Stamps are counted, not priced — there is no dollar-value conversion.
 
 The tier implementation resets the entire village balance when a merchant confirms redemption. Stamp rewards affect their own card. The design study proposes retaining excess points; that is not an approved or deployed business-rule change. Do not change financial or earning logic as part of a visual redesign.
 
@@ -71,3 +71,9 @@ Run syntax and local-link checks after page edits. For interaction changes, chec
 ## Reading order
 
 `AI_CONTEXT.md` → `docs/BRAND.md` → this brief → `docs/SCHEMA.md` / `docs/SECURITY.md` / `docs/TIERED-SYSTEM.md` as required. `SUPER_MIND.md` is a compatibility pointer to the current independent product context.
+
+## Stamp pilot candidate — 26 October 2026
+
+`stamp-pilot.html`, `assets/stamp-app.js` and the additive migration under `supabase/migrations/` implement an isolated authenticated stamp candidate. Read `docs/STAMP-PILOT-SETUP.md` for new-project staging setup and release gates. Configuration points only to the isolated staging project `dbxzlznscwstjklphstv`. `app.html` and its legacy points remain unchanged until staging verification and an approved conversion/cutover. `npm test` exercises the stamp SQL in local PostgreSQL; `npm run test:browser` tests browser flows against that database, with external requests blocked. Neither certifies production configuration or multi-session concurrency.
+
+Latest commercial direction: `docs/COMMERCIAL-MODEL.md`. Basic participation is free; no automatic post-pilot billing. User-approved product direction is one stamp per qualifying purchase and cost-only redemption retaining surplus. Shop cards and prize campaigns remain separate, unenabled features in this candidate.
