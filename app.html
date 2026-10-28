@@ -401,6 +401,7 @@
     .pp-head { font-size: 13px; font-weight: 600; letter-spacing: 0.02em; margin-bottom: 4px; }
     .pp-sub { font-size: 12px; opacity: 0.5; line-height: 1.5; margin-bottom: 12px; }
     .pp-progress { font-family: var(--serif); font-size: 22px; color: var(--accent); margin-bottom: 14px; }
+    .pp-meter { width: 100%; height: 10px; accent-color: var(--accent); margin-bottom: 14px; }
     .pp-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
     .pp-tile { padding: 12px 6px; text-align: center; border-radius: 10px; font-size: 10px; letter-spacing: 0.03em; line-height: 1.3; border: 1px solid rgba(255,240,220,0.1); }
     .pp-tile.visited { background: var(--accent); color: var(--green-dark); border-color: var(--accent); font-weight: 600; }
@@ -1610,19 +1611,38 @@ async function renderPassport(cid) {
   try {
     var today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
     var cr = await sb.from('passport_campaigns')
-      .select('id,name,period,required_shops,reward_description')
+      .select('id,name,period,end_date,reward_description')
       .eq('is_active', true).lte('start_date', today).gte('end_date', today)
       .order('start_date', { ascending: false }).limit(1).maybeSingle();
     var camp = cr.data;
     if (!camp) { el.style.display = 'none'; return; }
 
     var shopsRes = await sb.from('shops').select('id,name').eq('passport_active', true).order('name');
+    if (shopsRes.error) throw shopsRes.error;
     var shops = shopsRes.data || [];
 
     var progRes = await sb.from('passport_progress')
-      .select('unique_traders_visited,required_shops,qualifies,shops_remaining')
+      .select('unique_traders_visited')
       .eq('campaign_id', camp.id).eq('customer_id', cid).maybeSingle();
-    var prog = progRes.data || { unique_traders_visited: 0, qualifies: false, shops_remaining: camp.required_shops };
+    if (progRes.error) throw progRes.error;
+    var count = Number((progRes.data || {}).unique_traders_visited) || 0;
+    var total = shops.length;
+    var position = '';
+    // Count-only requests keep other customers' progress out of the browser.
+    try {
+      var participants = await sb.from('passport_progress').select('*', { count: 'exact', head: true })
+        .eq('campaign_id', camp.id).gt('unique_traders_visited', 0);
+      if (!participants.error && participants.count >= 2) {
+        var ahead = await sb.from('passport_progress').select('*', { count: 'exact', head: true })
+          .eq('campaign_id', camp.id).gt('unique_traders_visited', count);
+        if (!ahead.error && Number.isInteger(ahead.count)) {
+          var rank = ahead.count + 1;
+          var suffix = rank % 100 >= 11 && rank % 100 <= 13 ? 'th'
+            : ({ 1: 'st', 2: 'nd', 3: 'rd' }[rank % 10] || 'th');
+          position = '<div class="pp-progress">You’re currently in ' + rank + suffix + ' place</div>';
+        }
+      }
+    } catch (e) { console.log('Passport position not available.', e); }
 
     var stampRes = await sb.from('passport_stamps').select('shop_id')
       .eq('campaign_id', camp.id).eq('customer_id', cid);
@@ -1633,14 +1653,16 @@ async function renderPassport(cid) {
     var tiles = shops.map(function(s) {
       return '<div class="pp-tile ' + (visited[s.id] ? 'visited' : 'dim') + '">' + esc(s.name) + '</div>';
     }).join('');
-    var cta = prog.qualifies
-      ? '<div class="pp-cta done">You’re in the draw!</div>'
-      : '<div class="pp-cta">' + prog.shops_remaining + ' more to go</div>';
+    var cta = total > 0 && count >= total
+      ? '<div class="pp-cta done">You’ve visited every trader! 🏆</div>'
+      : '<div class="pp-cta">Visit more traders to move up the leaderboard</div>';
 
     el.innerHTML =
       '<div class="pp-head">Village Passport — ' + esc(camp.name) + '</div>' +
-      '<div class="pp-sub">Visit ' + camp.required_shops + ' different traders this ' + periodWord + ' to enter the draw</div>' +
-      '<div class="pp-progress">' + (prog.unique_traders_visited || 0) + ' of ' + camp.required_shops + ' traders visited</div>' +
+      '<div class="pp-sub">The most unique trader visits by ' + esc(camp.end_date) + ' wins.</div>' +
+      '<div class="pp-progress">You’ve visited ' + count + ' of ' + total + ' traders this ' + periodWord + '</div>' +
+      '<progress class="pp-meter" aria-label="Unique traders visited" max="' + Math.max(total, 1) + '" value="' + Math.min(count, total) + '"></progress>' +
+      position +
       (tiles ? '<div class="pp-tiles">' + tiles + '</div>' : '') +
       cta;
     el.style.display = 'block';

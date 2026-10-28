@@ -67,6 +67,7 @@
     .pp-admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:18px;background:var(--green);color:var(--beige);padding:22px 20px;}
     .pp-card-val{font-family:var(--serif);font-size:22px;color:var(--accent);margin-top:4px;}
     .pp-card-sub{font-size:11px;opacity:0.4;margin-top:4px;}
+    .pp-leader td{background:var(--vr-butter, #FFF0A8);color:var(--vr-ink, #29332F);font-weight:700;}
     .pp-sortable{cursor:pointer;user-select:none;}
 
     table{width:100%;border-collapse:collapse;}
@@ -433,8 +434,8 @@
         <table>
           <thead><tr>
             <th>Customer</th>
-            <th class="pp-sortable" onclick="togglePassportSort()">Traders visited ▾</th>
-            <th>In draw</th>
+            <th class="pp-sortable" onclick="togglePassportSort()">Unique Visits ▾</th>
+            <th>Race status</th>
             <th>Last stamp</th>
           </tr></thead>
           <tbody id="passport-body"><tr><td colspan="4" class="empty"><div class="spinner"></div></td></tr></tbody>
@@ -755,10 +756,10 @@ async function loadPassport(){
     }
 
     var pr=await sb.from('passport_progress')
-      .select('customer_id,unique_traders_visited,qualifies').eq('campaign_id',c.id);
+      .select('customer_id,unique_traders_visited').eq('campaign_id',c.id).order('unique_traders_visited',{ascending:false});
     var rows=pr.data||[];
-    var started=rows.length;
-    var completed=rows.filter(function(r){return r.qualifies;}).length;
+    var started=rows.filter(function(r){return r.unique_traders_visited>0;}).length;
+    passportSortDir=-1;
 
     var today=new Date().toLocaleDateString('en-CA');
     var status=!c.is_active?'Inactive':(today<c.start_date?'Scheduled':(today>c.end_date?'Ended':'Active'));
@@ -768,10 +769,10 @@ async function loadPassport(){
         '<div class="pp-card-sub">'+esc(c.village||'')+(c.period?' · '+esc(c.period):'')+'</div></div>'+
       '<div><div class="stat-lbl">Status</div><div class="pp-card-val">'+status+'</div>'+
         '<div class="pp-card-sub">'+fmtD(c.start_date)+' – '+fmtD(c.end_date)+'</div></div>'+
-      '<div><div class="stat-lbl">Goal</div><div class="pp-card-val">'+c.required_shops+' traders</div>'+
+      '<div><div class="stat-lbl">Race</div><div class="pp-card-val">Most unique visits wins</div>'+
         '<div class="pp-card-sub">'+esc(c.reward_description||'')+'</div></div>'+
       '<div><div class="stat-lbl">Participants</div><div class="pp-card-val">'+started+' started</div>'+
-        '<div class="pp-card-sub">'+completed+' completed</div></div>'+
+        '<div class="pp-card-sub">Visit more traders before the end date</div></div>'+
     '</div>';
 
     if(!rows.length){ body.innerHTML='<tr><td colspan="4" class="empty">No participants yet.</td></tr>'; passportRows=[]; return; }
@@ -785,7 +786,7 @@ async function loadPassport(){
 
     passportRows=rows.map(function(r){
       return { name:nameMap[r.customer_id]||r.customer_id, traders:r.unique_traders_visited,
-               qualifies:r.qualifies, last:lastMap[r.customer_id]||null };
+               last:lastMap[r.customer_id]||null };
     });
     renderPassportTable();
   } catch(e){
@@ -798,10 +799,12 @@ async function loadPassport(){
 function renderPassportTable(){
   var body=document.getElementById('passport-body');
   var rows=passportRows.slice().sort(function(a,b){return (a.traders-b.traders)*passportSortDir;});
+  var top=passportRows.reduce(function(max,r){return Math.max(max,r.traders);},0);
   body.innerHTML=rows.map(function(r){
-    return '<tr><td>'+esc(r.name)+'</td>'+
+    var leader=top>0 && r.traders===top;
+    return '<tr'+(leader?' class="pp-leader"':'')+'><td>'+esc(r.name)+'</td>'+
       '<td>'+r.traders+'</td>'+
-      '<td>'+(r.qualifies?'✓':'—')+'</td>'+
+      '<td>'+(leader?'Current leader':'—')+'</td>'+
       '<td style="opacity:0.6;">'+fmtD(r.last)+'</td></tr>';
   }).join('');
 }
