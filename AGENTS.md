@@ -43,7 +43,7 @@ Static HTML/CSS/JavaScript with no build step, deployed through GitHub Pages at 
 - Customer registration and returning access use email lookup and a customer ID in localStorage. This is not verified customer authentication.
 - Trader pilot login compares a shared code fetched from `pilot_config`. Moving it out of the source does not make a publicly readable code secure.
 - Admin email magic-link auth is implemented, including an `admin_users` allowlist lookup. Supabase configuration and database authorisation must be verified separately.
-- `DEMO_MODE = true`: mock tier offers and mock redemption QR codes are exposed in the customer experience. The app labels this demo and keeps real earning separate.
+- The `DEMO_MODE` tier browser (mock offers and a mock redemption QR) has been removed. The customer dashboard now renders real stamp cards from the `get_stamp_cards` RPC — one card per participating shop, unvisited shops dimmed — with a placeholder when no stamp rewards exist.
 - `DEV_MODE = true`: the client proximity eligibility check is bypassed. Do not describe GPS enforcement as active. Backend enforcement is unverified.
 - Real reward/stamp RPC calls exist. The SQL includes customer locking for tier validation, but ownership, stamp concurrency and monthly caps need review.
 - A service worker exists. Manifest and icon assets are still absent; do not claim installation is fully verified.

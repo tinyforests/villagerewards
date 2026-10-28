@@ -1,6 +1,6 @@
 # Village Rewards - Database Schema Documentation
 
-> September 2026 source review: current engineering facts are in [AGENTS.md](../AGENTS.md), and current appearance in [BRAND.md](BRAND.md). This older technical document includes historical descriptions and proposals; it does not verify deployed Supabase configuration. Admin magic-link and trader pilot-code flows exist in source. `DEMO_MODE` and `DEV_MODE` are currently true. Tier validation currently resets the full balance. The legacy prototype URL now redirects to `app.html`.
+> September 2026 source review: current engineering facts are in [AGENTS.md](../AGENTS.md), and current appearance in [BRAND.md](BRAND.md). This older technical document includes historical descriptions and proposals; it does not verify deployed Supabase configuration. Admin magic-link and trader pilot-code flows exist in source. `DEV_MODE` is currently true; the `DEMO_MODE` demo tier browser has been removed. Tier validation currently resets the full balance. The legacy prototype URL now redirects to `app.html`.
 
 **Supabase Project:** `hwtwfhvaeczofqktychc.supabase.co`  
 **Last Schema Audit:** May 2026  

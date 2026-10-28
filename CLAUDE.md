@@ -15,7 +15,7 @@ Customer registration, point history and QR code generation exist. Trader login 
 
 Admin configuration requires the Email provider, authorised redirect URL, an `admin_users` table and appropriate access policies. Trader configuration currently expects a `trader_pilot_code` row. The shared pilot-code approach is not secure authentication and should be replaced before wider rollout.
 
-Real reward tiers, stamp cards, redemption RPC calls and `docs/schema-v2.sql` exist. `DEMO_MODE = true` exposes example rewards and mock redemption codes; `DEV_MODE = true` bypasses client proximity eligibility. Do not repeat the older claim that both auth flows are disabled or GPS is enforced.
+Real reward tiers, stamp cards, redemption RPC calls and `docs/schema-v2.sql` exist. The `DEMO_MODE` tier browser and its mock redemption codes have been removed; the customer dashboard now shows real stamp cards from the `get_stamp_cards` RPC, falling back to a placeholder when no stamp rewards exist. `DEV_MODE = true` bypasses client proximity eligibility. Do not repeat the older claim that both auth flows are disabled or GPS is enforced.
 
 ## Brand and implementation
 
