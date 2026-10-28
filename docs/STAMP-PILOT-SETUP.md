@@ -80,3 +80,9 @@ Do not merge a route change or deploy the migration to the existing project unti
 - No production cutover, legacy conversion, customer import or real reward stock has been performed. The preview marketplace starts empty.
 
 The staging repository is a static copy, not an automatic deployment of the source branch. When updating it, copy the candidate and its dependencies only; keep `index.html` and `app.html` identical to `stamp-pilot.html`. Do not copy the production CNAME, service worker or legacy app.
+
+## Email codes — 28 October 2026
+
+Custom SMTP is now saved using Resend and auth.villagerewards.com.au is verified. A sign-in email to the authorised test address was confirmed delivered before the switch to codes. Both Confirm signup and Magic link or OTP templates now use `supabase/templates/sign-in-code.html`, subject “Your Village Rewards sign-in code”.
+
+The app requests a code with signInWithOtp and verifies it with verifyOtp(type: email). It includes a 60-second resend countdown, change-email control, invalid/expired feedback and same-tab pending-email recovery after refresh. Tokens are never saved by the app; Supabase manages the authenticated session. Code lifetime and server rate limits remain the configured Supabase values. Local browser tests cover invalid and accepted verification responses and cooldown; real code entry on a phone remains to be confirmed by the user. No email has been sent to Bruce.
