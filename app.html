@@ -396,6 +396,16 @@
     .stamp-cards-section { padding: 20px 24px 4px; border-bottom: 1px solid rgba(255,240,220,0.1); }
     .stamp-card.dim { opacity: 0.4; }
 
+    /* Badge details use the same profile palette and card shape. */
+    .badge-item[type=button]{font:inherit;color:var(--vr-ink);cursor:pointer;min-height:88px;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+    #badge-detail{margin:auto;inset:0;border:0;border-radius:var(--vr-card-radius,24px);padding:28px;width:min(440px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;background:var(--vr-white);color:var(--vr-ink);font-family:var(--vr-font);box-shadow:0 20px 80px #29332f40}
+    #badge-detail::backdrop{background:#29332f80}
+    .badge-detail-close{float:right;min-width:48px;min-height:48px;border:0;border-radius:16px;background:var(--vr-mint);color:var(--vr-ink);font:800 22px var(--vr-font);cursor:pointer}
+    .badge-detail-icon{display:block;font-size:64px;line-height:1.2;color:var(--vr-ink);margin:16px 0}
+    #badge-detail h2{font-size:28px;margin:12px 0}#badge-detail h3{font-size:16px;margin:24px 0 8px}
+    #badge-detail p{font-size:16px;line-height:1.6;margin:8px 0}.badge-detail-status{font-weight:800;color:var(--vr-muted)}
+    .badge-detail-status.earned{color:var(--accent)}
+
     /* -- Village passport widget -- */
     .passport-widget { padding: 20px 24px; border-bottom: 1px solid rgba(255,240,220,0.1); }
     .pp-head { font-size: 13px; font-weight: 600; letter-spacing: 0.02em; margin-bottom: 4px; }
@@ -1605,46 +1615,71 @@ async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng, 
 
 /* ═══ BADGES ═══ */
 var CUSTOMER_BADGES = [
-  { id:'pioneer',  name:'Pioneer',       icon:'◆', check:function(s){return s.total_transactions>=1;}},
-  { id:'explorer', name:'Explorer',      icon:'⬡', check:function(s){return s.unique_shops>=3;}},
-  { id:'legend',   name:'Legend',        icon:'◎', check:function(s){return s.total_transactions>=10;}},
-  { id:'crosser',  name:'Cross-shopper', icon:'↔', check:function(s){return s.unique_shops>=5;}},
-  { id:'regular',  name:'Regular',       icon:'◈', check:function(s){return s.total_checkins>=5;}},
-  { id:'spender',  name:'Supporter',     icon:'◉', check:function(s){return (s.points||0)>=20;}}
+  {id:'pioneer',name:'Pioneer',icon:'◆',criteria:'Complete at least one transaction in the village.',metric:'total_transactions',goal:1,unit:'transactions',check:function(s){return s.total_transactions>=1;}},
+  {id:'explorer',name:'Explorer',icon:'⬡',criteria:'Visit 3 different shops. The unique-shop count includes recorded transactions and check-ins.',metric:'unique_shops',goal:3,unit:'shops visited',check:function(s){return s.unique_shops>=3;}},
+  {id:'legend',name:'Legend',icon:'◎',criteria:'Complete 10 or more transactions. Purchases, check-ins and redemptions all count.',metric:'total_transactions',goal:10,unit:'transactions',check:function(s){return s.total_transactions>=10;}},
+  {id:'crosser',name:'Cross-shopper',icon:'↔',criteria:'Visit 5 different shops. The unique-shop count includes recorded transactions and check-ins.',metric:'unique_shops',goal:5,unit:'shops visited',check:function(s){return s.unique_shops>=5;}},
+  {id:'regular',name:'Regular',icon:'◈',criteria:'Record 5 check-ins across village shops. QR stamps are purchases, so they do not count as check-ins.',metric:'total_checkins',goal:5,unit:'check-ins',check:function(s){return s.total_checkins>=5;}},
+  {id:'spender',name:'Supporter',icon:'◉',criteria:'Have 20 or more stamps in your current village balance.',metric:'points',goal:20,unit:'stamps in your balance',check:function(s){return (s.points||0)>=20;}}
 ];
 var badgeRenderVersion = 0;
-async function renderBadges(cid) {
-  var version = ++badgeRenderVersion;
-  var g = document.getElementById('badges-grid');
-  if (!g) return;
-
-  // Keep badges stable during activity refreshes.
-  if (g.dataset.customer !== cid) {
-  g.dataset.customer = cid;
-  g.innerHTML = CUSTOMER_BADGES.map(function(b) {
-    return '<div class="badge-item locked">' +
-      '<span class="bi-icon">'+b.icon+'</span>' +
-      '<span class="bi-name">'+b.name+'</span>' +
-    '</div>';
+var customerBadgeStats = null;
+var badgeReturnFocus = null;
+function badgeTiles(stats) {
+  return CUSTOMER_BADGES.map(function(b) {
+    var earned = !!stats && b.check(stats);
+    return '<button type="button" class="badge-item '+(earned?'earned':'locked')+'" data-badge="'+b.id+'" aria-haspopup="dialog" aria-label="'+b.name+' — '+(earned?'Earned':'Not yet earned')+'">' +
+      '<span class="bi-icon" aria-hidden="true">'+b.icon+'</span><span class="bi-name">'+b.name+'</span>' +
+      (earned?'<span class="bi-earned-lbl">Earned</span>':'')+'</button>';
   }).join('');
-
-  }
-  // Then query customer_stats and update earned state
+}
+function openBadgeDetail(id, tile) {
+  var b = CUSTOMER_BADGES.find(function(b){return b.id===id;});
+  if (!b) return;
+  var earned = !!customerBadgeStats && b.check(customerBadgeStats);
+  badgeReturnFocus = tile;
+  document.getElementById('badge-detail-icon').textContent = b.icon;
+  document.getElementById('badge-detail-title').textContent = b.name;
+  var status = document.getElementById('badge-detail-status');
+  status.textContent = earned ? 'Earned' : 'Not yet earned';
+  status.className = 'badge-detail-status' + (earned ? ' earned' : '');
+  document.getElementById('badge-detail-criteria').textContent = b.criteria;
+  document.getElementById('badge-detail-progress').textContent = earned ? '' : customerBadgeStats
+    ? Math.max(0,Number(customerBadgeStats[b.metric])||0)+' of '+b.goal+' '+b.unit
+    : 'Progress is temporarily unavailable. Please try again shortly.';
+  document.getElementById('badge-detail').showModal();
+}
+// Native buttons provide Enter/Space; native dialog supplies focus trapping and Escape.
+document.addEventListener('click',function(event){
+  var tile=event.target.closest('[data-badge]');
+  if(tile)openBadgeDetail(tile.dataset.badge,tile);
+});
+// The dialog appears after this script, so install its handlers after parsing.
+document.addEventListener('DOMContentLoaded',function(){
+  var dialog=document.getElementById('badge-detail');
+  dialog.addEventListener('click',function(event){
+    if(event.target!==dialog)return;
+    var rect=dialog.getBoundingClientRect();
+    if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)dialog.close();
+  });
+  dialog.addEventListener('close',function(){
+    var tile=badgeReturnFocus;
+    if(tile&&!tile.isConnected)tile=document.querySelector('[data-badge="'+tile.dataset.badge+'"]');
+    if(tile)tile.focus();
+    badgeReturnFocus=null;
+  });
+});
+async function renderBadges(cid) {
+  var version=++badgeRenderVersion;
+  var g=document.getElementById('badges-grid');
+  if(!g)return;
+  if(g.dataset.customer!==cid){g.dataset.customer=cid;customerBadgeStats=null;g.innerHTML=badgeTiles(null);}
   try {
-    var r = await sb.from('customer_stats').select('*').eq('id', cid).maybeSingle();
-    if (version !== badgeRenderVersion || r.error) return;
-    var st = r.data || {};
-    g.innerHTML = CUSTOMER_BADGES.map(function(b) {
-      var earned = b.check(st);
-      return '<div class="badge-item '+(earned?'earned':'locked')+'">' +
-        '<span class="bi-icon">'+b.icon+'</span>' +
-        '<span class="bi-name">'+b.name+'</span>' +
-        (earned?'<span class="bi-earned-lbl">Earned</span>':'') +
-      '</div>';
-    }).join('');
-  } catch(e) {
-    console.log('Badges: customer_stats not available yet.', e);
-  }
+    var r=await sb.from('customer_stats').select('*').eq('id',cid).maybeSingle();
+    if(version!==badgeRenderVersion||r.error)return;
+    customerBadgeStats=r.data||{};
+    g.innerHTML=badgeTiles(customerBadgeStats);
+  } catch(e){console.log('Badges: customer_stats not available yet.',e);}
 }
 
 /* ── Village passport widget (Layer 2) ── */
@@ -2148,6 +2183,15 @@ if (pendingCheckinShop || pendingRedeemShop || new URLSearchParams(location.sear
 }
 
 </script>
+<dialog id="badge-detail" aria-labelledby="badge-detail-title" aria-describedby="badge-detail-criteria badge-detail-progress">
+  <button type="button" class="badge-detail-close" aria-label="Close badge details" autofocus onclick="document.getElementById('badge-detail').close()">×</button>
+  <span class="badge-detail-icon" id="badge-detail-icon" aria-hidden="true"></span>
+  <h2 id="badge-detail-title"></h2>
+  <p id="badge-detail-status" class="badge-detail-status"></p>
+  <h3>How it’s earned</h3>
+  <p id="badge-detail-criteria"></p>
+  <p id="badge-detail-progress"></p>
+</dialog>
 <dialog id="qr-scanner" aria-labelledby="qr-title">
   <h2 id="qr-title">Scan their code</h2>
   <p id="qr-status" role="status" aria-live="polite">Opening camera…</p>

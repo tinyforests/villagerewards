@@ -492,13 +492,13 @@ var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 /* ── Badge definitions ── */
 var BADGES = [
   { id:'pioneer',  name:'Pioneer',          icon:'◆',
-    desc:'One of the first to join the village.',
+    desc:'Completed at least one village transaction.',
     criteria: [
-      'Registered within the first 7 days of the system launching',
+      'Complete at least one transaction in the village',
       'Must have completed at least 1 transaction',
-      'One-time founding member badge — window closes permanently after 7 days'
+      'The customer app does not apply a launch-date eligibility window'
     ],
-    check:function(s){return isEarlyAdopter(s.joined_at)&&s.total_transactions>=1;}},
+    check:function(s){return s.total_transactions>=1;}},
   { id:'explorer', name:'Village Explorer',  icon:'⬡',
     desc:'Visited 3 or more different shops.',
     criteria: [
@@ -528,7 +528,7 @@ var BADGES = [
     criteria: [
       '5 or more GPS check-ins recorded across any shops',
       'Rewards visiting behaviour independent of spending',
-      'Each check-in requires GPS verification within 150m of the shop'
+      'QR stamps are purchases and do not count as check-ins'
     ],
     check:function(s){return s.total_checkins>=5;}},
   { id:'spender',  name:'Village Supporter', icon:'◉',
@@ -536,7 +536,7 @@ var BADGES = [
     criteria: [
       '20 or more stamps in their current balance',
       'Accumulates across all participating shops over any time period',
-      'Every qualifying purchase or check-in earns one stamp'
+      'Qualifying purchases and shop QR scans earn stamps; GPS check-ins record visits only'
     ],
     check:function(s){return (s.points||0)>=20;}}
 ];
