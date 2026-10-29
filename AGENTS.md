@@ -50,7 +50,7 @@ Static HTML/CSS/JavaScript with no build step, deployed through GitHub Pages at 
 
 ## Business rules
 
-Current source: every qualifying purchase earns 1 stamp (`STAMPS_PER_PURCHASE = 1`), flat regardless of the spend amount. Check-ins award 1 stamp (`CHECKIN_STAMPS = 1`) with a client-side four-hour eligibility check per shop. Stamps are counted, not priced — there is no dollar-value conversion.
+Current source: every qualifying purchase earns 1 stamp (`STAMPS_PER_PURCHASE = 1`), flat regardless of the spend amount. GPS/staff check-ins record visits with zero stamps (`CHECKIN_STAMPS = 0`). Shopper QR scans (`?shop=SHOP_ID`) insert `purchase`, `amount=0`, `points=1`, `note='qr_scan'`, with a client-side four-hour eligibility check per shop. QR purchases bypass passport and shop-card minimum spend; GPS check-ins do not count toward either. Stamps are counted, not priced — there is no dollar-value conversion.
 
 The tier implementation resets the entire village balance when a merchant confirms redemption. Stamp rewards affect their own card. The design study proposes retaining excess points; that is not an approved or deployed business-rule change. Do not change financial or earning logic as part of a visual redesign.
 

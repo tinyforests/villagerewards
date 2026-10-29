@@ -541,9 +541,9 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
   <div class="checkin-cta" role="button" tabindex="0" onkeydown="activateWithKeyboard(event)" id="checkin-cta" onclick="show('s-checkin')" style="cursor:pointer;">
     <div class="cta-text">
       <strong>Just visiting?</strong>
-      Tap to check in at a nearby shop and earn a stamp.
+      Record a nearby visit. Scan the shop QR to earn a stamp.
     </div>
-    <div class="cta-pts">+1 →</div>
+    <div class="cta-pts">→</div>
   </div>
 
   <!-- Rewards marketplace CTA (real, DB-backed) -->
@@ -572,7 +572,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     <span class="sub">Check In</span>
   </div>
   <div class="body">
-    <h2 class="display-sm">Check in.<br />Earn stamps.</h2>
+    <h2 class="display-sm">Check in.<br />Record your visit.</h2>
     <p class="hint" style="margin-top:12px;">We'll find participating shops near you. One check-in per shop every 4 hours.</p>
 
     <div id="dev-banner" style="display:none;background:rgba(201,123,90,0.15);border:1px solid rgba(201,123,90,0.35);padding:10px 14px;margin-top:16px;font-size:11px;color:var(--danger);letter-spacing:0.1em;text-transform:uppercase;">⚠ Dev mode — 150m check bypassed</div>
@@ -705,8 +705,8 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
       <h2 class="display-sm">Record a visit</h2>
       <p class="hint" style="margin:12px 0 18px">Help a customer check in by scanning their code. No purchase needed.</p>
       <div class="checkin-info">
-        <strong>+1 stamp per check-in.</strong>
-        Customers earn a stamp just for visiting — no purchase required.
+        <strong>Record a visit.</strong>
+        Visit records do not earn stamps. Customers scan the shop QR to earn.
         One check-in per customer per shop every 4 hours.
       </div>
 
@@ -717,7 +717,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
       <div id="ci-lookup" style="display:none;" class="lookup-box"></div>
 
       <button class="btn btn-checkin" id="ci-btn" onclick="awardCheckin()" disabled style="margin-top:18px;">
-        Record visit · award 1 stamp
+        Record visit
       </button>
     </div>
 
@@ -817,7 +817,7 @@ var SUPABASE_URL = 'https://hwtwfhvaeczofqktychc.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3dHdmaHZhZWN6b2Zxa3R5Y2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MjA1NTcsImV4cCI6MjA5MzI5NjU1N30.F2UBLZBIhULAXiuI5ApHqQEsnS8YkYkEwU-6dfVrcmw';
 var TRADER_PIN = null; // Fetched from Supabase pilot_config table at startup — not hardcoded here
 var STAMPS_PER_PURCHASE = 1;        // Flat: every qualifying purchase = 1 stamp
-var CHECKIN_STAMPS      = 1;        // 1 stamp per check-in
+var CHECKIN_STAMPS      = 0;        // GPS/staff check-ins record visits only
 var REWARDS_V2       = false;       // V2 rewards (tiers + shop cards + Validate). Keep FALSE until docs/schema-v2.sql is run in Supabase, then set true.
 
 /* ═══════════════════════════════════════════════════════
@@ -1073,12 +1073,13 @@ async function renderCustomerDashboard(c) {
     var isReward  = tx.type === 'reward';   // stamp-card free item (0 points)
     var ptsClass  = isRedeem ? 'redeem' : (isCheckin || isReward) ? 'checkin' : 'earn';
     var icon      = isReward ? '🎁 ' : isCheckin ? '⬡ ' : '';
-    var ptsCell   = (tx.type === 'purchase' || isCheckin) ? '+1 stamp'
+    var isQrStamp = tx.type === 'purchase' && tx.note === 'qr_scan';
+    var ptsCell   = isCheckin ? 'Visit recorded' : tx.type === 'purchase' ? '+1 stamp'
       : isReward ? 'Free' : (isRedeem ? '−' : '+') + Math.abs(tx.points);
 
     return '<div class="tx-item">' +
-      '<div><div class="tx-shop">' + icon + esc(tx.shop_name || 'Village') + '</div>' +
-      '<div class="tx-meta">' + formatDate(tx.created_at) + (tx.amount ? ' · $' + parseFloat(tx.amount).toFixed(2) : '') + '</div></div>' +
+      '<div><div class="tx-shop">' + icon + (isQrStamp ? 'Stamp at ' : '') + esc(tx.shop_name || 'Village') + '</div>' +
+      '<div class="tx-meta">' + formatDate(tx.created_at) + (!isQrStamp && tx.amount ? ' · $' + parseFloat(tx.amount).toFixed(2) : '') + '</div></div>' +
       '<div class="tx-pts ' + ptsClass + '">' + ptsCell + '</div>' +
     '</div>';
   }).join('');
@@ -1369,11 +1370,11 @@ function showSuccess(pts, type, name, amount, isCheckin) {
   var details = {
     awarded:  name + ' earned ' + pts + ' ' + stampWord + ' on a $' + parseFloat(amount).toFixed(2) + ' purchase.',
     redeemed: name + ' redeemed ' + pts + ' ' + stampWord + '.',
-    checkin:  name + ' checked in and earned ' + pts + ' ' + stampWord + '.'
+    checkin:  'Visit recorded for ' + name + '.'
   };
 
   document.getElementById('suc-icon').textContent = icons[type] || '✦';
-  document.getElementById('suc-pts').textContent  = (type === 'redeemed' ? '−' : '+') + pts;
+  document.getElementById('suc-pts').textContent  = type === 'checkin' ? '✓' : (type === 'redeemed' ? '−' : '+') + pts;
   document.getElementById('suc-pts').style.color  = colors_map[type] || 'var(--accent)';
   document.getElementById('suc-label').textContent  = labels[type];
   document.getElementById('suc-detail').textContent = details[type];
@@ -1519,7 +1520,7 @@ async function locateAndLoad() {
         var inRange = DEV_MODE || s.dist <= CHECKIN_RADIUS_M;
         var alreadyIn = recentShops.includes(s.name);
         var cls = alreadyIn ? 'checked' : (!inRange ? 'too-far' : '');
-        var btnLabel = alreadyIn ? 'Checked in' : (!inRange ? 'Too far' : 'Check in +' + CHECKIN_STAMPS);
+        var btnLabel = alreadyIn ? 'Checked in' : (!inRange ? 'Too far' : 'Record visit');
         var btnCls = (alreadyIn || !inRange) ? 'done' : '';
         var distCls = inRange ? 'close' : '';
         var idx = nearbyShops.indexOf(s);
@@ -1557,7 +1558,7 @@ function doCheckinByIndex(idx, customerLat, customerLng) {
   doCheckin(s.id, s.name, s.dist, customerLat, customerLng);
 }
 
-async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng, fromQr) {
+async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng, fromQr, qrStamp) {
   var myId = localStorage.getItem('vr_my_id');
   if (!myId) { showToast('Please register first.', true); return; }
 
@@ -1567,9 +1568,10 @@ async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng, 
       customer_id:  myId,
       shop_id:      shopId,
       shop_name:    shopName,
-      type:         'checkin',
-      amount:       null,
-      points:       CHECKIN_STAMPS,
+      type:         qrStamp ? 'purchase' : 'checkin',
+      amount:       qrStamp ? 0 : null,
+      note:         qrStamp ? 'qr_scan' : null,
+      points:       qrStamp ? 1 : 0,
       customer_lat: customerLat,
       customer_lng: customerLng,
       distance_m:   distanceM
@@ -1585,7 +1587,7 @@ async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng, 
     }
 
     // Show success then return to dashboard
-    showToast('+' + CHECKIN_STAMPS + ' stamp — checked in at ' + shopName + '!');
+    showToast(qrStamp ? '1 stamp at ' + shopName + '!' : 'Visit recorded at ' + shopName + '.');
     if (!fromQr) setTimeout(function() { show('s-customer'); }, 1200);
 
     // Refresh nearby list to show updated state
@@ -2053,12 +2055,15 @@ async function resumeShopCheckin() {
       return;
     }
     var cutoff = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
-    var recent = await sb.from('transactions').select('id').eq('customer_id', currentCustomer.id)
-      .eq('shop_id', shop.id).eq('type', 'checkin').gte('created_at', cutoff).limit(1);
+    var qrStamp = shopQrParams.has('shop');
+    var recentQuery = sb.from('transactions').select('id').eq('customer_id', currentCustomer.id)
+      .eq('shop_id', shop.id).eq('type', qrStamp ? 'purchase' : 'checkin');
+    if (qrStamp) recentQuery = recentQuery.eq('note', 'qr_scan');
+    var recent = await recentQuery.gte('created_at', cutoff).limit(1);
     if (recent.error) throw recent.error;
     if (recent.data && recent.data.length) {
       clearShopCheckin();
-      showToast('You’ve already stamped here recently — come back later');
+      showToast(qrStamp ? 'You’ve already stamped here recently — come back later' : 'You’ve already recorded a visit here recently — come back later');
       return;
     }
     var lat = null, lng = null, distance = null;
@@ -2076,9 +2081,9 @@ async function resumeShopCheckin() {
       if (!Number.isFinite(distance) || distance > CHECKIN_RADIUS_M)
         throw new Error('Move within ' + CHECKIN_RADIUS_M + 'm of ' + shop.name + ' and scan again.');
     }
-    if (await doCheckin(shop.id, shop.name, distance, lat, lng, true)) {
+    if (await doCheckin(shop.id, shop.name, distance, lat, lng, true, qrStamp)) {
       clearShopCheckin();
-      showShopStampSuccess('1 stamp at ' + shop.name + '!', 'Thanks for shopping local.');
+      showShopStampSuccess(qrStamp ? '1 stamp at ' + shop.name + '!' : 'Visit recorded at ' + shop.name + '.', qrStamp ? 'Thanks for shopping local.' : 'Scan the shop QR to earn a stamp.');
     }
   } catch (error) {
     showToast(error.message || 'Could not check in. Please scan the shop QR again.', true);

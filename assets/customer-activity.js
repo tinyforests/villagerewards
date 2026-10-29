@@ -7,18 +7,18 @@
     var recent = Number.isFinite(timestamp) && age >= -60000 && age < 5 * 60000;
     var just = recent ? 'You just ' : 'You ';
     var shop = tx.shop_name ? ' at ' + tx.shop_name : '';
-    var points = tx.type === 'purchase' || tx.type === 'checkin' ? 1 : Math.abs(Number(tx.points) || 0);
+    var points = tx.type === 'purchase' ? 1 : Math.abs(Number(tx.points) || 0);
     var unit = points === 1 ? 'stamp' : 'stamps';
     var title, message;
     if (tx.type === 'checkin') {
       title = just + 'checked in' + shop + '!';
-      message = 'Great to see you here!' + (points ? ' +' + points + ' ' + unit + '.' : '');
+      message = 'Visit recorded. Scan the shop QR to earn a stamp.';
     } else if (tx.type === 'redeem' || tx.type === 'reward') {
       var item = tx.reward_title ? ' for ' + tx.reward_title : '';
       title = tx.type === 'reward' ? just + 'claimed your shop reward' + shop + '.' : just + 'redeemed ' + points + ' ' + unit + item + shop + '.';
       message = /coffee|espresso|cappuccino|latte|flat white|tea\b/i.test(tx.reward_title || '') ? 'Enjoy the cuppa!' : 'Enjoy your little treat!';
     } else if (tx.type === 'purchase') {
-      title = just + 'earned ' + points + ' ' + unit + shop + '!';
+      title = tx.note === 'qr_scan' ? 'Stamp at ' + (tx.shop_name || 'your local shop') : just + 'earned ' + points + ' ' + unit + shop + '!';
       message = 'Thanks for shopping local. Your next treat is a little closer.';
     } else if (tx.type === 'bonus' && Number(tx.points) >= 0) {
       title = 'A little extra: ' + points + ' bonus ' + unit + '!';
