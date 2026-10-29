@@ -16,7 +16,26 @@
     video.srcObject = null;
   }
   function close() { stop(); if (dialog.open) dialog.close(); }
+  function shopQrDestination(text) {
+    try {
+      var url = new URL(String(text).trim());
+      if (url.origin !== 'https://villagerewards.com.au' || url.pathname !== '/app.html') return null;
+      var mode = url.searchParams.has('shop') ? 'shop' : url.searchParams.has('redeem') ? 'redeem' : null;
+      var id = mode && url.searchParams.get(mode);
+      if (!id || (url.searchParams.has('shop') && url.searchParams.has('redeem'))) return null;
+      var safe = new URL('https://villagerewards.com.au/app.html');
+      safe.searchParams.set(mode, id);
+      return safe.href;
+    } catch (error) { return null; }
+  }
   function accept(text) {
+    if (target === 'shop') {
+      var destination = shopQrDestination(text);
+      if (!destination) {status.textContent = 'Scan a Village Rewards shop Earn or Redeem QR code.';return false;}
+      close();
+      window.location.assign(destination);
+      return true;
+    }
     var code = String(text).trim().toUpperCase();
     if (code.indexOf('DEMO-') === 0) {
       status.textContent = 'This is a demo reward, not a live redemption. To earn points, scan the customer’s village code.';
@@ -55,10 +74,12 @@
     }
   }
   window.openQrScanner = async function (prefix) {
-    if (['p', 'ci', 'r', 'v'].indexOf(prefix) < 0 || dialog.open) return;
+    if (['p', 'ci', 'r', 'v', 'shop'].indexOf(prefix) < 0 || dialog.open) return;
     stop(); target = prefix;
     dialog.showModal();
-    status.textContent = 'Allow camera access, then point at the QR code on the customer’s phone.';
+    document.getElementById('qr-title').textContent = prefix === 'shop' ? 'Scan a shop QR' : 'Scan their code';
+    document.getElementById('qr-hint').textContent = prefix === 'shop' ? 'Earn records one stamp if eligible. Redeem opens your shop card for confirmation.' : 'Scanning fills the code. Stamps or rewards still need your confirmation.';
+    status.textContent = prefix === 'shop' ? 'Allow camera access, then point at the shop counter QR code.' : 'Allow camera access, then point at the QR code on the customer’s phone.';
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.isSecureContext) {
       status.textContent = 'Camera scanning needs HTTPS and a supported browser. Open the live site in Safari or Chrome, or type the code.';
       return;

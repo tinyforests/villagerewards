@@ -176,6 +176,8 @@
   </style>
   <link rel="stylesheet" href="assets/brand.css">
   <link rel="stylesheet" href="assets/admin-brand.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="stylesheet" href="assets/shop-qrs.css">
 </head>
 <body>
 
@@ -210,6 +212,7 @@
     </div>
     <div class="nav-tabs">
       <button class="nav-tab active" id="tab-overview"      onclick="switchPage('overview',this)">Overview</button>
+      <button class="nav-tab" id="tab-shops" onclick="switchPage('shops',this)">Shops</button>
       <button class="nav-tab"        id="tab-network"       onclick="switchPage('network',this)">Network</button>
       <button class="nav-tab"        id="tab-matrix"        onclick="switchPage('matrix',this)">Cross-pollination</button>
       <button class="nav-tab"        id="tab-heatmap"       onclick="switchPage('heatmap',this)">Heatmap</button>
@@ -255,6 +258,11 @@
       </div>
     </div>
 
+    <div class="page" id="page-shops"><div class="section">
+      <div class="section-hd"><div><div class="section-title">Shop QR codes</div><p>Customers scan Earn to collect one stamp, or Redeem to open their shop reward.</p></div>
+      <button class="btn" id="print-shop-qrs" onclick="printShopQrs()" disabled>Print A5 counter cards</button></div>
+      <div id="shop-qr-list" aria-live="polite">Open this tab to load active shops.</div>
+    </div></div>
     <!-- NETWORK -->
     <div class="page" id="page-network">
       <div class="section">
@@ -655,6 +663,7 @@ function switchPage(id, btn){
   document.querySelectorAll('.nav-tab').forEach(function(t){t.classList.remove('active');});
   document.getElementById('page-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
+  if(id==='shops') loadShopQrs();
   if(id==='network')  renderNetwork();
   if(id==='matrix')   renderMatrix();
   if(id==='badges')   renderBadges();
@@ -1486,5 +1495,6 @@ document.addEventListener('mousemove', function(e) {
   <span class="hmt-text"></span>
 </div>
 
+<script src="assets/admin-shop-qrs.js"></script>
 </body>
 </html>

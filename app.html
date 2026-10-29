@@ -525,7 +525,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     </div>
   </section>
   <div class="customer-actions">
-    <button class="btn btn-primary" onclick="customerSection('customer-qr')">Show my code</button>
+    <button class="btn btn-primary" onclick="openQrScanner('shop')">Scan shop QR</button>
     <button class="btn btn-outline" onclick="openRewards()">Browse rewards</button>
   </div>
   <div class="stamp-cards-section" id="stamp-cards-dash"></div>
@@ -534,7 +534,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     <div class="qr-label">Your village code</div>
     <div id="qr-canvas"></div>
     <div class="customer-code" id="c-code">——</div>
-    <div class="code-hint">Show to staff · scan to earn</div>
+    <div class="code-hint">Your member code · available for staff assistance</div>
   </div>
 
   <!-- Check-in CTA -->
@@ -784,12 +784,21 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     <div class="success-pts"   id="suc-pts"  style="color:var(--accent)">0</div>
     <div class="success-label" id="suc-label">Stamp Awarded</div>
     <div class="success-detail" id="suc-detail"></div>
-    <div class="success-btns">
+    <div class="success-btns" id="trader-success-actions">
       <button class="btn btn-accent"  onclick="show('s-trader')">Next customer</button>
       <button class="btn btn-outline" onclick="traderLogout()">Done for today</button>
     </div>
   </div>
   <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
+</div>
+
+<div class="screen" id="s-shop-reward">
+  <div class="bar"><span class="logo">Village Rewards</span><button class="back-btn" onclick="show('s-customer')">Back to profile</button></div>
+  <div class="body"><h2 id="shop-reward-shop"></h2><div id="shop-reward-cards" aria-live="polite"></div></div>
+</div>
+<div class="screen" id="s-shop-success">
+  <div class="bar"><span class="logo">Village Rewards</span></div>
+  <div class="body"><h2 id="shop-success-title"></h2><p id="shop-success-copy"></p><button class="btn btn-primary" onclick="show('s-customer')">Back to profile</button></div>
 </div>
 
 <!-- ═══ INSTALL BANNER ════════════════════════════════ -->
@@ -922,7 +931,7 @@ async function goCustomer() {
         await renderCustomerDashboard(res.data);
 
         show('s-customer');
-        await resumeShopCheckin();
+        await resumeShopIntent();
         return;
       }
     } catch(e) {}
@@ -956,7 +965,7 @@ async function register() {
 
       show('s-customer');
       showToast('Welcome back, ' + full.data.name.split(' ')[0] + '!');
-      await resumeShopCheckin();
+      await resumeShopIntent();
       return;
     }
 
@@ -973,7 +982,7 @@ async function register() {
 
     show('s-customer');
     showToast('Welcome to Village Rewards, ' + name.split(' ')[0] + '!');
-    await resumeShopCheckin();
+    await resumeShopIntent();
   } catch(e) {
     console.error('Register error:', e); showToast(e.message || JSON.stringify(e) || 'Something went wrong.', true);
   } finally {
@@ -1577,7 +1586,7 @@ async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng, 
 
     // Show success then return to dashboard
     showToast('+' + CHECKIN_STAMPS + ' stamp — checked in at ' + shopName + '!');
-    setTimeout(function() { show('s-customer'); }, 1200);
+    if (!fromQr) setTimeout(function() { show('s-customer'); }, 1200);
 
     // Refresh nearby list to show updated state
     if (!fromQr) setTimeout(function() { locateAndLoad(); }, 1300);
@@ -2013,12 +2022,15 @@ async function traderValidate() {
 }
 
 // Shop QR intent stays in the URL through registration and is consumed on success.
-var pendingCheckinShop = new URLSearchParams(location.search).get('checkin');
+var shopQrParams = new URLSearchParams(location.search);
+var pendingCheckinShop = shopQrParams.get('shop') || shopQrParams.get('checkin');
+var pendingRedeemShop = shopQrParams.get('redeem');
 var shopCheckinPending = false;
 function clearShopCheckin() {
   pendingCheckinShop = null;
   var url = new URL(location.href);
   url.searchParams.delete('checkin');
+  url.searchParams.delete('shop');
   url.searchParams.delete('join');
   history.replaceState(null, '', url);
 }
@@ -2033,7 +2045,9 @@ async function resumeShopCheckin() {
     if (result.error && result.error.code !== '22P02') throw result.error;
     var shop = result.data;
     if (!shop || !shop.active) {
+      var directShop = shopQrParams.has('shop');
       clearShopCheckin();
+      if (directShop) { showToast('Shop not found or unavailable.', true); return; }
       show('s-checkin');
       showToast('Shop not available. Choose a nearby shop.');
       return;
@@ -2044,11 +2058,11 @@ async function resumeShopCheckin() {
     if (recent.error) throw recent.error;
     if (recent.data && recent.data.length) {
       clearShopCheckin();
-      showToast('You’ve already checked in here in the last four hours.');
+      showToast('You’ve already stamped here recently — come back later');
       return;
     }
     var lat = null, lng = null, distance = null;
-    if (!DEV_MODE) {
+    if (!DEV_MODE && !shopQrParams.has('shop')) {
       if (shop.lat == null || shop.lng == null || !Number.isFinite(Number(shop.lat)) || !Number.isFinite(Number(shop.lng)))
         throw new Error('This shop has no location set. Ask the trader for help.');
       if (!navigator.geolocation) throw new Error('Location is not supported on this device.');
@@ -2062,7 +2076,10 @@ async function resumeShopCheckin() {
       if (!Number.isFinite(distance) || distance > CHECKIN_RADIUS_M)
         throw new Error('Move within ' + CHECKIN_RADIUS_M + 'm of ' + shop.name + ' and scan again.');
     }
-    if (await doCheckin(shop.id, shop.name, distance, lat, lng, true)) clearShopCheckin();
+    if (await doCheckin(shop.id, shop.name, distance, lat, lng, true)) {
+      clearShopCheckin();
+      showShopStampSuccess('1 stamp at ' + shop.name + '!', 'Thanks for shopping local.');
+    }
   } catch (error) {
     showToast(error.message || 'Could not check in. Please scan the shop QR again.', true);
   } finally {
@@ -2070,8 +2087,58 @@ async function resumeShopCheckin() {
     setLoading(false);
   }
 }
+function showShopStampSuccess(title, copy) {
+  document.getElementById('shop-success-title').textContent = title;
+  document.getElementById('shop-success-copy').textContent = copy;
+  show('s-shop-success');
+}
+async function resumeShopIntent() {
+  if (pendingRedeemShop) await openShopReward();
+  else await resumeShopCheckin();
+}
+var shopRewardCards = [];
+var shopRewardBusy = false;
+async function openShopReward() {
+  if (!currentCustomer || shopRewardBusy) return;
+  shopRewardBusy = true;
+  setLoading(true);
+  try {
+    var shop = await sb.from('shops').select('id,name,active').eq('id', pendingRedeemShop).maybeSingle();
+    if (shop.error || !shop.data || !shop.data.active) throw new Error('Shop not found or unavailable.');
+    var result = await sb.rpc('get_stamp_cards', {p_customer_id:currentCustomer.id});
+    if (result.error) throw result.error;
+    shopRewardCards = (result.data || []).filter(function(c) {return c.merchant_id === shop.data.id;});
+    document.getElementById('shop-reward-shop').textContent = shop.data.name;
+    document.getElementById('shop-reward-cards').innerHTML = shopRewardCards.length ? shopRewardCards.map(function(c,i) {
+      var ready = c.stamp_goal > 0 && c.current_stamps >= c.stamp_goal;
+      return '<div class="stamp-card"><h3>' + esc(c.reward_title) + '</h3>' +
+        '<p>' + esc(c.reward_description || '') + '</p><p>You have ' + Number(c.current_stamps || 0) + ' of ' + Number(c.stamp_goal) + ' stamps at ' + esc(c.shop_name) + '</p>' +
+        (ready ? '<button class="btn btn-primary" onclick="confirmShopReward(' + i + ')">Confirm redemption</button>' : '') + '</div>';
+    }).join('') : '<p>No active stamp reward is available at this shop.</p>';
+    show('s-shop-reward');
+  } catch (error) { showToast(error.message || 'Could not load this shop reward.', true); }
+  finally {shopRewardBusy = false; setLoading(false);}
+}
+async function confirmShopReward(index) {
+  if (shopRewardBusy || !currentCustomer) return;
+  var card = shopRewardCards[index];
+  if (!card || card.current_stamps < card.stamp_goal || card.stamp_goal <= 0) return;
+  shopRewardBusy = true;
+  setLoading(true);
+  try {
+    var result = await sb.rpc('redeem_shop_stamp', {p_customer_id:currentCustomer.id,p_reward_id:card.reward_id});
+    if (result.error) throw result.error;
+    if (!result.data || result.data.status !== 'validated') throw new Error('Redemption was not completed. Please try again.');
+    pendingRedeemShop = null;
+    var url = new URL(location.href); url.searchParams.delete('redeem'); url.searchParams.delete('join');
+    history.replaceState(null,'',url);
+    await renderCustomerDashboard(currentCustomer);
+    showShopStampSuccess('Reward redeemed!', card.reward_title + ' at ' + card.shop_name + '. Show this screen to the trader.');
+  } catch (error) {showToast(error.message || 'Could not redeem. Please try again.',true);}
+  finally {shopRewardBusy=false;setLoading(false);}
+}
 // Window decals and shop QR codes open the same customer registration flow.
-if (pendingCheckinShop || new URLSearchParams(location.search).get('join') === '1') {
+if (pendingCheckinShop || pendingRedeemShop || new URLSearchParams(location.search).get('join') === '1') {
   goCustomer();
 }
 
@@ -2080,7 +2147,7 @@ if (pendingCheckinShop || new URLSearchParams(location.search).get('join') === '
   <h2 id="qr-title">Scan their code</h2>
   <p id="qr-status" role="status" aria-live="polite">Opening camera…</p>
   <video id="qr-video" muted playsinline aria-label="QR camera preview"></video>
-  <p class="hint">Scanning fills the code. Stamps or rewards still need your confirmation.</p>
+  <p class="hint" id="qr-hint">Scanning fills the code. Stamps or rewards still need your confirmation.</p>
   <button class="btn btn-outline" id="qr-close">Close camera · type instead</button>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
