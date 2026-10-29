@@ -1048,15 +1048,17 @@ async function renderCustomerDashboard(c) {
     list.textContent = 'Your recent activity could not load. We’ll try again shortly.';
     return;
   }
-  var latest = res.data && res.data[0];
+  // Hide demo/test transactions (note = 'demo') from the customer-facing feed.
+  var rows = (res.data || []).filter(function(tx) { return tx.note !== 'demo'; });
+  var latest = rows[0];
   if (confirmedRewardActivity && confirmedRewardActivity.customer_id === c.id && (!latest || Date.parse(confirmedRewardActivity.created_at) >= Date.parse(latest.created_at))) latest = confirmedRewardActivity;
   showCustomerActivity(latest);
-  if (!res.data || res.data.length === 0) {
+  if (!rows.length) {
     list.innerHTML = '<p class="tx-empty">No activity yet. Start shopping!</p>';
     return;
   }
 
-  list.innerHTML = res.data.map(function(tx) {
+  list.innerHTML = rows.map(function(tx) {
     var isCheckin = tx.type === 'checkin';
     var isRedeem  = tx.type === 'redeem';
     var isReward  = tx.type === 'reward';   // stamp-card free item (0 points)
