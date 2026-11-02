@@ -40,7 +40,7 @@ test('acquisition links and all customer entry paths resume QR intent',()=>{
  const village=fs.readFileSync('montalbert/index.html','utf8');
  const links=village.match(/<a\b[^>]*>[^<]*(?:Join Village Rewards|Make local more rewarding)[^<]*<\/a>/g);
  assert.equal(links.length,4);links.forEach(a=>assert.ok(a.includes('app.html?join=1')));
- assert.equal((html.match(/await resumeShopIntent\(\);/g)||[]).length,3);
+ assert.equal((html.match(/await resumeShopIntent\(\);/g)||[]).length,4);
 });
 
 test('shop earn bypasses GPS, consumes URL, shows shopper success and rejects unknown shops',async()=>{

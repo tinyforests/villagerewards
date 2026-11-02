@@ -450,8 +450,26 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     <div class="role-btns">
       <button class="btn btn-primary"  onclick="goCustomer()">I'm shopping</button>
       <button class="btn btn-outline"  onclick="show('s-trader-login')">I'm a trader</button>
+      <button class="btn btn-outline" onclick="openCustomerSignIn()">Already a member? Sign in</button>
       <p class="role-hint">Two ways in. One village.</p>
     </div>
+  </div>
+  <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
+</div>
+
+<!-- Returning customers use their existing account, without registering again. -->
+<div class="screen" id="s-customer-login">
+  <div class="bar"><button class="back-btn" onclick="show('s-welcome')">← Back</button><span class="sub">Sign in</span></div>
+  <div class="body">
+    <h2 class="display-sm">Welcome back.</h2>
+    <p class="hint">Enter the email you joined with to return to your stamps, badges and passport.</p>
+    <form class="field-group" onsubmit="event.preventDefault();signInCustomer()" style="margin-top:24px;">
+      <div><label class="field-label" for="login-email">Your email</label>
+        <input class="field" id="login-email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required aria-describedby="login-message" /></div>
+      <p class="hint" id="login-message" role="status" aria-live="polite"></p>
+      <button class="btn btn-primary" id="customer-signin-button" type="submit">Sign in</button>
+      <button class="btn btn-outline" type="button" onclick="openCustomerRegistration()">New here? Create an account</button>
+    </form>
   </div>
   <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
 </div>
@@ -464,7 +482,8 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
   </div>
   <div class="body">
     <h2 class="display-sm">Join Village<br />Rewards</h2>
-    <p class="intro">One quick registration. Earn stamps at every participating shop — and every time you check in.</p>
+    <p class="intro">One quick registration. Scan participating shop QR codes to earn stamps.</p>
+    <button class="btn btn-outline" onclick="openCustomerSignIn()" style="margin-top:20px;">Already joined? Sign in</button>
     <div class="field-group">
       <div>
         <div class="field-label">Your name</div>
@@ -947,7 +966,60 @@ async function goCustomer() {
     } catch(e) {}
     finally { setLoading(false); }
   }
+  if (new URLSearchParams(location.search).get('join') === '1') openCustomerRegistration();
+  else openCustomerSignIn();
+}
+
+var customerSignInPending = false;
+function openCustomerSignIn() {
+  var email = document.getElementById('reg-email').value.trim();
+  if (email) document.getElementById('login-email').value = email;
+  document.getElementById('login-message').textContent = '';
+  show('s-customer-login');
+  document.getElementById('login-email').focus();
+}
+function openCustomerRegistration() {
+  var email = document.getElementById('login-email').value.trim();
+  if (email) document.getElementById('reg-email').value = email;
   show('s-register');
+}
+async function signInCustomer() {
+  if (customerSignInPending) return;
+  var input = document.getElementById('login-email');
+  var email = input.value.trim();
+  var message = document.getElementById('login-message');
+  if (!email || !input.checkValidity()) { input.reportValidity(); return; }
+  customerSignInPending = true;
+  var button = document.getElementById('customer-signin-button');
+  button.disabled = true;
+  button.textContent = 'Signing in…';
+  message.textContent = '';
+  setLoading(true);
+  try {
+    // Preserve the pilot's existing email-lookup access, without creating an account.
+    // Escape LIKE wildcards so email underscores/percent signs match literally.
+    var pattern = email.replace(/[\\%_]/g, '\\$&');
+    var result = await sb.from('customers').select('*').ilike('email',pattern).maybeSingle();
+    if (result.error) throw result.error;
+    if (!result.data) {
+      message.textContent = 'No account found for that email. Check the address or create an account below.';
+      input.focus();
+      return;
+    }
+    localStorage.setItem('vr_my_id',result.data.id);
+    currentCustomer = result.data;
+    await renderCustomerDashboard(result.data);
+    show('s-customer');
+    showToast('Welcome back, ' + (result.data.name || 'neighbour').split(' ')[0] + '!');
+    await resumeShopIntent();
+  } catch(error) {
+    message.textContent = 'We couldn’t sign you in. Please try again shortly.';
+  } finally {
+    customerSignInPending = false;
+    button.disabled = false;
+    button.textContent = 'Sign in';
+    setLoading(false);
+  }
 }
 
 async function register() {
