@@ -570,10 +570,12 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
   <div class="checkin-cta" role="button" tabindex="0" onkeydown="activateWithKeyboard(event)" id="checkin-cta" onclick="show('s-checkin')" style="cursor:pointer;">
     <div class="cta-text">
       <strong>Just visiting?</strong>
-      Record a nearby visit. Scan the shop QR to earn a stamp.
+      Every 6 nearby check-ins earns 1 village stamp. Shop QR scans earn a stamp straight away.
     </div>
     <div class="cta-pts">→</div>
   </div>
+
+  <p id="gps-bonus-progress" class="hint" role="status" style="margin:0 24px 20px;" hidden></p>
 
   <!-- Rewards marketplace CTA (real, DB-backed) -->
   <div class="rewards-cta" role="button" tabindex="0" onkeydown="activateWithKeyboard(event)" id="real-rewards-cta" onclick="openRewards()">
@@ -602,7 +604,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
   </div>
   <div class="body">
     <h2 class="display-sm">Check in.<br />Record your visit.</h2>
-    <p class="hint" style="margin-top:12px;">We'll find participating shops near you. One check-in per shop every 4 hours.</p>
+    <p class="hint" style="margin-top:12px;">Every 6 GPS check-ins earns 1 village stamp. One check-in per shop every 4 hours. This bonus does not fill shop reward cards or your passport.</p>
 
     <div id="dev-banner" style="display:none;background:rgba(201,123,90,0.15);border:1px solid rgba(201,123,90,0.35);padding:10px 14px;margin-top:16px;font-size:11px;color:var(--danger);letter-spacing:0.1em;text-transform:uppercase;">⚠ Dev mode — 150m check bypassed</div>
     <button class="locate-btn" id="locate-btn" onclick="locateAndLoad()">
@@ -1107,6 +1109,7 @@ async function renderCustomerDashboard(c) {
   }
   renderBadges(c.id);
   renderPassport(c.id);
+  renderGpsVisitProgress(c.id);
   var firstName = c.name.split(' ')[0];
   document.getElementById('c-greeting').textContent = 'Hello, ' + firstName;
   document.getElementById('c-points').textContent = (c.points || 0).toLocaleString();
@@ -1156,7 +1159,7 @@ async function renderCustomerDashboard(c) {
     var ptsClass  = isRedeem ? 'redeem' : (isCheckin || isReward) ? 'checkin' : 'earn';
     var icon      = isReward ? '🎁 ' : isCheckin ? '⬡ ' : '';
     var isQrStamp = tx.type === 'purchase' && tx.note === 'qr_scan';
-    var ptsCell   = isCheckin ? 'Visit recorded' : tx.type === 'purchase' ? '+1 stamp'
+    var ptsCell   = isCheckin ? 'Visit recorded' : (tx.type === 'purchase' || tx.note === 'gps_checkin_bonus') ? '+1 stamp'
       : isReward ? 'Free' : (isRedeem ? '−' : '+') + Math.abs(tx.points);
 
     return '<div class="tx-item">' +
@@ -1640,13 +1643,28 @@ function doCheckinByIndex(idx, customerLat, customerLng) {
   doCheckin(s.id, s.name, s.dist, customerLat, customerLng);
 }
 
+function updateGpsVisitProgress(data) {
+  var el=document.getElementById('gps-bonus-progress');
+  if(!el)return;
+  el.hidden=false;
+  el.textContent=Number(data.visits||0)+' of 6 check-ins toward your next village stamp';
+}
+async function renderGpsVisitProgress(cid) {
+  var el=document.getElementById('gps-bonus-progress');
+  if(!el)return;
+  if(el.dataset.customer!==cid){el.dataset.customer=cid;el.hidden=true;}
+  try {
+    var result=await sb.rpc('get_gps_visit_progress',{p_customer_id:cid});
+    if(!result.error&&result.data&&currentCustomer&&currentCustomer.id===cid)updateGpsVisitProgress(result.data);
+  } catch(error) { /* Keep previously confirmed progress on temporary errors. */ }
+}
 async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng, fromQr, qrStamp) {
   var myId = localStorage.getItem('vr_my_id');
   if (!myId) { showToast('Please register first.', true); return; }
 
   setLoading(true);
   try {
-    var res = await sb.from('transactions').insert({
+    var res = qrStamp ? await sb.from('transactions').insert({
       customer_id:  myId,
       shop_id:      shopId,
       shop_name:    shopName,
@@ -1657,8 +1675,16 @@ async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng, 
       customer_lat: customerLat,
       customer_lng: customerLng,
       distance_m:   distanceM
+    }) : await sb.rpc('record_gps_visit', {
+      p_customer_id:myId,p_shop_id:shopId,p_lat:customerLat == null ? null : customerLat,
+      p_lng:customerLng == null ? null : customerLng,p_distance:distanceM == null ? null : distanceM
     });
     if (res.error) throw res.error;
+    if (!qrStamp && (!res.data || res.data.duplicate)) {
+      showToast(res.data && res.data.duplicate ? 'You’ve already checked in here recently — come back later.' : 'The visit could not be confirmed. Please try again.',true);
+      return false;
+    }
+    if (!qrStamp) updateGpsVisitProgress(res.data);
 
     // Reload customer dashboard in background
     var cust = await sb.from('customers').select('*').eq('id', myId).single();
@@ -1669,7 +1695,7 @@ async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng, 
     }
 
     // Show success then return to dashboard
-    showToast(qrStamp ? '1 stamp at ' + shopName + '!' : 'Visit recorded at ' + shopName + '.');
+    showToast(qrStamp ? '1 stamp at ' + shopName + '!' : res.data.awarded ? 'Six visits! +1 village stamp.' : 'Visit recorded — ' + res.data.visits + ' of 6 toward your next village stamp.');
     if (!fromQr) setTimeout(function() { show('s-customer'); }, 1200);
 
     // Refresh nearby list to show updated state
@@ -2190,7 +2216,7 @@ async function resumeShopCheckin() {
     }
     if (await doCheckin(shop.id, shop.name, distance, lat, lng, true, qrStamp)) {
       clearShopCheckin();
-      showShopStampSuccess(qrStamp ? '1 stamp at ' + shop.name + '!' : 'Visit recorded at ' + shop.name + '.', qrStamp ? 'Thanks for shopping local.' : 'Scan the shop QR to earn a stamp.');
+      showShopStampSuccess(qrStamp ? '1 stamp at ' + shop.name + '!' : 'Visit recorded at ' + shop.name + '.', qrStamp ? 'Thanks for shopping local.' : 'Every 6 GPS check-ins earns 1 village stamp.');
     }
   } catch (error) {
     showToast(error.message || 'Could not check in. Please scan the shop QR again.', true);

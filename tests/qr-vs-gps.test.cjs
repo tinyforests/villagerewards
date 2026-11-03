@@ -21,8 +21,8 @@ test('only QR and qualifying purchase rows earn passport/shop-card progress; GPS
 });
 test('transaction writer distinguishes QR earning from GPS recording',async()=>{
  const html=fs.readFileSync('app.html','utf8');const start=html.indexOf('async function doCheckin(');const source=html.slice(start,html.indexOf('/* ═══ BADGES',start));
- const writes=[];const ctx=vm.createContext({localStorage:{getItem:()=> 'me'},setLoading:()=>{},showToast:()=>{},setTimeout:()=>{},console,renderCustomerDashboard:()=>{},sb:{from(table){return table==='transactions'?{insert:async row=>{writes.push(row);return {}}}:{select(){return this},eq(){return this},single:async()=>({data:null})}}}});vm.runInContext(source,ctx);
+ const writes=[];const ctx=vm.createContext({localStorage:{getItem:()=> 'me'},setLoading:()=>{},showToast:()=>{},setTimeout:()=>{},console,renderCustomerDashboard:()=>{},updateGpsVisitProgress:()=>{},sb:{rpc:async(name,args)=>{writes.push({type:'checkin',points:0,note:'gps_visit'});return{data:{visits:1,awarded:false,duplicate:false}}},from(table){return table==='transactions'?{insert:async row=>{writes.push(row);return {}}}:{select(){return this},eq(){return this},single:async()=>({data:null})}}}});vm.runInContext(source,ctx);
  await ctx.doCheckin('shop','Local',null,null,null,true,true);await ctx.doCheckin('shop','Local',5,1,2,false,false);
  assert.equal(writes[0].type,'purchase');assert.equal(writes[0].note,'qr_scan');assert.equal(writes[0].points,1);assert.equal(writes[0].amount,0);
- assert.equal(writes[1].type,'checkin');assert.equal(writes[1].points,0);assert.equal(writes[1].note,null);
+ assert.equal(writes[1].type,'checkin');assert.equal(writes[1].points,0);assert.equal(writes[1].note,'gps_visit');
 });

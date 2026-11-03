@@ -12,7 +12,7 @@
     var title, message;
     if (tx.type === 'checkin') {
       title = just + 'checked in' + shop + '!';
-      message = 'Visit recorded. Scan the shop QR to earn a stamp.';
+      message = tx.note === 'gps_visit' ? 'Every 6 GPS check-ins earns 1 village stamp.' : 'Visit recorded. Scan the shop QR to earn a stamp.';
     } else if (tx.type === 'redeem' || tx.type === 'reward') {
       var item = tx.reward_title ? ' for ' + tx.reward_title : '';
       title = tx.type === 'reward' ? just + 'claimed your shop reward' + shop + '.' : just + 'redeemed ' + points + ' ' + unit + item + shop + '.';
@@ -21,8 +21,8 @@
       title = tx.note === 'qr_scan' ? 'Stamp at ' + (tx.shop_name || 'your local shop') : just + 'earned ' + points + ' ' + unit + shop + '!';
       message = 'Thanks for shopping local. Your next treat is a little closer.';
     } else if (tx.type === 'bonus' && Number(tx.points) >= 0) {
-      title = 'A little extra: ' + points + ' bonus ' + unit + '!';
-      message = 'That’s something to smile about.';
+      title = tx.note === 'gps_checkin_bonus' ? 'Six visits! You earned 1 village stamp.' : 'A little extra: ' + points + ' bonus ' + unit + '!';
+      message = tx.note === 'gps_checkin_bonus' ? 'Your next set of 6 check-ins starts now. This stamp is in your village balance.' : 'That’s something to smile about.';
     } else {
       title = 'Your stamps have been updated.';
       message = 'See your recent activity for the details.';
