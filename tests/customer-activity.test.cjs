@@ -23,3 +23,5 @@ for (const points of [300,250,8,0,null]) {
 assert.equal(format({...tx,type:'purchase',note:'qr_scan',points:1,amount:0},now).title,'Stamp at Example café');
 
 assert.match(format({...tx,type:'bonus',points:1,note:'gps_checkin_bonus'},now).title,/Six visits! You earned 1 village stamp/);
+
+assert.match(format({...tx,type:'bonus',points:1,note:'shop_card_completion_bonus'},now).title,/Card completed! You earned 1 village stamp/);

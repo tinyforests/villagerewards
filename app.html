@@ -143,6 +143,14 @@
     .toast.show { transform: none; opacity: 1; }
     .toast.error { border-color: rgba(201,123,90,0.4); }
 
+    /* Village Rewards outcome notifications: visible, readable and dismissible. */
+    #toast{display:grid;grid-template-columns:42px minmax(0,1fr) 40px;gap:12px;align-items:start;max-width:480px;margin:auto;bottom:calc(var(--safe-bot) + 20px);padding:18px;border-radius:var(--vr-card-radius,24px);background:var(--vr-butter);color:var(--vr-ink);border:1px solid var(--vr-border);box-shadow:0 12px 40px #29332f30;pointer-events:none;text-align:left}
+    #toast[hidden]{display:none!important}#toast.show{pointer-events:auto}#toast.visit{background:var(--vr-sky)}#toast.reward{background:var(--vr-mint)}#toast.error{background:#fff0f0;color:var(--vr-error)}
+    .notice-icon{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#ffffff90;font-size:24px}
+    #notice-title{display:block;font:900 16px/1.35 var(--vr-font)}#notice-copy{display:block;font:400 14px/1.5 var(--vr-font);margin-top:5px}
+    .notice-close{min-height:40px;min-width:40px;border:0;background:transparent;color:inherit;border-radius:12px;font-size:24px;cursor:pointer}
+    @media(prefers-reduced-motion:reduce){#toast{transition:none;transform:none}}
+
     /* ══════════════════════════════════════
        SCREEN: WELCOME
     ══════════════════════════════════════ */
@@ -433,7 +441,11 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
 <div class="loading-overlay" id="loader"><div class="spinner"></div></div>
 
 <!-- Toast -->
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true" hidden>
+  <span class="notice-icon" id="notice-icon" aria-hidden="true">✦</span>
+  <div><strong id="notice-title"></strong><span id="notice-copy"></span></div>
+  <button type="button" class="notice-close" aria-label="Dismiss notification" onclick="dismissVillageNotice()">×</button>
+</div>
 
 <!-- ═══ WELCOME ═══════════════════════════════════════ -->
 <div class="screen active" id="s-welcome">
@@ -927,12 +939,40 @@ function setLoading(on) {
   document.getElementById('loader').classList.toggle('active', on);
 }
 
-function showToast(msg, isError) {
-  var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show' + (isError ? ' error' : '');
-  setTimeout(function() { t.classList.remove('show'); }, 3000);
+var villageNoticeQueue=[];
+var villageNoticeTimer=null;
+var villageNoticeActive=false;
+function showToast(msg,isError) {showVillageNotice(msg,'',isError?'error':'info');}
+function showVillageNotice(title,copy,kind) {
+  villageNoticeQueue.push({title:String(title),copy:String(copy||''),kind:kind||'reward'});
+  if(!villageNoticeActive)displayVillageNotice();
 }
+function displayVillageNotice() {
+  var notice=villageNoticeQueue.shift();
+  if(!notice){villageNoticeActive=false;return;}
+  villageNoticeActive=true;
+  var el=document.getElementById('toast');
+  document.getElementById('notice-title').textContent=notice.title;
+  document.getElementById('notice-copy').textContent=notice.copy;
+  document.getElementById('notice-icon').textContent=notice.kind==='error'?'!':notice.kind==='visit'?'↗':'✦';
+  el.hidden=false;el.className='toast show '+notice.kind;
+  clearTimeout(villageNoticeTimer);
+  villageNoticeTimer=setTimeout(dismissVillageNotice,notice.copy?8000:5000);
+}
+function dismissVillageNotice() {
+  clearTimeout(villageNoticeTimer);
+  var el=document.getElementById('toast');
+  el.className='toast';el.hidden=true;
+  villageNoticeActive=false;
+  if(villageNoticeQueue.length)displayVillageNotice();
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var el=document.getElementById('toast');
+  function pause(){clearTimeout(villageNoticeTimer);}
+  function resume(){clearTimeout(villageNoticeTimer);if(villageNoticeActive)villageNoticeTimer=setTimeout(dismissVillageNotice,8000);}
+  el.addEventListener('mouseenter',pause);el.addEventListener('mouseleave',resume);
+  el.addEventListener('focusin',pause);el.addEventListener('focusout',resume);
+});
 
 /* ═══════════════════════════════════════════════════════
    HELPERS
@@ -1159,7 +1199,7 @@ async function renderCustomerDashboard(c) {
     var ptsClass  = isRedeem ? 'redeem' : (isCheckin || isReward) ? 'checkin' : 'earn';
     var icon      = isReward ? '🎁 ' : isCheckin ? '⬡ ' : '';
     var isQrStamp = tx.type === 'purchase' && tx.note === 'qr_scan';
-    var ptsCell   = isCheckin ? 'Visit recorded' : (tx.type === 'purchase' || tx.note === 'gps_checkin_bonus') ? '+1 stamp'
+    var ptsCell   = isCheckin ? 'Visit recorded' : (tx.type === 'purchase' || ['gps_checkin_bonus','shop_card_completion_bonus'].includes(tx.note)) ? '+1 stamp'
       : isReward ? 'Free' : (isRedeem ? '−' : '+') + Math.abs(tx.points);
 
     return '<div class="tx-item">' +
@@ -1695,7 +1735,9 @@ async function doCheckin(shopId, shopName, distanceM, customerLat, customerLng, 
     }
 
     // Show success then return to dashboard
-    showToast(qrStamp ? '1 stamp at ' + shopName + '!' : res.data.awarded ? 'Six visits! +1 village stamp.' : 'Visit recorded — ' + res.data.visits + ' of 6 toward your next village stamp.');
+    if(qrStamp)showVillageNotice('1 stamp at '+shopName+'!','Your stamp has been added. Keep exploring your village.','reward');
+    else if(res.data.awarded)showVillageNotice('Six visits! +1 village stamp.','Added to your village balance. Your next set of 6 check-ins starts now.','reward');
+    else showVillageNotice('Visit recorded at '+shopName, res.data.visits+' of 6 check-ins toward your next village stamp.','visit');
     if (!fromQr) setTimeout(function() { show('s-customer'); }, 1200);
 
     // Refresh nearby list to show updated state
@@ -1775,7 +1817,9 @@ async function renderBadges(cid) {
   try {
     var r=await sb.from('customer_stats').select('*').eq('id',cid).maybeSingle();
     if(version!==badgeRenderVersion||r.error)return;
+    var previous=customerBadgeStats;
     customerBadgeStats=r.data||{};
+    if(previous)CUSTOMER_BADGES.forEach(function(b){if(!b.check(previous)&&b.check(customerBadgeStats))showVillageNotice('New badge: '+b.name,b.criteria,'reward');});
     g.innerHTML=badgeTiles(customerBadgeStats);
   } catch(e){console.log('Badges: customer_stats not available yet.',e);}
 }
@@ -2091,7 +2135,7 @@ function stopRedemptionTimers() {
 async function pollRedemption() {
   if (!activeRedemption) return;
   try {
-    var res = await sb.from('redemptions').select('status,validated_at,points_at_redemption,reward_type')
+    var res = await sb.from('redemptions').select('status,validated_at,points_at_redemption,reward_type,completion_bonus_points')
       .eq('redemption_code', activeRedemption.code).maybeSingle();
     if (res.data && res.data.status === 'validated') {
       stopRedemptionTimers();
@@ -2111,7 +2155,8 @@ async function pollRedemption() {
         renderCustomerDashboard(c.data);
 
       }
-      showToast('Redeemed: ' + title + '. Enjoy!');
+      if(res.data.completion_bonus_points===1)showVillageNotice('Card completed! +1 village stamp.',title+' redeemed. Your bonus is in your village balance.','reward');
+      else showVillageNotice('Reward redeemed!',title+'. Enjoy your little treat.','reward');
       show('s-customer');
     }
   } catch(e) { /* keep polling */ }
@@ -2270,8 +2315,12 @@ async function confirmShopReward(index) {
     pendingRedeemShop = null;
     var url = new URL(location.href); url.searchParams.delete('redeem'); url.searchParams.delete('join');
     history.replaceState(null,'',url);
+    var customer=await sb.from('customers').select('*').eq('id',currentCustomer.id).single();
+    if(customer.data)currentCustomer=customer.data;
     await renderCustomerDashboard(currentCustomer);
-    showShopStampSuccess('Reward redeemed!', card.reward_title + ' at ' + card.shop_name + '. Show this screen to the trader.');
+    var bonus=result.data.completion_bonus_points===1;
+    showShopStampSuccess(bonus?'Card completed! +1 village stamp.':'Reward redeemed!',card.reward_title+' at '+card.shop_name+'. '+(bonus?'Your bonus has been added to your village balance. ':'')+'Show this screen to the trader.');
+    showVillageNotice(bonus?'Card completed! +1 village stamp.':'Reward redeemed!',card.reward_title+' at '+card.shop_name+(bonus?'. Your bonus is in your village balance.':'. Enjoy your little treat.'),'reward');
   } catch (error) {showToast(error.message || 'Could not redeem. Please try again.',true);}
   finally {shopRewardBusy=false;setLoading(false);}
 }

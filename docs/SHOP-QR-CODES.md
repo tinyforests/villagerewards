@@ -11,3 +11,5 @@
 Production prerequisite: `supabase/migrations/202610290002_shopper_stamp_redemption.sql` (applied to village-rewards on 29 October 2026). It keeps PIN values server-side and uses a customer-row lock around creation and validation.
 
 This continues the existing pilot customer-ID access model, not verified customer authentication. Shopper completion without trader PIN was explicitly approved. Local fixtures and SQL tests do not certify production identity or multi-session behaviour. No production stamps or rewards were created during verification.
+
+Completed shop-card redemptions now award one village-only bonus stamp through `202611030002_card_completion_bonus.sql`. The server records one bonus per redemption and exposes `completion_bonus_points` for accurate shopper notifications. Existing completed redemptions are not backfilled. Notifications use in-app cards (not push messages), queue outcomes, and pause while hovered or focused.
