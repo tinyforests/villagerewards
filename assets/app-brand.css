@@ -75,7 +75,7 @@ html,body{background:var(--vr-white);color:var(--vr-ink);font-weight:400}
 
 /* Make the two Rewards sections easy to spot without styling other headings. */
 #stamp-cards > .section-label,
-#s-rewards .tiers-section > .section-label {
+#tiers-section > .section-label {
   display: inline-block;
   padding: 7px 13px;
   border-radius: 12px;

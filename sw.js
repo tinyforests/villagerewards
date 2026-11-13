@@ -3,7 +3,7 @@
    v1.0 · Mont Albert Pilot
    ───────────────────────────────────────────────────── */
 
-var CACHE_NAME = 'village-rewards-reward-headings-v23';
+var CACHE_NAME = 'village-rewards-reward-headings-v24';
 
 /* Assets to cache on install so the app loads offline */
 var PRECACHE = [
