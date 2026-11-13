@@ -654,7 +654,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     <div class="redeem-title" id="rd-title"></div>
     <div class="redeem-qr" id="rd-qr"></div>
     <div class="redeem-count" id="rd-count"></div>
-    <p class="redeem-hint">Show this to the merchant. They confirm the code to complete it. Your stamps reset to zero once confirmed.</p>
+    <p class="redeem-hint">Show this to the merchant. They confirm the code to complete it. For village tier rewards, only the listed stamp cost is deducted.</p>
     <button class="btn btn-outline" style="margin-top:28px;max-width:300px;" onclick="cancelRedemption()">Cancel</button>
   </div>
   <footer class="vr-footer"><a href="index.html">Village Rewards</a><a href="docs/brand-book.html">Brand book</a></footer>
@@ -796,7 +796,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
       <div class="checkin-info">
         <strong>Confirm a reward redemption.</strong>
         Enter the customer's redemption code and your shop code.
-        This resets their stamps to zero — only do it as they collect the reward.
+        Confirm only when they collect the reward. Village tier rewards deduct the listed cost.
       </div>
 
       <div class="field-label">Redemption code</div>
@@ -1907,7 +1907,6 @@ async function renderPassport(cid) {
 ═══════════════════════════════════════════════════════ */
 var rewardsCache      = {};    // tier reward_id -> { title, shop, tier }
 var stampCache        = {};    // stamp reward_id -> { title, shop }
-var tiersWithRewards  = [];    // tier levels that have >=1 active reward (for the nudge)
 var activeRedemption  = null;  // { code, title, shop, expires }
 var redemptionPoll    = null;
 var redemptionCountdown = null;
@@ -1924,7 +1923,7 @@ async function openRewards() {
 
   var bal = currentCustomer.points || 0;
   document.getElementById('rewards-balance').textContent =
-    'You have ' + bal.toLocaleString() + ' stamps. Redeeming a tier reward resets your stamps to zero.';
+    'You have ' + bal.toLocaleString() + ' stamps. You keep any stamps above the reward cost.';
 
   renderStampCards();  // shop cards load in parallel with the tiers below
 
@@ -1944,11 +1943,9 @@ async function openRewards() {
     if (!tiers.length) { list.innerHTML = '<p class="tier-empty">No reward tiers set up yet.</p>'; return; }
 
     rewardsCache = {};
-    tiersWithRewards = [];
     list.innerHTML = tiers.map(function(t) {
       var unlocked = bal >= t.points_required;
       var tierRewards = rewards.filter(function(r) { return r.tier_id === t.id; });
-      if (tierRewards.length) tiersWithRewards.push(t.tier_level);
       var remaining = Math.max(0, t.points_required - bal);
       var progress = Math.max(0, Math.min(bal, t.points_required));
       var head = '<div class="tier-head"><h3 class="tl">' + t.points_required + ' stamps</h3>' +
@@ -1989,18 +1986,8 @@ function confirmRedeem(rewardId) {
   if (!r) return;
   var bal = (currentCustomer && currentCustomer.points) || 0;
   if (bal < r.cost) { showToast('You need ' + (r.cost - bal) + ' more stamps to redeem this reward.'); return; }
-  var msg = 'Redeem "' + r.title + '" at ' + r.shop + '?\n\nThis resets your ' + bal + ' stamps to zero.';
-
-  // Redeem-near-your-tier nudge: is a strictly higher tier that also has
-  // rewards affordable right now? If so, warn they're leaving value behind.
-  var betterTier = 0;
-  tiersWithRewards.forEach(function(lvl) {
-    if (lvl > r.tier && lvl <= bal && lvl > betterTier) betterTier = lvl;
-  });
-  if (betterTier) {
-    msg += '\n\n⚠ You have enough for a tier-' + betterTier + ' reward, which is worth more. ' +
-           'Redeeming this ' + r.tier + '-stamp reward still costs you all ' + bal + ' stamps.';
-  }
+  var msg = 'Redeem "' + r.title + '" at ' + r.shop + '?\n\n' +
+    'This uses ' + r.cost + ' stamps. You’ll keep ' + (bal-r.cost) + ' stamps at your current balance.';
 
   if (!confirm(msg)) return;
   doRedeem(rewardId, r.shop);
@@ -2196,7 +2183,7 @@ async function traderValidate() {
     out.className = 'val-result ok';
     var detail = (d.reward_type === 'stamp')
       ? 'Shop card complete (' + d.stamps + ' stamps).<br />Village stamps unaffected — hand over the reward.'
-      : 'Tier ' + d.tier + '.<br />Stamps reset from ' + d.points_reset_from + ' to 0.';
+      : Number(d.points_spent) + ' stamps used.<br />' + Number(d.points_remaining) + ' stamps remaining.';
     out.innerHTML = '<strong>' + esc(d.customer_name) + '</strong> redeemed <strong>' + esc(d.reward_title) +
       '</strong>.<br />' + detail;
     document.getElementById('v-code').value = '';
