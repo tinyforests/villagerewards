@@ -72,3 +72,14 @@ html,body{background:var(--vr-white);color:var(--vr-ink);font-weight:400}
 .badge-detail-body{padding:22px 24px}.badge-progress-panel{background:var(--vr-mint);border-radius:16px;padding:12px 16px;margin-top:16px}
 #badge-detail .badge-detail-body h3{margin:0 0 6px}#badge-detail .badge-progress-panel progress{margin:10px 0 0;background:var(--vr-white)}
 .reward-progress[hidden],.badge-progress-panel[hidden]{display:none}
+
+/* Make the two Rewards sections easy to spot without styling other headings. */
+#stamp-cards > .section-label,
+#s-rewards .tiers-section > .section-label {
+  display: inline-block;
+  padding: 7px 13px;
+  border-radius: 12px;
+  background: var(--vr-butter);
+  font-weight: 900;
+}
+#stamp-cards > .section-label { background: var(--vr-sky); }
