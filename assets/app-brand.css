@@ -45,3 +45,30 @@ html,body{background:var(--vr-white);color:var(--vr-ink);font-weight:400}
 .points-hero .pp-tile.dim{background:#ffffff80}
 .points-hero .pp-cta{color:var(--vr-ink);opacity:1;line-height:1.5}
 .passport-empty{font-size:14px;color:var(--vr-muted);line-height:1.6}
+
+/* Rewards: separate shop-card progress from the village balance. */
+#s-rewards .section-label,.stamp-cards-section .section-label{font-size:23px;line-height:1.2;color:var(--vr-ink);opacity:1;letter-spacing:0;text-transform:none}
+.reward-section-copy{font-size:14px;color:var(--vr-muted);margin:0 0 16px;line-height:1.5}
+#s-rewards .tier-block{border:1px solid var(--vr-border);border-radius:24px;padding:18px;background:var(--vr-white);margin-bottom:16px}
+#s-rewards .tier-head{border:0;padding:0;margin:0 0 10px;gap:10px;flex-wrap:wrap}
+#s-rewards .tier-head .ts,.sc-count{border-radius:999px;background:var(--vr-mint);padding:5px 10px;font-weight:800}
+#s-rewards .tier-block.locked .ts{background:var(--vr-sky)}
+.reward-progress{display:block;width:100%;height:9px;border:0;border-radius:999px;overflow:hidden;accent-color:var(--vr-ink);background:var(--vr-mint);margin-bottom:14px}
+.reward-progress::-webkit-progress-bar{background:var(--vr-mint)}.reward-progress::-webkit-progress-value{background:var(--vr-ink)}.reward-progress::-moz-progress-bar{background:var(--vr-ink)}
+#s-rewards .reward-card{background:var(--vr-butter);margin:0 0 10px}.rc-val{font-weight:900}
+.rc-redeem:disabled{background:var(--vr-white);color:var(--vr-muted);border:1px solid var(--vr-border);opacity:1}
+.redeem-hint,.sc-next{font-size:14px;color:var(--vr-muted);margin:8px 0 0;font-weight:700}
+.stamp-card .sc-top{gap:8px;flex-wrap:wrap;align-items:center}.stamp-card .sc-title{margin:10px 0 6px}
+.sc-dots{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
+.sc-dots span{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--vr-white);border:1px dashed var(--vr-muted)}
+.sc-dots .filled{background:var(--vr-butter);border:1px solid var(--vr-ink);color:var(--vr-ink)}
+#badge-detail{padding:0}
+#badge-detail .badge-detail-close{position:absolute;right:12px;top:12px;background:var(--vr-white);z-index:1}
+.badge-detail-hero{background:var(--vr-sky);padding:24px;text-align:center}
+.badge-earned .badge-detail-hero{background:var(--vr-butter)}
+.badge-detail-kicker{font-size:13px;font-weight:900;letter-spacing:.04em}
+#badge-detail .badge-detail-icon{display:grid;place-items:center;width:88px;height:88px;border-radius:50%;background:var(--vr-white);font-size:48px;margin:14px auto}
+#badge-detail .badge-detail-status{display:inline-block;background:var(--vr-white);border-radius:999px;padding:4px 12px;font-size:14px}
+.badge-detail-body{padding:22px 24px}.badge-progress-panel{background:var(--vr-mint);border-radius:16px;padding:12px 16px;margin-top:16px}
+#badge-detail .badge-detail-body h3{margin:0 0 6px}#badge-detail .badge-progress-panel progress{margin:10px 0 0;background:var(--vr-white)}
+.reward-progress[hidden],.badge-progress-panel[hidden]{display:none}

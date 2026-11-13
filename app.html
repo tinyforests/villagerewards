@@ -639,7 +639,7 @@ if (new URLSearchParams(window.location.search).get('join') === '1') {
     <p class="hint" id="rewards-balance" style="margin-top:12px;"></p>
     <div id="stamp-cards" style="margin-top:24px;"></div>
     <div id="tiers-section" style="margin-top:8px;">
-      <div class="section-label">Village tiers</div>
+      <h2 class="section-label">Village tiers</h2><p class="reward-section-copy">Use your village stamp balance to unlock these rewards.</p>
       <div id="tiers-list"></div>
     </div>
   </div>
@@ -1787,6 +1787,12 @@ function openBadgeDetail(id, tile) {
   document.getElementById('badge-detail-progress').textContent = earned ? '' : customerBadgeStats
     ? Math.max(0,Number(customerBadgeStats[b.metric])||0)+' of '+b.goal+' '+b.unit
     : 'Progress is temporarily unavailable. Please try again shortly.';
+  document.getElementById('badge-progress-panel').hidden = earned;
+  var meter = document.getElementById('badge-progress-meter');
+  meter.hidden = !customerBadgeStats;
+  meter.max = b.goal;
+  meter.value = Math.max(0, Math.min(b.goal, Number(customerBadgeStats && customerBadgeStats[b.metric]) || 0));
+  document.getElementById('badge-detail').classList.toggle('badge-earned', earned);
   document.getElementById('badge-detail').showModal();
 }
 // Native buttons provide Enter/Space; native dialog supplies focus trapping and Escape.
@@ -1943,8 +1949,12 @@ async function openRewards() {
       var unlocked = bal >= t.points_required;
       var tierRewards = rewards.filter(function(r) { return r.tier_id === t.id; });
       if (tierRewards.length) tiersWithRewards.push(t.tier_level);
-      var head = '<div class="tier-head"><span class="tl">' + t.tier_level + ' stamps</span>' +
-        '<span class="ts">' + (unlocked ? 'Unlocked' : ((t.points_required - bal) + ' more') ) + '</span></div>';
+      var remaining = Math.max(0, t.points_required - bal);
+      var progress = Math.max(0, Math.min(bal, t.points_required));
+      var head = '<div class="tier-head"><h3 class="tl">' + t.points_required + ' stamps</h3>' +
+        '<span class="ts">' + (unlocked ? 'Unlocked' : remaining + ' to go') + '</span></div>' +
+        '<progress class="reward-progress" aria-label="Progress toward ' + t.points_required +
+        ' stamps" max="' + t.points_required + '" value="' + progress + '"></progress>';
 
       var body;
       if (!tierRewards.length) {
@@ -1953,14 +1963,16 @@ async function openRewards() {
         body = tierRewards.map(function(r) {
           var shopName = shopMap[r.merchant_id] || 'Village shop';
           rewardsCache[r.id] = { title: r.reward_title, shop: shopName, tier: t.tier_level };
-          var btn = unlocked
-            ? '<button class="btn btn-accent rc-redeem" onclick="confirmRedeem(\'' + r.id + '\')">Redeem</button>'
-            : '';
+          rewardsCache[r.id].cost = Number(t.points_required);
+          var btn = '<button class="btn btn-primary rc-redeem"' + (unlocked
+            ? ' onclick="confirmRedeem(\'' + esc(r.id) + '\')"'
+            : ' disabled') + '>Redeem</button>' +
+            (unlocked ? '' : '<p class="redeem-hint">' + remaining + ' more stamps to unlock</p>');
           return '<div class="reward-card">' +
             '<div class="rc-shop">' + esc(shopName) + '</div>' +
             '<div class="rc-title">' + esc(r.reward_title) + '</div>' +
             (r.reward_description ? '<div class="rc-desc">' + esc(r.reward_description) + '</div>' : '') +
-            (r.estimated_value ? '<div class="rc-val">Worth ~$' + parseFloat(r.estimated_value).toFixed(0) + '</div>' : '') +
+            (r.estimated_value ? '<div class="rc-val">Worth ' + Number(r.estimated_value).toLocaleString('en-AU',{style:'currency',currency:'AUD',minimumFractionDigits:0,maximumFractionDigits:2}) + '</div>' : '') +
             btn + '</div>';
         }).join('');
       }
@@ -1976,6 +1988,7 @@ function confirmRedeem(rewardId) {
   var r = rewardsCache[rewardId];
   if (!r) return;
   var bal = (currentCustomer && currentCustomer.points) || 0;
+  if (bal < r.cost) { showToast('You need ' + (r.cost - bal) + ' more stamps to redeem this reward.'); return; }
   var msg = 'Redeem "' + r.title + '" at ' + r.shop + '?\n\nThis resets your ' + bal + ' stamps to zero.';
 
   // Redeem-near-your-tier nudge: is a strictly higher tier that also has
@@ -2008,18 +2021,8 @@ async function renderStampCardsDash() {
     if (res.error) throw res.error;
     var cards = res.data || [];
     if (!cards.length) { el.innerHTML = placeholder; return; }
-    el.innerHTML = '<div class="section-label">Your stamp cards</div>' + cards.map(function(c) {
-      var goal = c.stamp_goal || 0;
-      var cur  = Math.min(c.current_stamps || 0, goal);
-      var pct  = goal ? Math.round(cur / goal * 100) : 0;
-      var cls  = (c.ready ? ' ready' : '') + (cur === 0 ? ' dim' : '');
-      return '<div class="stamp-card' + cls + '">' +
-        '<div class="sc-top"><span class="sc-shop">' + esc(c.shop_name) + '</span>' +
-        '<span class="sc-count">' + cur + ' of ' + goal + ' stamps</span></div>' +
-        '<div class="sc-title">' + esc(c.reward_title) + '</div>' +
-        (c.reward_description ? '<div class="rc-desc">' + esc(c.reward_description) + '</div>' : '') +
-        '<div class="sc-bar"><div class="sc-fill" style="width:' + pct + '%"></div></div>' +
-      '</div>';
+    el.innerHTML = '<h2 class="section-label">Your shop cards</h2>' + cards.map(function(c) {
+      return shopCardMarkup(c, '');
     }).join('');
   } catch(e) {
     console.log('Stamp cards: not available yet.', e);
@@ -2039,30 +2042,36 @@ async function renderStampCards() {
     if (!cards.length) return;  // no shop cards — leave the section empty
 
     stampCache = {};
-    el.innerHTML = '<div class="section-label">Shop cards</div>' + cards.map(function(c) {
+    el.innerHTML = '<h2 class="section-label">Shop cards</h2><p class="reward-section-copy">Fill each shop’s card to unlock its own reward.</p>' + cards.map(function(c) {
       stampCache[c.reward_id] = { title: c.reward_title, shop: c.shop_name };
-      var cur = Math.min(c.current_stamps, c.stamp_goal);
-      var pct = Math.round(cur / c.stamp_goal * 100);
       var btn = c.ready
-        ? '<button class="btn btn-accent rc-redeem" onclick="confirmStampRedeem(\'' + c.reward_id + '\')">Redeem free reward</button>'
+        ? '<button class="btn btn-primary rc-redeem" onclick="confirmStampRedeem(\'' + esc(c.reward_id) + '\')">Redeem shop reward</button>'
         : '';
-      return '<div class="stamp-card ' + (c.ready ? 'ready' : '') + '">' +
-        '<div class="sc-top"><span class="sc-shop">' + esc(c.shop_name) + '</span>' +
-        '<span class="sc-count">' + cur + ' / ' + c.stamp_goal + '</span></div>' +
-        '<div class="sc-title">' + esc(c.reward_title) + '</div>' +
-        (c.reward_description ? '<div class="rc-desc">' + esc(c.reward_description) + '</div>' : '') +
-        '<div class="sc-bar"><div class="sc-fill" style="width:' + pct + '%"></div></div>' +
-        btn + '</div>';
+      return shopCardMarkup(c, btn);
     }).join('');
   } catch(e) {
     console.error('stamp cards error:', e);  // fail quietly; tiers still render
   }
 }
 
+function shopCardMarkup(c, action) {
+  var goal = Math.max(1, Number(c.stamp_goal) || 1);
+  var cur = Math.max(0, Math.min(Number(c.current_stamps) || 0, goal));
+  var dots = goal <= 12 ? '<div class="sc-dots" aria-hidden="true">' +
+    Array.from({length:goal}, function(_,i) {return '<span class="' + (i<cur?'filled':'') + '">' + (i<cur?'✦':'') + '</span>';}).join('') +
+    '</div>' : '<progress class="reward-progress" aria-label="Shop card stamps" max="' + goal + '" value="' + cur + '"></progress>';
+  return '<article class="stamp-card' + (c.ready?' ready':'') + '">' +
+    '<div class="sc-top"><span class="sc-shop">' + esc(c.shop_name) + '</span><span class="sc-count">' + cur + ' of ' + goal + ' stamps</span></div>' +
+    '<h3 class="sc-title">' + esc(c.reward_title) + '</h3>' +
+    (c.reward_description?'<p class="rc-desc">' + esc(c.reward_description) + '</p>':'') +
+    dots + '<p class="sc-next">' + (c.ready?'Ready to redeem':(goal-cur) + ' ' + (goal-cur===1?'stamp':'stamps') + ' to go') + '</p>' +
+    action + '</article>';
+}
+
 function confirmStampRedeem(rewardId) {
   var c = stampCache[rewardId];
   if (!c) return;
-  if (!confirm('Redeem "' + c.title + '" at ' + c.shop + '?\n\nThis completes your card. Your village stamps are not affected.')) return;
+  if (!confirm('Redeem "' + c.title + '" at ' + c.shop + '?\n\nThis completes your shop card and adds one bonus stamp to your village balance.')) return;
   doRedeem(rewardId, c.shop);
 }
 
@@ -2332,12 +2341,21 @@ if (pendingCheckinShop || pendingRedeemShop || new URLSearchParams(location.sear
 </script>
 <dialog id="badge-detail" aria-labelledby="badge-detail-title" aria-describedby="badge-detail-criteria badge-detail-progress">
   <button type="button" class="badge-detail-close" aria-label="Close badge details" autofocus onclick="document.getElementById('badge-detail').close()">×</button>
-  <span class="badge-detail-icon" id="badge-detail-icon" aria-hidden="true"></span>
-  <h2 id="badge-detail-title"></h2>
-  <p id="badge-detail-status" class="badge-detail-status"></p>
-  <h3>How it’s earned</h3>
-  <p id="badge-detail-criteria"></p>
-  <p id="badge-detail-progress"></p>
+  <div class="badge-detail-hero">
+    <span class="badge-detail-kicker">Village Rewards · Badges</span>
+    <span class="badge-detail-icon" id="badge-detail-icon" aria-hidden="true"></span>
+    <h2 id="badge-detail-title"></h2>
+    <p id="badge-detail-status" class="badge-detail-status"></p>
+  </div>
+  <div class="badge-detail-body">
+    <h3>How it’s earned</h3>
+    <p id="badge-detail-criteria"></p>
+    <div class="badge-progress-panel" id="badge-progress-panel">
+      <h3>Your progress</h3>
+      <p id="badge-detail-progress"></p>
+      <progress class="reward-progress" id="badge-progress-meter" aria-label="Badge progress"></progress>
+    </div>
+  </div>
 </dialog>
 <dialog id="qr-scanner" aria-labelledby="qr-title">
   <h2 id="qr-title">Scan their code</h2>
